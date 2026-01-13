@@ -3,154 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoDrone EDU Simulator - Robolink Style (Clear View)</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+    <title>Drone Simulator - Modular</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚁</text></svg>">
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/blockly_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/blocks_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/javascript_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/msg/en.js"></script>
-
-    <style>
-        :root {
-            --bg-color: #1e1e1e;
-            --panel-bg: #111111;
-            --text-color: #e0e0e0;
-            --accent-color: #00adb5;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* 頂部導航列 */
-        .top-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 50px;
-            background-color: #2c3e50;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-sizing: border-box;
-            z-index: 100;
-            border-bottom: 2px solid #00adb5;
-        }
-
-        .top-bar h2 { margin: 0; color: white; font-size: 1.2rem; margin-right: 30px; }
-
-        .control-btn {
-            background-color: #34495e; color: white; border: none; padding: 8px 15px;
-            margin-right: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;
-            display: flex; align-items: center; gap: 5px; transition: 0.2s;
-        }
-        .control-btn:hover { filter: brightness(1.2); }
-        .btn-run { background-color: #27ae60; }
-        .btn-stop { background-color: #c0392b; }
-        .btn-reset { background-color: #e67e22; }
-        
-        .scene-select { padding: 5px 10px; border-radius: 4px; background: #ecf0f1; border: none; margin-left: auto; font-weight: bold; cursor: pointer; }
-
-        .main-container { display: flex; width: 100%; height: calc(100vh - 50px); margin-top: 50px; }
-        #blocklyDiv { width: 40%; height: 100%; background-color: var(--panel-bg); border-right: 1px solid #444; }
-        #canvas-container { width: 60%; height: 100%; position: relative; background-color: #000; cursor: grab; overflow: hidden; }
-        #canvas-container:active { cursor: grabbing; }
-
-        .hud {
-            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7);
-            padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace;
-            pointer-events: none; color: #00ff00; font-size: 0.95rem; line-height: 1.5;
-            user-select: none; min-width: 180px; border: 1px solid #333;
-        }
-
-        /* Console 面板樣式 */
-        #console-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 150px;
-            background-color: rgba(30, 30, 30, 0.95);
-            border-top: 2px solid #00adb5;
-            display: flex;
-            flex-direction: column;
-            z-index: 20;
-            transition: transform 0.3s;
-        }
-
-        .console-header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 5px 10px;
-            font-size: 0.85rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        #console-content {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #00ff00;
-            text-align: left;
-        }
-
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; }
-        .log-time { color: #888; font-size: 0.8em; margin-right: 8px; }
-
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div class="top-bar">
-        <h2>🚁 CoDrone EDU Sim</h2>
-        <button class="control-btn btn-run" onclick="runBlocklyCode()">▶ RUN</button>
-        <button class="control-btn btn-stop" onclick="emergencyStop()">⬛ STOP</button>
-        <button class="control-btn btn-reset" onclick="resetSimulator()">⟳ RESET</button>
-        <select class="scene-select" id="scene-select" onchange="changeScene(this.value)">
-            <option value="free">場景: 自由飛行</option>
-            <option value="tunnel">任務一: 智能隧道</option>
-            <option value="city">任務二: 城市物流</option>
-        </select>
-    </div>
-
-    <div class="main-container">
-        <div id="blocklyDiv"></div>
-
-        <div id="canvas-container">
-            <div class="hud" id="hud-display">Status: LANDED<br>Alt: 0 cm</div>
-            
-            <div id="console-panel">
-                <div class="console-header">
-                    <span>>_ Console Output</span>
-                    <button onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;">🗑️ Clear</button>
+    <!-- 主菜单画面 -->
+    <div id="main-menu" class="menu-screen">
+        <div class="menu-content">
+            <div class="menu-left">
+                <div class="menu-logo">
+                    <h1 class="logo-title">SKYGUARD</h1>
+                    <p class="logo-tagline">Code to rescue</p>
                 </div>
-                <div id="console-content"></div>
+                <div class="menu-buttons">
+                    <button class="menu-btn" onclick="showMissionSelect()">COMPETITION</button>
+                    <button class="menu-btn" onclick="startFreePlay()">FREE PLAY</button>
+                    <button class="menu-btn" onclick="showBasecamp()">BASECAMP</button>
+                    <button class="menu-btn" onclick="showYourMissions()">YOUR MISSIONS</button>
+                    <button class="menu-btn" onclick="showLoadScene()">LOAD SCENE</button>
+                    <button class="menu-btn" onclick="quitGame()">QUIT</button>
+                </div>
             </div>
+            <div class="menu-right">
+                <div class="menu-preview" id="main-menu-preview">
+                    <!-- 3D 預覽將在這裡渲染 -->
+                </div>
+                <div class="feature-cards">
+                    <div class="feature-card">
+                        <div class="feature-icon">🧩</div>
+                        <h3>Blockly 編程</h3>
+                        <p>使用視覺化積木進行編程</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎮</div>
+                        <h3>3D 模擬</h3>
+                        <p>即時 3D 無人機飛行模擬</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>任務挑戰</h3>
+                        <p>完成各種任務挑戰</p>
+                    </div>
+                </div>
             </div>
+        </div>
     </div>
 
+    <!-- 任務選擇畫面 -->
+    <div id="mission-select-menu" class="menu-screen" style="display: none;">
+        <button class="back-btn" onclick="showMainMenu()">←</button>
+        <div class="mission-select-content">
+            <div class="mission-select-header">
+                <h1>COMPETITION MISSIONS</h1>
+            </div>
+            <div class="mission-select-body">
+                <div class="mission-list">
+                    <button class="mission-btn" onclick="startMission(1)">MISSION 1</button>
+                    <button class="mission-btn" onclick="startMission(2)">MISSION 2</button>
+                </div>
+                <div class="mission-preview" id="mission-preview">
+                    <!-- 3D 場景預覽將在這裡渲染 -->
+                </div>
+            </div>
+            <div class="mission-select-footer">
+                <div class="footer-logo">
+                    <h2>SKYGUARD</h2>
+                    <p>CODE TO RESCUE</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲界面（預設隱藏） -->
+    <div id="game-interface" style="display: none;">
+        <div class="top-bar">
+            <button class="back-btn-game" onclick="returnToMissionSelect()" title="返回任務選擇">← 返回</button>
+            <button class="control-btn toggle-blockly-btn" onclick="toggleBlocklyPanel()" title="顯示/隱藏積木區" id="toggle-blockly-btn">📦 顯示積木區</button>
+            <button class="control-btn" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none; background-color: #ff9800; color: white;">💡 參考答案</button>
+            <select class="scene-select" id="scene-select" onchange="changeScene(this.value)">
+                <option value="free">場景: 自由飛行</option>
+                <option value="tunnel">任務一: 隧道迷宮</option>
+                <option value="city">任務二: 山火應對</option>
+            </select>
+        </div>
+        
+        <!-- 右上角设置菜单 -->
+        <div class="settings-menu" id="settings-menu">
+            <button class="settings-toggle-btn" onclick="toggleSettingsMenu()" title="設置">⚙️</button>
+            <div class="settings-panel" id="settings-panel" style="display: none;">
+                <div class="settings-item">
+                    <label for="speed-slider">速度:</label>
+                    <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                    <span id="speed-display">1.0x</span>
+                </div>
+                <div class="settings-item">
+                    <button class="settings-btn" onclick="toggleCameraMode()" id="camera-mode-btn">🎥 視角: 跟隨中</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右下角浮动控制面板 -->
+        <div class="floating-control-panel">
+            <div class="execution-progress" id="execution-progress" style="display: none;">
+                <span>執行中: <span id="progress-text">0/0</span></span>
+            </div>
+            <div class="control-buttons-group">
+                <button class="floating-btn btn-run" onclick="runBlocklyCode()" title="執行">▶</button>
+                <button class="floating-btn btn-stop" onclick="emergencyStop()" title="停止">⬛</button>
+                <button class="floating-btn btn-reset" onclick="resetSimulator()" title="重置">⟳</button>
+            </div>
+        </div>
+        <div class="main-container">
+            <div id="blocklyDiv" class="blockly-panel">
+                <div class="blockly-resizer" id="blockly-resizer"></div>
+                <div class="blockly-zoom-controls">
+                    <button class="zoom-btn" onclick="zoomBlockly('in')" title="放大">+</button>
+                    <button class="zoom-btn" onclick="zoomBlockly('out')" title="縮小">−</button>
+                    <button class="zoom-btn" onclick="zoomBlockly('reset')" title="重置">⌂</button>
+                </div>
+            </div>
+            <div id="canvas-container" class="canvas-panel">
+                <div class="hud" id="hud-display">Status: LANDED<br>Alt: 0 cm</div>
+                
+                <div id="console-panel">
+                    <div class="console-header">
+                        <span>>_ Console Output</span>
+                        <button onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;">🗑️ Clear</button>
+                    </div>
+                    <div id="console-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <xml id="toolbox" style="display: none">
         <category name="Events" colour="#FFBF00">
             <block type="event_start"></block>
             <block type="event_wait_key"></block>
         </category>
-        
         <category name="Flight Commands" colour="#4C97FF">
             <label text="Basic"></label>
             <block type="drone_takeoff"></block>
@@ -158,6 +154,8 @@
             <block type="drone_hover">
                 <value name="DURATION"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
             </block>
+            <block type="drone_collect_water"></block>
+            <block type="drone_release_water"></block>
             <block type="drone_move_time">
                 <value name="DURATION"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
                 <value name="POWER"><shadow type="math_number"><field name="NUM">50</field></shadow></value>
@@ -189,7 +187,6 @@
             </block>
             <block type="drone_move_complex_infinite"></block>
         </category>
-
         <category name="Lights" colour="260">
             <block type="drone_set_led_color">
                 <value name="COLOR"><shadow type="colour_picker"><field name="COLOUR">#ff0000</field></shadow></value>
@@ -209,14 +206,12 @@
                 <value name="B_VAL"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
             </block>
         </category>
-
         <category name="Sensors" colour="#5b67a5">
             <block type="drone_get_range">
                 <field name="TYPE">front</field><field name="UNIT">cm</field>
             </block>
             <block type="drone_get_height"><field name="UNIT">cm</field></block>
         </category>
-
         <category name="Console" colour="#5ba5e0">
             <block type="drone_print">
                 <value name="TEXT"><shadow type="text"><field name="TEXT">Hello</field></shadow></value>
@@ -224,9 +219,7 @@
             <block type="text"></block>
             <block type="text_join"></block>
         </category>
-        
         <sep></sep>
-
         <category name="Logic" colour="#5C81A6">
             <block type="logic_compare"></block>
             <block type="logic_operation"></block>
@@ -234,7 +227,6 @@
             <block type="logic_boolean"></block>
             <block type="logic_ternary"></block>
         </category>
-
         <category name="Control" colour="#FFAB19">
             <block type="controls_if"></block>
             <block type="controls_repeat_ext">
@@ -245,7 +237,6 @@
             <block type="controls_whileUntil"></block>
             <block type="controls_flow_statements"></block>
         </category>
-
         <category name="Math" colour="#59C059">
             <block type="math_number"><field name="NUM">0</field></block>
             <block type="math_arithmetic"></block>
@@ -256,1238 +247,50 @@
             <block type="math_round"></block>
             <block type="math_modulo"></block>
         </category>
-
         <category name="Variables" colour="#a5c73d" custom="VARIABLE"></category>
-
+        <category name="Lists" colour="#745ba5" custom="LIST"></category>
         <category name="Functions" colour="#d65cd6" custom="PROCEDURE"></category>
-
     </xml>
-
-    <script>
-        // ==========================================
-        // 1. Blockly 積木定義 (修正版)
-        // ==========================================
-        
-        Blockly.defineBlocksWithJsonArray([
-            // --- Events ---
-            {
-                "type": "event_start",
-                "message0": "when %1 clicked",
-                "args0": [{"type": "field_image", "src": "https://www.gstatic.com/images/icons/material/system/1x/play_arrow_white_24dp.png", "width": 15, "height": 15, "alt": "play"}],
-                "nextStatement": null, "colour": "#FFBF00", "tooltip": "程式開始"
-            },
-            {
-                "type": "event_wait_key",
-                "message0": "wait for key input",
-                "previousStatement": null, "nextStatement": null, "colour": "#FFBF00", "tooltip": "暫停直到按下空白鍵"
-            },
-            // --- Basic Flight ---
-            {
-                "type": "drone_takeoff",
-                "message0": "take off",
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_land",
-                "message0": "land",
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_hover",
-                "message0": "hover for %1 second(s)",
-                "args0": [{ "type": "input_value", "name": "DURATION", "check": "Number" }],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_move_time",
-                "message0": "go %1 for %2 second(s) at %3 %% power",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DIR", "options": [["forward", "FORWARD"], ["backward", "BACKWARD"], ["left", "LEFT"], ["right", "RIGHT"], ["up", "UP"], ["down", "DOWN"]] },
-                    { "type": "input_value", "name": "DURATION", "check": "Number" },
-                    { "type": "input_value", "name": "POWER", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_move_cm",
-                "message0": "go %1 %2 cm",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DIR", "options": [["forward", "FORWARD"], ["backward", "BACKWARD"], ["left", "LEFT"], ["right", "RIGHT"], ["up", "UP"], ["down", "DOWN"]] },
-                    { "type": "input_value", "name": "DIST", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_turn",
-                "message0": "turn %1 %2 degrees",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
-                    { "type": "input_value", "name": "DEGREE", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_goto_xyz",
-                "message0": "go to coordinate (x, y, z) = (%1, %2, %3) m",
-                "args0": [
-                    { "type": "input_value", "name": "X", "check": "Number" },
-                    { "type": "input_value", "name": "Y", "check": "Number" },
-                    { "type": "input_value", "name": "Z", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_turn_degree",
-                "message0": "turn %1 %2 degrees",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
-                    { "type": "input_value", "name": "DEGREE", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            {
-                "type": "drone_turn_time",
-                "message0": "turn %1 for %2 second(s) at %3 %% power",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
-                    { "type": "input_value", "name": "DURATION", "check": "Number" },
-                    { "type": "input_value", "name": "POWER", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
-            },
-            // --- Advanced Flight ---
-            {
-                "type": "drone_set_variable",
-                "message0": "set %1 to %2 %%",
-                "args0": [
-                    { "type": "field_dropdown", "name": "VAR", "options": [["roll", "ROLL"], ["pitch", "PITCH"], ["yaw", "YAW"], ["throttle", "THROTTLE"]] },
-                    { "type": "input_value", "name": "VAL", "check": "Number" }
-                ],
-                "previousStatement": null, "nextStatement": null, "colour": "#364d99"
-            },
-            {
-                "type": "drone_turn_heading",
-                "message0": "turn to heading %1 °",
-                "args0": [{ "type": "input_value", "name": "DEGREE", "check": "Number" }],
-                "previousStatement": null, "nextStatement": null, "colour": "#364d99"
-            },
-            {
-                "type": "drone_move_complex",
-                "message0": "move %1 second(s)",
-                "args0": [{ "type": "input_value", "name": "DURATION", "check": "Number" }],
-                "previousStatement": null, "nextStatement": null, "colour": "#364d99"
-            },
-            {
-                "type": "drone_move_complex_infinite",
-                "message0": "move()",
-                "previousStatement": null, "nextStatement": null, "colour": "#364d99",
-                "tooltip": "使用當前參數移動一小步"
-            },
-            // --- Lights ---
-            {
-                "type": "drone_set_led_color",
-                "message0": "set %1 LED color to %2 , with a brightness of %3",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "DRONE_1"]] },
-                    { "type": "input_value", "name": "COLOR" },
-                    { "type": "input_value", "name": "BRIGHTNESS", "check": "Number" }
-                ],
-                "inputsInline": true,
-                "previousStatement": null, "nextStatement": null, "colour": 260,
-                "tooltip": "Set LED color and brightness"
-            },
-            {
-                "type": "drone_set_led_rgb",
-                "message0": "set %1 LED R= %2 , G= %3 , B= %4 , %5",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "DRONE_1"]] },
-                    { "type": "input_value", "name": "R_VAL", "check": "Number" },
-                    { "type": "input_value", "name": "G_VAL", "check": "Number" },
-                    { "type": "input_value", "name": "B_VAL", "check": "Number" },
-                    { "type": "input_value", "name": "BRIGHTNESS", "check": "Number" }
-                ],
-                "inputsInline": true,
-                "previousStatement": null, "nextStatement": null, "colour": 260,
-                "tooltip": "Set custom RGB values"
-            },
-            {
-                "type": "drone_led_off",
-                "message0": "turn %1 LED off",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "DRONE_1"]] }
-                ],
-                "inputsInline": true,
-                "previousStatement": null, "nextStatement": null, "colour": 260,
-                "tooltip": "Turn off LED"
-            },
-            {
-                "type": "drone_led_sequence",
-                "message0": "set %1 LED sequence %2 with color R= %3 , G= %4 , B= %5 and speed %6",
-                "args0": [
-                    { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "DRONE_1"]] },
-                    { "type": "field_dropdown", "name": "SEQUENCE", "options": [["dimming", "DIMMING"], ["blinking", "BLINKING"]] },
-                    { "type": "input_value", "name": "R_VAL", "check": "Number" },
-                    { "type": "input_value", "name": "G_VAL", "check": "Number" },
-                    { "type": "input_value", "name": "B_VAL", "check": "Number" },
-                    { "type": "field_dropdown", "name": "SPEED", "options": [["1", "1"], ["2", "2"], ["3", "3"]] }
-                ],
-                "inputsInline": true,
-                "previousStatement": null, "nextStatement": null, "colour": 260,
-                "tooltip": "Play LED sequence"
-            },
-            // --- Sensors ---
-            {
-                "type": "drone_get_range",
-                "message0": "get %1 range in %2",
-                "args0": [
-                    {
-                        "type": "field_dropdown",
-                        "name": "TYPE",
-                        "options": [
-                            ["front", "front"],
-                            ["bottom", "bottom"]
-                        ]
-                    },
-                    {
-                        "type": "field_dropdown",
-                        "name": "UNIT",
-                        "options": [
-                            ["cm", "cm"],
-                            ["mm", "mm"],
-                            ["in", "in"],
-                            ["m", "m"]
-                        ]
-                    }
-                ],
-                "output": "Number",
-                "colour": "#5b67a5",
-                "tooltip": "Get distance from sensor"
-            },
-            {
-                "type": "drone_get_height",
-                "message0": "get height in %1",
-                "args0": [
-                    {
-                        "type": "field_dropdown",
-                        "name": "UNIT",
-                        "options": [
-                            ["cm", "cm"],
-                            ["mm", "mm"],
-                            ["in", "in"],
-                            ["m", "m"]
-                        ]
-                    }
-                ],
-                "output": "Number",
-                "colour": "#5b67a5",
-                "tooltip": "Get drone height from bottom sensor"
-            },
-            // --- Console ---
-            {
-                "type": "drone_print",
-                "message0": "print %1",
-                "args0": [
-                    {
-                        "type": "input_value",
-                        "name": "TEXT"
-                    }
-                ],
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 210, 
-                "tooltip": "Print text to console log"
-            },
-        ]); // <--- 這裡結束陣列定義
-
-        // --- Generator Functions ---
-        Blockly.JavaScript['event_start'] = function(block) { return ""; };
-        Blockly.JavaScript['event_wait_key'] = function(block) { return "cmdQueue.push({type: 'wait_key', text: 'Wait Key'});\n"; };
-
-        Blockly.JavaScript['drone_takeoff'] = function(block) { return "cmdQueue.push({type: 'takeoff', text: 'Takeoff'});\n"; };
-        Blockly.JavaScript['drone_land'] = function(block) { return "cmdQueue.push({type: 'land', text: 'Land'});\n"; };
-        Blockly.JavaScript['drone_hover'] = function(block) {
-            let d = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC) || '1';
-            return `cmdQueue.push({type: 'hover', param: ${d}, text: 'Hover ${d}s'});\n`;
-        };
-        Blockly.JavaScript['drone_move_time'] = function(block) {
-            let dir = block.getFieldValue('DIR'); 
-            let d = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC) || '1';
-            let p = Blockly.JavaScript.valueToCode(block, 'POWER', Blockly.JavaScript.ORDER_ATOMIC) || '50';
-            return `cmdQueue.push({type: 'move_${dir.toLowerCase()}', param: ${d}, power: ${p}, text: 'Go ${dir} ${d}s'});\n`;
-        };
-        Blockly.JavaScript['drone_move_cm'] = function(block) {
-            let dir = block.getFieldValue('DIR');
-            let d = Blockly.JavaScript.valueToCode(block, 'DIST', Blockly.JavaScript.ORDER_ATOMIC) || '50';
-            let timeCalc = `${d} / 50.0`; 
-            return `cmdQueue.push({type: 'move_${dir.toLowerCase()}', param: ${timeCalc}, text: 'Go ${dir} ${d}cm'});\n`;
-        };
-        Blockly.JavaScript['drone_goto_xyz'] = function(block) {
-            let x = Blockly.JavaScript.valueToCode(block, 'X', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let y = Blockly.JavaScript.valueToCode(block, 'Y', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let z = Blockly.JavaScript.valueToCode(block, 'Z', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            return `cmdQueue.push({type: 'goto_xyz', x: ${x}*100, y: ${z}*100, z: ${y}*(-100), text: 'Goto (${x},${y},${z})m'});\n`; 
-        };
-        Blockly.JavaScript['drone_turn_degree'] = function(block) {
-            let dir = block.getFieldValue('DIR');
-            let d = Blockly.JavaScript.valueToCode(block, 'DEGREE', Blockly.JavaScript.ORDER_ATOMIC) || '90';
-            return `cmdQueue.push({type: 'turn_${dir.toLowerCase()}', param: ${d}, text: 'Turn ${dir} ${d}°'});\n`;
-        };
-        Blockly.JavaScript['drone_turn_time'] = function(block) {
-            let dir = block.getFieldValue('DIR');
-            let d = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC) || '1';
-            let p = Blockly.JavaScript.valueToCode(block, 'POWER', Blockly.JavaScript.ORDER_ATOMIC) || '50';
-            return `cmdQueue.push({type: 'turn_time', dir: '${dir}', param: ${d}, power: ${p}, text: 'Turn ${dir} ${d}s'});\n`;
-        };
-        Blockly.JavaScript['drone_set_variable'] = function(block) {
-            let v = block.getFieldValue('VAR');
-            let val = Blockly.JavaScript.valueToCode(block, 'VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            return `cmdQueue.push({type: 'set_var', var: '${v}', val: ${val}, text: 'Set ${v} ${val}%'});\n`;
-        };
-        Blockly.JavaScript['drone_turn_heading'] = function(block) {
-            let h = Blockly.JavaScript.valueToCode(block, 'DEGREE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            return `cmdQueue.push({type: 'set_heading', val: ${h}, text: 'Heading ${h}°'});\n`;
-        };
-        Blockly.JavaScript['drone_move_complex'] = function(block) {
-            let d = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC) || '1';
-            return `cmdQueue.push({type: 'move_complex', param: ${d}, text: 'Move(${d}s)'});\n`;
-        };
-        Blockly.JavaScript['drone_move_complex_infinite'] = function(block) {
-            return `cmdQueue.push({type: 'move_complex', param: 0.1, text: 'Move()'});\n`;
-        };
-        Blockly.JavaScript['drone_set_color'] = function(block) {
-            let c = block.getFieldValue('COLOR');
-            return `cmdQueue.push({type: 'set_color', param: '${c}', text: 'LED ${c}'});\n`;
-        };
-        // --- Light 生成邏輯 ---
-        
-        Blockly.JavaScript['drone_set_led_color'] = function(block) {
-            let color = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_ATOMIC) || "'#ff0000'";
-            let bright = Blockly.JavaScript.valueToCode(block, 'BRIGHTNESS', Blockly.JavaScript.ORDER_ATOMIC) || '255';
-            return `cmdQueue.push({type: 'led_hex_bright', color: ${color}, brightness: ${bright}, text: 'LED ' + ${color} + ' (' + ${bright} + ')'});\n`;
-        };
-
-        Blockly.JavaScript['drone_set_led_rgb'] = function(block) {
-            let r = Blockly.JavaScript.valueToCode(block, 'R_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let g = Blockly.JavaScript.valueToCode(block, 'G_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let b = Blockly.JavaScript.valueToCode(block, 'B_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let br = Blockly.JavaScript.valueToCode(block, 'BRIGHTNESS', Blockly.JavaScript.ORDER_ATOMIC) || '255';
-            return `cmdQueue.push({type: 'led_rgb', r: ${r}, g: ${g}, b: ${b}, brightness: ${br}, text: 'LED RGB(' + ${r} + ',' + ${g} + ',' + ${b} + ')'});\n`;
-        };
-
-        Blockly.JavaScript['drone_led_off'] = function(block) {
-            return `cmdQueue.push({type: 'led_off', text: 'LED OFF'});\n`;
-        };
-
-        Blockly.JavaScript['drone_led_sequence'] = function(block) {
-            let seq = block.getFieldValue('SEQUENCE'); // 注意這裡變成了 SEQUENCE
-            let r = Blockly.JavaScript.valueToCode(block, 'R_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let g = Blockly.JavaScript.valueToCode(block, 'G_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            let b = Blockly.JavaScript.valueToCode(block, 'B_VAL', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            // Speed 在原本的模擬器邏輯還沒用到，暫時不處理，不影響執行
-            return `cmdQueue.push({type: 'led_seq', seq: '${seq}', r: ${r}, g: ${g}, b: ${b}, text: 'Seq: ${seq}'});\n`;
-        };
-
-        Blockly.JavaScript['drone_get_range'] = function(block) {
-            var sensorType = block.getFieldValue('TYPE');
-            var unit = block.getFieldValue('UNIT');
-            // 生成呼叫模擬器函式的程式碼
-            var code = `getSensorReading('${sensorType}', '${unit}')`; 
-            // 因為這是回傳值的積木，要用 tuple 格式回傳
-            return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
-        };
-
-        Blockly.JavaScript['drone_get_height'] = function(block) {
-            var unit = block.getFieldValue('UNIT');
-            var code = `getSensorReading('bottom', '${unit}')`;
-            return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
-        };
-
-        Blockly.JavaScript['drone_print'] = function(block) {
-            // 取得連接的數值代碼 (例如 getSensorReading(...))
-            var msgCode = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_NONE) || "''";
-            
-            // 取得來源積木
-            var targetBlock = block.getInputTargetBlock('TEXT');
-            
-            var prefix = ""; // 前綴 (例如 "Height: ")
-            var suffix = ""; // 後綴 (例如 " cm")
-
-            if (targetBlock) {
-                if (targetBlock.type === 'drone_get_height') {
-                    // 1. 如果是高度積木
-                    prefix = "Height: ";
-                    // 取得積木上選的單位 (cm, m, in...)
-                    var unit = targetBlock.getFieldValue('UNIT'); 
-                    suffix = " " + unit; 
-
-                } else if (targetBlock.type === 'drone_get_range') {
-                    // 2. 如果是距離積木
-                    var rangeType = targetBlock.getFieldValue('TYPE');
-                    var unit = targetBlock.getFieldValue('UNIT');
-                    
-                    if (rangeType === 'front') prefix = "Front Range: ";
-                    else prefix = "Bottom Range: ";
-                    
-                    suffix = " " + unit;
-                }
-            }
-            
-            // 生成代碼：前綴 + 數值 + 單位
-            return `cmdQueue.push({
-                type: 'print', 
-                fn: () => "${prefix}" + ${msgCode} + "${suffix}", 
-                text: 'Print Output'
-            });\n`;
-        };
-
-        const workspace = Blockly.inject('blocklyDiv', {
-            toolbox: document.getElementById('toolbox'),
-            scrollbars: true, trashcan: true,
-            grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
-            theme: { 'base': 'classic', 'componentStyles': { 'workspaceBackgroundColour': '#1e1e1e', 'toolboxBackgroundColour': '#2d2d2d' } }
-        });
-
-        // ==========================================
-        // 2. 模擬器核心 (3D Environment & Logic)
-        // ==========================================
-        
-        const container = document.getElementById('canvas-container');
-        let scene, camera, renderer, droneGroup;
-        let environmentGroup; 
-        let droneLedLight, droneLedMesh;  
-        let propellers = [];
-        let cmdQueue = []; 
-        let currentSceneType = 'free'; 
-        let tunnelWallData = []; 
-        let cityOrder = null; 
-        let hasHoveredTower = false; 
-        let currentScore = 0;      // 目前分數
-        let hasTakenOff = false;   // 是否已經起飛過
-        let targetPosition = { x: 0, z: 0 }; // 目標降落點 (會隨場景改變)
-        let lightScore = 40;       // 【新增】燈光邏輯分數 (預設 40)
-        let lastCheckTime = 0;     // 【新增】用來控制 10Hz 採樣頻率
-        let currentLedHex = '#000000'; // 【新增】記錄目前 LED 顏色
-
-        // 飛行狀態變數
-        let flightState = { roll: 0, pitch: 0, yaw: 0, throttle: 0 };
-        
-        // 攝影機與操作變數
-        let camRadius = 600; let camTheta = 45; let camPhi = 50;   
-        let isMouseDown = false, mouseX = 0, mouseY = 0;
-        const state = { x: 0, y: 0, z: 0, heading: 0, isFlying: false, isRunning: false, stopSignal: false };
-        let waitingForKey = false;
-
-        // --- 建立停機坪物件 ---
-        function createLandingPad(x, z) {
-            // 1. 取得動態生成的貼圖
-            const canvas = createLandingPadTexture();
-            const texture = new THREE.CanvasTexture(canvas);
-            
-            // 2. 建立材質
-            const geometry = new THREE.PlaneGeometry(40, 40);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true, 
-                side: THREE.DoubleSide
-            });
-            
-            const pad = new THREE.Mesh(geometry, material);
-            
-            // 3. 調整位置
-            pad.rotation.x = -Math.PI / 2; // 平放
-            pad.position.set(x, 0.2, z);   // 墊高一點點避免閃爍
-            
-            return pad;
-        }
-
-        // --- H 停機坪貼圖 ---
-        function createLandingPadTexture() {
-            const size = 512;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-
-            // 1. 清空背景 (透明)
-            ctx.clearRect(0, 0, size, size);
-
-            // 2. 畫深灰色底圓
-            const centerX = size / 2;
-            const centerY = size / 2;
-            const radius = 200;
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#333333'; // 深灰色
-            ctx.fill();
-
-            // 3. 畫外圈虛線
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius + 20, 0, Math.PI * 2);
-            ctx.strokeStyle = '#333333';
-            ctx.lineWidth = 10;
-            ctx.setLineDash([25, 15]); // 設定虛線間隔
-            ctx.stroke();
-
-            // 4. 畫中間的 "H"
-            ctx.font = 'bold 280px Arial';
-            ctx.fillStyle = '#ccff00'; // 螢光黃 (參考你的截圖)
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // 稍微調整 y 位置讓它垂直置中
-            ctx.fillText('H', centerX, centerY + 20); 
-
-            return canvas;
-        }
-
-        // 初始化 3D 環境
-        function init3D() {
-            scene = new THREE.Scene(); 
-            // 1. 【背景調亮】從極黑 (0x111111) 改為深灰 (0x252525)
-            scene.background = new THREE.Color(0x252525);
-            // 霧氣顏色要跟背景同步，不然遠處會有色差
-            scene.fog = new THREE.Fog(0x252525, 200, 2000);
-
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 4000);
-            updateCameraPosition();
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.shadowMap.enabled = true; 
-            container.appendChild(renderer.domElement);
-
-            // 2. 【燈光增強】
-            // 環境光：改成白色 (0xffffff) 且強度 0.8，確保所有角落都看得到
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); 
-            scene.add(ambientLight);
-            
-            // 主光源：強度提升到 1.2
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); 
-            dirLight.position.set(100, 400, 100); 
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 4096; 
-            dirLight.shadow.mapSize.height = 4096;
-            dirLight.shadow.camera.left = -1000; dirLight.shadow.camera.right = 1000;
-            dirLight.shadow.camera.top = 1000; dirLight.shadow.camera.bottom = -1000;
-            scene.add(dirLight);
-
-            // 3. 【地板格線調亮】這是讓你看清楚地面的關鍵！
-            // 參數：(大小, 格數, 中心線顏色, 格線顏色)
-            // 中心線用青色 (0x00adb5) 配合你的 UI，格線用淺灰 (0x666666) 讓它在背景上跳出來
-            const gridHelper = new THREE.GridHelper(2000, 50, 0x00adb5, 0x666666); 
-            scene.add(gridHelper);
-
-            // 環境群組
-            environmentGroup = new THREE.Group(); 
-            scene.add(environmentGroup);
-
-            // 建立無人機
-            createDroneModel();
-            
-            // 預設載入自由飛行
-            loadScene('free');
-
-            // 事件監聽
-            window.addEventListener('resize', onWindowResize);
-            container.addEventListener('mousedown', (e) => { isMouseDown = true; mouseX = e.clientX; mouseY = e.clientY; });
-            window.addEventListener('mouseup', () => { isMouseDown = false; });
-            window.addEventListener('mousemove', onMouseMove);
-            container.addEventListener('wheel', onMouseWheel);
-            
-            // 鍵盤監聽 (Wait Key)
-            window.addEventListener('keydown', (e) => {
-                if (e.code === 'Space' && waitingForKey) {
-                    waitingForKey = false;
-                }
-            });
-
-            animateLoop();
-        }
-
-        // --- 場景管理與切換 ---
-
-        function changeScene(type) {
-            currentSceneType = type;
-            loadScene(type);
-            resetSimulator(); // 切換場景時重置無人機位置
-        }
-
-        function loadScene(type) {
-            // 清除舊場景物件
-            while(environmentGroup.children.length > 0){ 
-                environmentGroup.remove(environmentGroup.children[0]); 
-            }
-            tunnelWallData = []; 
-
-            // 重置計分狀態
-            currentScore = 0; 
-            lightScore = 40; // 【新增】重置燈光分數
-            hasTakenOff = false;
-            currentLedHex = '#000000'; // 重置顏色
-
-            // 根據類型載入完整場景
-            if (type === 'tunnel') {
-                createTunnelMap();
-                // 任務一：終點在前方 -500cm 處
-                targetPosition = { x: 0, z: -500 }; 
-            } else if (type === 'city') {
-                createCityMap();
-                // 任務二：終點設在 Zone Z (隧道後方)
-                targetPosition = { x: 0, z: -650 }; 
-            } else {
-                createFreeFlightMap();
-                // 自由飛行：假設終點就是起點 (練習定點降落)
-                targetPosition = { x: 0, z: 0 }; 
-            }
-    
-        }
-
-        // 1. 自由飛行場景
-        function createFreeFlightMap() {
-            const landingPad = createLandingPad(0, 0);
-            environmentGroup.add(landingPad);
-            
-            // 放置四個角落的參考錐體 (保留原本的)
-            const coneGeo = new THREE.ConeGeometry(10, 30, 32);
-            const coneMat = new THREE.MeshPhongMaterial({ color: 0x00adb5 });
-            [{x:200, z:-200}, {x:-200, z:-200}, {x:200, z:200}, {x:-200, z:200}].forEach(pos => {
-                const cone = new THREE.Mesh(coneGeo, coneMat);
-                cone.position.set(pos.x, 15, pos.z);
-                environmentGroup.add(cone);
-            });
-        }
-
-        // 2. 智能隧道場景 (完整版)
-        function createTunnelMap() {
-            const rightBoundaryX = 300; 
-            
-            // 右側不規則牆壁
-            for (let z = 50; z >= -600; z -= 20) {
-                let dist = 120 + (Math.random() * 50 - 25); 
-                if (z < -280 && z > -320) dist = 40; // 陷阱區
-                
-                tunnelWallData.push({ z: z, dist: dist });
-                
-                const wallHeight = 150; 
-                const blockWidth = rightBoundaryX - dist; 
-                const wallMesh = new THREE.Mesh(
-                    new THREE.BoxGeometry(blockWidth, wallHeight, 20),
-                    new THREE.MeshPhongMaterial({ color: 0x888888 })
-                );
-                wallMesh.position.set(dist + (blockWidth / 2), wallHeight / 2, z);
-                wallMesh.castShadow = true; 
-                environmentGroup.add(wallMesh);
-            }
-
-            // 左側牆壁
-            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(20, 150, 700), new THREE.MeshPhongMaterial({ color: 0x444444 }));
-            leftWall.position.set(-100, 75, -250); 
-            leftWall.receiveShadow = true; 
-            environmentGroup.add(leftWall);
-            
-            // 起點與終點
-            const landingPad = createLandingPad(0, 0);
-            environmentGroup.add(landingPad);
-            
-            const pad = new THREE.Mesh(new THREE.BoxGeometry(60, 2, 60), new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent:true, opacity:0.6 }));
-            pad.position.set(0, 1, -500); environmentGroup.add(pad);
-        }
-
-        // 3. 城市物流場景 (完整版)
-        function createCityMap() {
-            // 信號塔
-            const towerBase = new THREE.Mesh(new THREE.CylinderGeometry(20, 30, 150, 32), new THREE.MeshPhongMaterial({ color: 0xffff00 }));
-            towerBase.position.set(0, 75, -250); towerBase.castShadow = true; environmentGroup.add(towerBase);
-            const towerTop = new THREE.Mesh(new THREE.SphereGeometry(15, 32, 32), new THREE.MeshBasicMaterial({ color: 0x00aaff, wireframe: true }));
-            towerTop.position.set(0, 160, -250); environmentGroup.add(towerTop);
-            
-            // Zone X (閘門)
-            const zoneXPad = new THREE.Mesh(new THREE.BoxGeometry(60, 2, 60), new THREE.MeshBasicMaterial({ color: 0x00ffff })); 
-            zoneXPad.position.set(-300, 1, -500); environmentGroup.add(zoneXPad);
-            createBuilding(-400, -350, 80, 400, 200); createBuilding(-200, -350, 80, 400, 200);
-            const lowGate = new THREE.Mesh(new THREE.BoxGeometry(120, 40, 10), new THREE.MeshPhongMaterial({ color: 0xcc4444 }));
-            lowGate.position.set(-300, 20, -350); environmentGroup.add(lowGate);
-            const highGate = new THREE.Mesh(new THREE.BoxGeometry(120, 60, 10), new THREE.MeshPhongMaterial({ color: 0xcc4444 }));
-            highGate.position.set(-300, 100, -420); environmentGroup.add(highGate);
-
-            // Zone Y (高台)
-            const zoneYCol = new THREE.Mesh(new THREE.CylinderGeometry(30, 30, 120, 32), new THREE.MeshPhongMaterial({ color: 0x555555 }));
-            zoneYCol.position.set(300, 60, -500); environmentGroup.add(zoneYCol);
-            const zoneYPad = new THREE.Mesh(new THREE.BoxGeometry(60, 2, 60), new THREE.MeshBasicMaterial({ color: 0xff00ff })); 
-            zoneYPad.position.set(300, 122, -500); environmentGroup.add(zoneYPad);
-            createBuilding(200, -500, 80, 100, 250); createBuilding(400, -500, 80, 100, 250); createBuilding(300, -600, 200, 80, 250);
-
-            // Zone Z (隧道)
-            const zoneZPad = new THREE.Mesh(new THREE.BoxGeometry(60, 2, 60), new THREE.MeshBasicMaterial({ color: 0xffaa00 })); 
-            zoneZPad.position.set(0, 1, -650); environmentGroup.add(zoneZPad);
-            const tunnelTube = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 200, 32, 1, true), new THREE.MeshPhongMaterial({ color: 0x888888, side: THREE.DoubleSide }));
-            tunnelTube.rotation.x = Math.PI / 2; tunnelTube.position.set(0, 40, -500); environmentGroup.add(tunnelTube);
-            createBuilding(-60, -500, 40, 200, 100); createBuilding(60, -500, 40, 200, 100);
-
-            // 起點
-            const landingPad = createLandingPad(0, 0);
-            environmentGroup.add(landingPad);
-        }
-
-        // 輔助函數：建立建築物
-        function createBuilding(x, z, w, d, h, color=0x333344) {
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshPhongMaterial({ color: color }));
-            mesh.position.set(x, h/2, z); 
-            mesh.castShadow = true; 
-            mesh.receiveShadow = true; 
-            environmentGroup.add(mesh);
-        }
-
-        // 建立無人機模型 (CoDrone EDU Style）
-        function createDroneModel() {
-            droneGroup = new THREE.Group();
-            
-            // 【修正關鍵】將所有零件往上抬高 1.5，讓底部剛好接觸地面 (y=0)
-            const elevation = 1.5; 
-
-            // 定義材質
-            const frameColor = 0x222222; 
-            const frameMat = new THREE.MeshPhongMaterial({ color: frameColor, flatShading: false });
-            
-            // 1. 中央機身
-            const bodyGeo = new THREE.CylinderGeometry(5, 5, 2.5, 32);
-            const body = new THREE.Mesh(bodyGeo, frameMat);
-            body.scale.set(1, 1, 1.4); 
-            body.castShadow = true;
-            // 原本是 (0,0,0) -> 改為 (0, elevation, 0)
-            body.position.set(0, elevation, 0); 
-            droneGroup.add(body);
-
-            // 2. 頂部 LED
-            const ledGeo = new THREE.SphereGeometry(4, 32, 16);
-            ledGeo.scale(1, 0.2, 1.3); 
-            droneLedMesh = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-            // 原本 y=1.3 -> 改為 1.3 + elevation
-            droneLedMesh.position.set(0, 1.3 + elevation, 0); 
-            droneGroup.add(droneLedMesh);
-            
-            droneLedLight = new THREE.PointLight(0x00ff00, 2, 40);
-            droneLedLight.position.set(0, 5 + elevation, 0); 
-            droneGroup.add(droneLedLight);
-            
-            // 3. 螺旋槳與支架
-            const armConfig = [
-                {x:-9, z:-9, color: 0xff0000}, 
-                {x: 9, z:-9, color: 0xff0000}, 
-                {x:-9, z: 9, color: 0x111111}, 
-                {x: 9, z: 9, color: 0x111111}  
-            ];
-
-            armConfig.forEach(pos => {
-                // A. 保護罩 (Guards)
-                const guardGeo = new THREE.TorusGeometry(5.5, 0.3, 8, 32);
-                const guard = new THREE.Mesh(guardGeo, frameMat);
-                guard.rotation.x = Math.PI / 2; 
-                // 原本 y=0 -> 改為 elevation
-                guard.position.set(pos.x, elevation, pos.z);
-                droneGroup.add(guard);
-
-                // B. 連接支架 (Struts)
-                const strutGeo = new THREE.BoxGeometry(9, 0.5, 1.5);
-                const strut = new THREE.Mesh(strutGeo, frameMat);
-                // 原本 y=-0.5 -> 改為 -0.5 + elevation
-                strut.position.set(pos.x / 2, -0.5 + elevation, pos.z / 2);
-                strut.rotation.y = Math.atan2(pos.z, pos.x);
-                droneGroup.add(strut);
-
-                // C. 馬達座 (Motor Housing) - 這是最低點 (高3，中心0，底-1.5)
-                const motor = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 3, 16), frameMat);
-                // 原本 y=0 -> 改為 elevation (這樣底部剛好在 1.5 - 1.5 = 0)
-                motor.position.set(pos.x, elevation, pos.z); 
-                droneGroup.add(motor);
-                
-                // D. 螺旋槳 (Propellers)
-                const propGeo = new THREE.BoxGeometry(10, 0.15, 0.8);
-                const propMat = new THREE.MeshBasicMaterial({
-                    color: pos.color, 
-                    transparent: true, 
-                    opacity: 0.9
-                });
-                const prop = new THREE.Mesh(propGeo, propMat);
-                // 原本 y=1.6 -> 改為 1.6 + elevation
-                prop.position.set(pos.x, 1.6 + elevation, pos.z); 
-                
-                propellers.push(prop); 
-                droneGroup.add(prop);
-            });
-
-            scene.add(droneGroup);
-        }
-
-        // --- 物理邏輯 ---
-
-        // 取得地面高度 (防止穿牆)
-        function getGroundHeight(x, z) {
-            if (currentSceneType === 'city') {
-                // 信號塔
-                const distToTower = Math.sqrt(Math.pow(x - 0, 2) + Math.pow(z - (-250), 2));
-                if (distToTower < 25) return 150; 
-                // Zone Y 平台
-                const distToY = Math.sqrt(Math.pow(x - 300, 2) + Math.pow(z - (-500), 2));
-                if (distToY < 30) return 120; 
-                
-                // 建築物頂部 (簡單判斷)
-                if (x > -440 && x < -360 && z > -550 && z < -150) return 200; // Zone X 左牆
-                if (x > -240 && x < -160 && z > -550 && z < -150) return 200; // Zone X 右牆
-            }
-            return 0; 
-        }
-
-        // 任務二邏輯：檢查是否接觸信號塔
-        function checkCityLogic() {
-            if (currentSceneType !== 'city') return;
-            const distToTower = Math.sqrt(Math.pow(state.x - 0, 2) + Math.pow(state.z - (-250), 2));
-            if (!hasHoveredTower && distToTower < 40 && state.y >= 140) {
-                if (cityOrder === null) {
-                    cityOrder = Math.floor(Math.random() * 3) + 1; hasHoveredTower = true;
-                }
-            }
-        }
-
-        // --- 新增：模擬傳感器讀數 ---
-        function getSensorReading(type, unit) {
-            // 注意：因為目前的模擬器是「預先生成指令」，這個數值會是「按下 RUN 瞬間」的數值。
-            // 如果要在飛行中動態判斷，需要更進階的模擬器架構。
-            // 這裡我們先實作基本的距離計算。
-
-            let value = 0;
-
-            if (type === 'bottom') {
-                // 底部傳感器 = 當前高度 (y) - 地面高度
-                let groundY = getGroundHeight(state.x, state.z);
-                value = Math.max(0, state.y - groundY);
-            } else if (type === 'front') {
-                // 前方傳感器 = 簡單模擬前方是否有障礙物
-                // 這裡做一個簡單的射線檢測模擬
-                let rad = THREE.MathUtils.degToRad(state.heading);
-                let dirX = -Math.sin(rad); // 前方向量 X
-                let dirZ = -Math.cos(rad); // 前方向量 Z
-                
-                // 預設最大距離 150cm (1.5m)
-                let minDist = 150; 
-                
-                // 簡單檢查場景邊界或牆壁 (這裡以 Tunnel 場景的牆壁為例)
-                if (currentSceneType === 'tunnel') {
-                   // 簡化的模擬：檢查前方 150cm 內有沒有碰到牆壁
-                   // 這裡僅回傳模擬數值，實際射線檢測在 3D 中較複雜，這裡回傳一個安全值或隨機值模擬
-                   // 若要真實，需要遍歷 tunnelWallData
-                   value = 150; 
-                } else {
-                   value = 150; // 空曠處
-                }
-            }
-
-            // 單位轉換 (預設 cm)
-            if (unit === 'mm') value *= 10;
-            else if (unit === 'm') value /= 100;
-            else if (unit === 'in') value /= 2.54;
-
-            return parseFloat(value.toFixed(2));
-        }
-
-        // --- 渲染循環 ---
-        function logToConsole(msg) {
-            const contentDiv = document.getElementById('console-content');
-            if (!contentDiv) return;
-
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            
-            // 加入時間戳記 (例如 10:30:05)
-            const time = new Date().toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second:"2-digit" });
-            
-            // 處理內容 (如果是物件就轉字串，避免顯示 [object Object])
-            let displayMsg = msg;
-            if (typeof msg === 'object') {
-                displayMsg = JSON.stringify(msg);
-            }
-
-            entry.innerHTML = `<span class="log-time">[${time}]</span> ${displayMsg}`;
-            contentDiv.appendChild(entry);
-            
-            // 自動捲動到底部
-            contentDiv.scrollTop = contentDiv.scrollHeight;
-        }
-
-        function clearConsole() {
-            const contentDiv = document.getElementById('console-content');
-            if (contentDiv) contentDiv.innerHTML = '';
-        }
-
-        function onWindowResize() { camera.aspect = container.clientWidth/container.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight); }
-        function onMouseMove(e) { if(!isMouseDown)return; camTheta-=(e.clientX-mouseX)*0.5; camPhi-=(e.clientY-mouseY)*0.5; camPhi=Math.max(10,Math.min(85,camPhi)); mouseX=e.clientX; mouseY=e.clientY; updateCameraPosition(); }
-        function onMouseWheel(e) { camRadius+=e.deltaY*0.5; camRadius=Math.max(100,Math.min(1000,camRadius)); updateCameraPosition(); e.preventDefault(); }
-
-        function updateCameraPosition() {
-            const radTheta = THREE.MathUtils.degToRad(camTheta), radPhi = THREE.MathUtils.degToRad(camPhi);
-            const x = camRadius * Math.sin(radPhi) * Math.sin(radTheta);
-            const y = camRadius * Math.cos(radPhi);
-            const z = camRadius * Math.sin(radPhi) * Math.cos(radTheta);
-            const targetX = state.x * 0.5, targetY = state.y * 0.5, targetZ = state.z;
-            camera.position.set(x + targetX, y + 100, z + targetZ + 100);
-            camera.lookAt(targetX, targetY, targetZ - 100);
-        }
-
-        function animateLoop() {
-            requestAnimationFrame(animateLoop);
-            
-            // 1. 螺旋槳旋轉
-            if (state.isFlying) propellers.forEach((p, i) => p.rotation.y += (i%2===0 ? 0.8 : -0.8));
-            
-            // 2. 更新無人機位置
-            if (droneGroup) {
-                droneGroup.position.set(state.x, state.y, state.z);
-                droneGroup.rotation.y = THREE.MathUtils.degToRad(state.heading);
-            }
-            
-            // 3. 檢查任務邏輯
-            if (state.isFlying) checkCityLogic();
-            
-            // 4. 更新 HUD (根據場景顯示不同資訊)
-            let hudTitle = "", hudContent = "";
-            let scoreDisplay = `SCORE: <span style="color:yellow; font-size:1.1rem">${currentScore}</span> / 100<br><hr style="border-color:#444">`;
-
-            if (currentSceneType === 'tunnel') {
-                hudTitle = "COMPETITION: TUNNEL";
-                // 把 scoreDisplay 加在最前面
-                hudContent = `${scoreDisplay}Status: ${state.isFlying ? 'FLYING' : 'LANDED'}<br>Alt: ${Math.round(state.y)} cm<br>Dist: ${Math.round(-state.z)} cm`;
-            } else if (currentSceneType === 'city') {
-                hudTitle = "COMPETITION: CITY";
-                hudContent = `${scoreDisplay}Status: ${state.isFlying ? 'FLYING' : 'LANDED'}<br>Alt: ${Math.round(state.y)} cm`;
-                if (cityOrder === null) {
-                    hudContent += `<span style="color:yellow">⚠ SEARCHING SIGNAL...</span><br>Fly to Yellow Tower!`;
-                } else {
-                    let zoneName = cityOrder === 1 ? "ZONE X (Cyan)" : (cityOrder === 2 ? "ZONE Y (Magenta)" : "ZONE Z (Orange)");
-                    let zoneColor = cityOrder === 1 ? "#00ffff" : (cityOrder === 2 ? "#ff00ff" : "#ffaa00");
-                    hudContent += `ORDER RECEIVED: <b>${cityOrder}</b><br>Target: <span style="color:${zoneColor};font-weight:bold">${zoneName}</span>`;
-                }
-            } else {
-                // 自由飛行模式 HUD
-                hudTitle = "FREE FLIGHT";
-                hudContent = `${scoreDisplay}Pos: ${Math.round(state.x)}, ${Math.round(state.z)}`;
-            }
-            
-            document.getElementById('hud-display').innerHTML = `<div style="margin-bottom:5px; font-weight:bold; color:#00adb5">${hudTitle}</div>${hudContent}`;
-            
-            updateCameraPosition();
-            renderer.render(scene, camera);
-        }
-
-        // ==========================================
-        // 3. 執行邏輯 (Blockly Integration)
-        // ==========================================
-        
-        function runBlocklyCode() {
-            if (state.isRunning) return;
-            resetDroneState();
-            
-            // 重要：這裡要清空並重新生成代碼
-            cmdQueue = [];
-            try {
-                // 使用 eval 執行 Blockly 生成的 JS 代碼
-                let code = Blockly.JavaScript.workspaceToCode(workspace);
-                eval(code); 
-            } catch (e) { alert("Code Error: " + e); return; }
-            
-            if (cmdQueue.length === 0) { alert("請拖曳積木!"); return; }
-            
-            // 顯示運行狀態 (可選)
-            // document.getElementById('running-msg').style.display = 'flex';
-            executeQueue();
-        }
-
-        // 修復 Reset 功能：確保 3D 模型也回到原點
-        // --- 強制重置功能 (修復版) ---
-        
-        function resetSimulator() {
-            // 1. 強制停止執行旗標
-            state.stopSignal = true; 
-            state.isRunning = false;
-            state.isFlying = false;
-            
-            // 重置時清空面板
-            clearConsole();
-
-            // 2. 清空指令隊列
-            cmdQueue = [];
-            waitingForKey = false;
-
-            // 3. 【關鍵】強制將所有座標變數歸零
-            state.x = 0; 
-            state.y = 0; 
-            state.z = 0; 
-            state.heading = 0; 
-            flightState = { roll: 0, pitch: 0, yaw: 0, throttle: 0 }; // 重置飛行姿態
-
-            // 4. 【關鍵】直接將 3D 模型移動到原點
-            if (droneGroup) {
-                droneGroup.position.set(0, 0, 0);
-                droneGroup.rotation.set(0, 0, 0);
-            }
-
-            // 5. 重置任務相關變數
-            cityOrder = null; 
-            hasHoveredTower = false;
-            
-            // 6. 重置燈光與 UI
-            if(droneLedMesh) droneLedMesh.material.color.setHex(0xff0000);
-            if(droneLedLight) droneLedLight.color.setHex(0xff0000);
-            
-            console.log("System Reset to (0,0,0)");
-        }
-
-        // 這裡保留一個空的 resetDroneState 以防其他地方呼叫到報錯，
-        // 但主要邏輯都已經合併到 resetSimulator 了。
-        function resetDroneState() {
-            // 已整合至 resetSimulator
-        }
-        
-        function emergencyStop() { 
-            state.stopSignal = true; 
-            state.isFlying = false; 
-            // 立即停止並降至地面高度
-            state.y = Math.max(0, getGroundHeight(state.x, state.z));
-        }
-        
-        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        // Wait Key Promise
-        const waitKey = () => new Promise(resolve => {
-            waitingForKey = true;
-            const check = setInterval(() => {
-                if (state.stopSignal) { clearInterval(check); resolve(); }
-                if (!waitingForKey) { clearInterval(check); resolve(); }
-            }, 100);
-        });
-
-        // 動畫輔助函數
-        async function animateAction(durationSec, updateFn) {
-            const startTime = performance.now(); const durationMs = durationSec * 1000;
-            return new Promise(resolve => {
-                function loop(currentTime) {
-                    if (state.stopSignal) { resolve(); return; }
-                    const elapsed = currentTime - startTime; const progress = Math.min(elapsed / durationMs, 1);
-                    updateFn(progress);
-                    if (progress < 1) requestAnimationFrame(loop); else resolve();
-                } requestAnimationFrame(loop);
-            });
-        }
-
-        // 執行指令隊列
-        async function executeQueue() {
-            state.isRunning = true; state.stopSignal = false;
-            
-            for (let i = 0; i < cmdQueue.length; i++) {
-                if (state.stopSignal) break;
-                const cmd = cmdQueue[i];
-                const param = parseFloat(cmd.param);
-                
-                // 檢查是否已起飛 (除了 takeoff, set_color, wait_key)
-                if (!state.isFlying && cmd.type !== 'takeoff' && cmd.type !== 'set_color' && cmd.type !== 'wait_key') { 
-                    await wait(200); continue; 
-                }
-
-                switch (cmd.type) {
-                    case 'wait_key': await waitKey(); break;
-                    case 'takeoff': 
-                        await animateAction(1.5, p => state.y = Math.max(state.y, p * 100)); 
-                        state.isFlying = true; 
-                        hasTakenOff = true; // 【新增】標記已起飛
-                        break;
-
-                    case 'land': 
-                        const sy = state.y; const gy = getGroundHeight(state.x, state.z);
-                        await animateAction(1.5, p => state.y = sy - ((sy-gy)*p)); 
-                        state.isFlying = false; 
-                        
-                        // 【新增】降落計分邏輯
-                        if (hasTakenOff) {
-                            // 1. 計算與目標點的距離 (毕氏定理)
-                            const dist = Math.sqrt(
-                                Math.pow(state.x - targetPosition.x, 2) + 
-                                Math.pow(state.z - targetPosition.z, 2)
-                            );
-                            
-                            logToConsole(`Landing Distance to target: ${dist.toFixed(1)} cm`);
-
-                            // 2. 判斷是否得分 (誤差 < 20cm)
-                            if (dist < 20) {
-                                currentScore += 10;
-                                logToConsole(`✅ Perfect Landing! (+10 Score)`);
-                                // 播放一個簡單的特效或音效提示 (這裡先用 Console)
-                            } else {
-                                logToConsole(`❌ Missed Target. (Error > 20cm)`);
-                            }
-                        }
-                        break;
-
-                    case 'hover': await wait(param * 1000); break;
-                    case 'set_color': 
-                        if(droneLedMesh) droneLedMesh.material.color.set(cmd.param); 
-                        if(droneLedLight) droneLedLight.color.set(cmd.param); await wait(200); break;
-                    
-                    // --- 新增的 LED 邏輯 ---
-                    case 'led_hex_bright':
-                        // 使用 HEX 顏色並調整亮度
-                        if(droneLedMesh) {
-                            let c = new THREE.Color(cmd.color);
-                            droneLedMesh.material.color.set(c);
-                            // 模擬亮度 (0-255 對應 0.2-2.0 的光強)
-                            let intensity = (cmd.brightness / 255) * 2.0; 
-                            if(droneLedLight) {
-                                droneLedLight.color.set(c);
-                                droneLedLight.intensity = intensity;
-                            }
-                        }
-                        await wait(100); 
-                        break;
-
-                    case 'led_rgb':
-                        // 使用 RGB 顏色
-                        if(droneLedMesh) {
-                            // Three.js color takes 0-1, inputs are 0-255
-                            let c = new THREE.Color(`rgb(${Math.round(cmd.r)}, ${Math.round(cmd.g)}, ${Math.round(cmd.b)})`);
-                            droneLedMesh.material.color.set(c);
-                            let intensity = (cmd.brightness / 255) * 2.0;
-                            if(droneLedLight) {
-                                droneLedLight.color.set(c);
-                                droneLedLight.intensity = intensity;
-                            }
-                        }
-                        await wait(100);
-                        break;
-
-                    case 'led_off':
-                        if(droneLedMesh) droneLedMesh.material.color.setHex(0x000000);
-                        if(droneLedLight) droneLedLight.intensity = 0;
-                        await wait(100);
-                        break;
-
-                    case 'led_seq':
-                        // 模擬序列效果 (簡化版：變色並等待，模擬執行時間)
-                        if(droneLedMesh) {
-                            let c = new THREE.Color(`rgb(${Math.round(cmd.r)}, ${Math.round(cmd.g)}, ${Math.round(cmd.b)})`);
-                            droneLedMesh.material.color.set(c);
-                            if(droneLedLight) {
-                                droneLedLight.color.set(c);
-                                droneLedLight.intensity = 2.0; // 開燈
-                            }
-                        }
-                        // 模擬 dimming 效果：在 1.5 秒內變暗再變亮 (簡易動畫)
-                        if (cmd.seq === 'DIMMING') {
-                            await animateAction(1.5, p => {
-                                let i = 2.0 * Math.abs(Math.sin(p * Math.PI)); // 簡單的呼吸燈效果
-                                if(droneLedLight) droneLedLight.intensity = i;
-                            });
-                        } else {
-                            await wait(1000); // 其他序列暫停 1 秒
-                        }
-                        break;    
-
-                    case 'set_var':
-                        if(cmd.var === 'ROLL') flightState.roll = cmd.val;
-                        if(cmd.var === 'PITCH') flightState.pitch = cmd.val;
-                        if(cmd.var === 'YAW') flightState.yaw = cmd.val;
-                        if(cmd.var === 'THROTTLE') flightState.throttle = cmd.val;
-                        break;
-
-                    case 'set_heading':
-                        const startH = state.heading;
-                        await animateAction(1.0, p => state.heading = startH + (cmd.val - startH) * p);
-                        break;
-
-                    case 'move_complex':
-                        // 根據 Roll/Pitch 計算位移
-                        const rad = THREE.MathUtils.degToRad(state.heading);
-                        const speed = 50; 
-                        const r = flightState.roll / 100;
-                        const p_val = flightState.pitch / 100;
-                        const t = flightState.throttle / 100;
-                        
-                        const dx = (r * Math.cos(rad) - (-p_val) * Math.sin(rad)) * speed;
-                        const dz = (r * Math.sin(rad) + (-p_val) * Math.cos(rad)) * speed;
-                        const dy = t * speed;
-
-                        const curX = state.x; const curY = state.y; const curZ = state.z;
-                        await animateAction(param, prog => {
-                            state.x = curX + dx * param * prog;
-                            const groundY = getGroundHeight(state.x, state.z);
-                            state.y = Math.max(groundY, curY + dy * param * prog);
-                            state.z = curZ + dz * param * prog;
-                        });
-                        break;
-                        
-                    case 'goto_xyz':
-                         const gx = state.x, gY = state.y, gz = state.z;
-                         await animateAction(2.0, p => {
-                             state.x = gx + (cmd.x - gx)*p;
-                             state.y = gY + (cmd.y - gY)*p;
-                             state.z = gz + (cmd.z - gz)*p;
-                         });
-                         break;
-                    
-                    case 'turn_time':
-                        const turnSpd = (cmd.power/100) * 90; 
-                        const sHT = state.heading;
-                        const dirMult = (cmd.dir === 'LEFT') ? 1 : -1;
-                        await animateAction(param, p => { state.heading = sHT + (turnSpd * param * dirMult * p); });
-                        break;
-
-                    case 'print':
-                        // 【修正關鍵】
-                        // 1. 呼叫剛剛存起來的函式，取得「現在」的數值
-                        let currentMsg = "Undefined";
-                        try {
-                             currentMsg = cmd.fn(); 
-                        } catch(e) {
-                             currentMsg = "Error: " + e.message;
-                        }
-
-                        // 2. 顯示在 Console 面板
-                        logToConsole(currentMsg);
-                        
-                        // 3. 同時顯示在瀏覽器 Console (除錯用)
-                        console.log("%c[Drone Output] " + currentMsg, "color: #00adb5");
-                        
-                        await wait(200); 
-                        break;
-
-                    default:
-                        if (cmd.type.startsWith('move_')) {
-                            const rad = THREE.MathUtils.degToRad(state.heading); let dx = 0, dz = 0; let dy = 0;
-                            if (cmd.type === 'move_forward') { dx = -Math.sin(rad); dz = -Math.cos(rad); }
-                            else if (cmd.type === 'move_backward') { dx = Math.sin(rad); dz = Math.cos(rad); }
-                            else if (cmd.type === 'move_left') { dx = -Math.cos(rad); dz = Math.sin(rad); }
-                            else if (cmd.type === 'move_right') { dx = Math.cos(rad); dz = -Math.sin(rad); }
-                            else if (cmd.type === 'move_up') { dy = 1; }
-                            else if (cmd.type === 'move_down') { dy = -1; }
-                            
-                            const sX = state.x; const sZ = state.z; const sY = state.y; const dist = 50 * param;
-                            await animateAction(param, (p) => { 
-                                state.x = sX + (dx * dist * p); 
-                                state.z = sZ + (dz * dist * p);
-                                const gH = getGroundHeight(state.x, state.z);
-                                state.y = Math.max(gH, sY + (dy * dist * p));
-                            });
-                        } else if (cmd.type.startsWith('turn_')) {
-                            const sH = state.heading; 
-                            const deg = cmd.param * (cmd.type==='turn_left'?1:-1);
-                            await animateAction(1.0, p => state.heading = sH + deg*p);
-                        }
-                        break;
-                }
-                await wait(200);
-            }
-            
-            state.isRunning = false;
-        }
-
-        init3D();
-    </script>
+    <!-- 任務結算彈窗 -->
+    <div id="result-modal" class="modal-overlay" style="display: none;">
+        <div class="result-card">
+            <div class="result-header">
+                <h2>任務完成！ MISSION COMPLETE</h2>
+                <div class="result-icon">🏆</div>
+            </div>
+            <div class="result-body">
+                <table class="result-table">
+                    <tr>
+                        <td>信號標記點 (Beacons)</td>
+                        <td id="res-beacons">0 / 3</td>
+                        <td id="res-beacons-score">+0</td>
+                    </tr>
+                    <tr>
+                        <td>成功抵達出口</td>
+                        <td>YES</td>
+                        <td id="res-exit-score">+200</td>
+                    </tr>
+                    <tr>
+                        <td>任務耗時 (Time)</td>
+                        <td id="res-time">0s</td>
+                        <td id="res-time-bonus">+0</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="2">總得分 (TOTAL SCORE)</td>
+                        <td id="res-total">0</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="result-footer">
+                <button class="result-btn btn-challenge" id="challenge-btn" onclick="closeResultModal(); startChallengeMode();" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white;">🔥 挑戰隨機迷宮</button>
+                <button class="result-btn btn-retry" onclick="closeResultModal(); resetSimulator();">重試一次</button>
+                <button class="result-btn btn-continue" onclick="closeResultModal(); returnToMissionSelect();">返回選單</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/simulator.js"></script>
+    <script src="js/blockly_def.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
