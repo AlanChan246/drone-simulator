@@ -169,10 +169,10 @@ async function init3D() {
     console.log(`Initializing 3D with container size: ${width}x${height}`);
     
     scene = new THREE.Scene(); 
-    // 【風格調整】Holodeck 背景改為深黑色，讓網格發光更明顯
-    scene.background = new THREE.Color(0x000000); 
-    // 霧氣改為黑色，隱藏遠處邊界
-    scene.fog = new THREE.Fog(0x000000, 1500, 6000); 
+    // 【風格優化】改為平衡的「專業灰」深藍灰色
+    scene.background = new THREE.Color(0x1a1c23); 
+    // 霧氣也同步調整
+    scene.fog = new THREE.Fog(0x1a1c23, 1500, 6000); 
 
     camera = new THREE.PerspectiveCamera(45, width / height, 1, 8000);
     updateCameraPosition();
@@ -279,12 +279,10 @@ function changeScene(type) {
         sceneSelect.value = type;
     }
     
-    // 更新參考答案按鈕可見性
+    // 更新參考答案按鈕可見性 (目前設為永久隱藏)
     const answerBtn = document.getElementById('maze-answer-btn');
     if (answerBtn) {
-        // 如果是任務一(tunnel)、任務二(city)或隨機挑戰(challenge_maze)，就顯示按鈕
-        const showList = ['tunnel', 'city', 'challenge_maze'];
-        answerBtn.style.display = showList.includes(type) ? 'inline-block' : 'none';
+        answerBtn.style.display = 'none';
     }
 }
 function loadScene(type) {
@@ -445,7 +443,8 @@ function stopMazeCycling() {
 
 function createEmptyFloor() {
     createHolodeckRoom();
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x111111);
+    // 專業灰網格：主線深青，細線深灰
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
     gridHelper.position.y = 0.1;
     environmentGroup.add(gridHelper);
     
@@ -557,8 +556,8 @@ function createChallengeMaze() {
 function createMazeMap() {
     createHolodeckRoom();
     
-    // 1. 地面網格
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x111111);
+    // 1. 地面網格 (平衡版)
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
     gridHelper.position.y = 0.1;
     environmentGroup.add(gridHelper);
 
@@ -808,7 +807,7 @@ function createFixedTunnelMap() {
 
 function createFreeFlightMap() {
     createHolodeckRoom(); // 自由飛行也加入 Holodeck
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x111111);
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
     environmentGroup.add(gridHelper);
     
     startPosition = { x: 0, y: 0, z: 0, heading: 180 };
@@ -1242,18 +1241,18 @@ function createHolodeckRoom() {
     environmentGroup.add(room);
 }
 
-// 生成電子網格貼圖的 Canvas
+// 生成電子網格貼圖的 Canvas (平衡版)
 function createHolodeckTexture() {
     const size = 512;
     const canvas = document.createElement('canvas');
     canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
     
-    // 背景深色
-    ctx.fillStyle = '#051020';
+    // 背景深灰藍
+    ctx.fillStyle = '#1a1c23';
     ctx.fillRect(0, 0, size, size);
 
-    // 網格線 (青色)
+    // 網格線 (深青色)
     ctx.strokeStyle = '#005566';
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, size, size); // 外框
@@ -1613,14 +1612,15 @@ function createDroneModel() {
 function handleWallCollision() {
     if (!currentMazeGrid) return;
 
-    // 如果無人機高度超過牆壁高度 (120cm)，則不檢查碰撞
-    if (state.y > 125) {
+    // 森林場景樹木較高 (400cm)，隧道場景牆壁較矮 (120cm)
+    const wallHeightLimit = currentSceneType === 'city' ? 420 : 125;
+    if (state.y > wallHeightLimit) {
         lastSafePos.x = state.x;
         lastSafePos.z = state.z;
         return;
     }
 
-    const droneRadius = 12; // 縮小一點碰撞半徑，提供容錯率 (cm)
+    const droneRadius = 15; // 稍微增加碰撞半徑，更符合視覺感受
     
     // 檢查點：中心、前、後、左、右
     const checkPoints = [
@@ -1630,8 +1630,6 @@ function handleWallCollision() {
         { x: state.x, z: state.z + droneRadius },
         { x: state.x, z: state.z - droneRadius }
     ];
-
-    let isColliding = false;
 
     let isCollidingX = false;
     let isCollidingZ = false;
@@ -1660,9 +1658,14 @@ function handleWallCollision() {
     if (isCollidingX || isCollidingZ) {
         if (isCollidingX) state.x = lastSafePos.x;
         if (isCollidingZ) state.z = lastSafePos.z;
+        
+        // 增加碰撞視覺/聲音反饋的標記
+        if (!state.collisionDetected) {
+            console.warn("💥 Collision detected!");
         state.collisionDetected = true;
+            // 可以在這裡加入震動相機或閃紅光效果
+        }
     } else {
-        // 只有在完全安全時才更新安全位置
         lastSafePos.x = state.x;
         lastSafePos.z = state.z;
     }
@@ -1698,7 +1701,7 @@ function checkMissionLogic() {
                     logToConsole(`✅ 標記點啟動！(+100分) 目前已啟動: ${beaconsTriggered}/3`);
                     
                     if (beacon.mesh) {
-                        beacon.mesh.traverse(child => {
+                    beacon.mesh.traverse(child => {
                             if (child.isMesh && child.material) {
                                 child.material.color.setHex(0xffff00); // 變為金色
                                 if (child.material.emissive) {
@@ -1706,7 +1709,7 @@ function checkMissionLogic() {
                                     child.material.emissiveIntensity = 1.0;
                                 }
                             }
-                        });
+                    });
                     }
                 }
             } else {

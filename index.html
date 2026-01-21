@@ -25,10 +25,11 @@
                 <div class="menu-buttons">
                     <button class="menu-btn" onclick="showMissionSelect()">COMPETITION</button>
                     <button class="menu-btn" onclick="startFreePlay()">FREE PLAY</button>
-                    <button class="menu-btn" onclick="showBasecamp()">BASECAMP</button>
-                    <button class="menu-btn" onclick="showYourMissions()">YOUR MISSIONS</button>
-                    <button class="menu-btn" onclick="showLoadScene()">LOAD SCENE</button>
-                    <button class="menu-btn" onclick="quitGame()">QUIT</button>
+                    <!-- 隱藏主選單其他按鈕 -->
+                    <button class="menu-btn" onclick="showBasecamp()" style="display: none;">BASECAMP</button>
+                    <button class="menu-btn" onclick="showYourMissions()" style="display: none;">YOUR MISSIONS</button>
+                    <button class="menu-btn" onclick="showLoadScene()" style="display: none;">LOAD SCENE</button>
+                    <button class="menu-btn" onclick="quitGame()" style="display: none;">QUIT</button>
                 </div>
             </div>
             <div class="menu-right">
@@ -66,7 +67,8 @@
             <div class="mission-select-body">
                 <div class="mission-list">
                     <button class="mission-btn" onclick="startMission(1)">MISSION 1</button>
-                    <button class="mission-btn" onclick="startMission(2)">MISSION 2</button>
+                    <!-- 暫時隱藏 MISSION 2 -->
+                    <button class="mission-btn" onclick="startMission(2)" style="display: none;">MISSION 2</button>
                 </div>
                 <div class="mission-preview" id="mission-preview">
                     <!-- 3D 場景預覽將在這裡渲染 -->
@@ -86,8 +88,11 @@
         <div class="top-bar">
             <button class="back-btn-game" onclick="returnToMissionSelect()" title="返回任務選擇">← 返回</button>
             <button class="control-btn toggle-blockly-btn" onclick="toggleBlocklyPanel()" title="顯示/隱藏積木區" id="toggle-blockly-btn">📦 顯示積木區</button>
+            <button class="control-btn" onclick="showMissionBriefing()" title="任務說明" id="mission-briefing-btn">📋 任務說明</button>
+            <!-- 隱藏參考答案按鈕 -->
             <button class="control-btn" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none; background-color: #ff9800; color: white;">💡 參考答案</button>
-            <select class="scene-select" id="scene-select" onchange="changeScene(this.value)">
+            <!-- 隱藏場景選擇下拉選單 -->
+            <select class="scene-select" id="scene-select" onchange="changeScene(this.value)" style="display: none;">
                 <option value="free">場景: 自由飛行</option>
                 <option value="tunnel">任務一: 隧道迷宮</option>
                 <option value="city">任務二: 山火應對</option>
@@ -285,6 +290,22 @@
                 <button class="result-btn btn-challenge" id="challenge-btn" onclick="closeResultModal(); startChallengeMode();" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white;">🔥 挑戰隨機迷宮</button>
                 <button class="result-btn btn-retry" onclick="closeResultModal(); resetSimulator();">重試一次</button>
                 <button class="result-btn btn-continue" onclick="closeResultModal(); returnToMissionSelect();">返回選單</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任務簡報面板 -->
+    <div id="mission-briefing" class="modal-overlay" style="display: none;">
+        <div class="result-card" style="border-color: #4c6ef5;">
+            <div class="result-header">
+                <h2 id="briefing-title">任務簡報 MISSION BRIEF</h2>
+                <div class="result-icon" id="briefing-icon">📋</div>
+            </div>
+            <div class="result-body" id="briefing-content" style="text-align: left; color: #ffffff; line-height: 1.6;">
+                <!-- 內容由 JS 動態注入 -->
+            </div>
+            <div class="result-footer">
+                <button class="result-btn btn-continue" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
             </div>
         </div>
     </div>

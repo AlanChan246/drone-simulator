@@ -10,6 +10,7 @@ let savedBlocklyWidth = 30; // 默認 30%
 // 執行控制變數
 let executionSpeed = 1.0; // 執行速度倍數（1.0 = 正常速度）
 let currentGameMode = 'mission'; // 當前遊戲模式 ('mission' 或 'freeplay')
+let activeMissionId = null; // 當前活動的任務 ID
 let currentExecutingBlockId = null; // 當前執行的積木 ID
 let blockToCommandMap = new Map(); // 積木 ID 到命令索引的映射
 let commandToBlockMap = new Map(); // 命令索引到積木 ID 的映射
@@ -376,7 +377,7 @@ async function executeCommandLive(cmd) {
     // 額外保護：如果指令執行時間少於 100ms（代表它可能被立刻中止了），強制等待
     const duration = Date.now() - cmdStartTime;
     if (duration < 100) {
-        await wait(100);
+    await wait(100);
     }
     
     if (cmd && cmd._blockId) {
@@ -892,46 +893,45 @@ function loadMazeAnswer() {
 
     // 🔥 任務二：森林救援答案 (繞路導航版)
     // 🔥 任務二：森林救援答案 (多火場循環版)
+    // 🔥 任務二：森林救援答案 (避障攻略版)
     if (currentSceneType === 'city') {
-        if (confirm("這將會清除當前積木並載入「任務二：森林救援」全任務參考答案，確定嗎？")) {
+        if (confirm("這將會清除當前積木並載入「任務二：森林救援」避障攻略版參考答案，確定嗎？")) {
             workspace.clear();
             const answerXml = `<xml xmlns="https://developers.google.com/blockly/xml">
   <block type="event_start" x="20" y="20">
     <next>
       <block type="drone_takeoff">
         <next>
-          <!-- 1. 前往水源 (3,3) -->
+          <!-- 1. 前往水源 (3,3)：繞過森林障礙 -->
           <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
             <next>
-              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1350</field></block></value>
                 <next>
                   <block type="drone_move_cm"><field name="DIR">BACKWARD</field><value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
                     <next>
-                      <block type="drone_collect_water">
+                      <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">1050</field></block></value>
                         <next>
-                          <!-- 2. 前往第一個火場 (7,6) -->
-                          <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
+                          <block type="drone_collect_water">
                             <next>
-                              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
+                              <!-- 2. 前往火場 (6,7) -->
+                              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1050</field></block></value>
                                 <next>
-                                  <block type="drone_release_water">
+                                  <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
                                     <next>
-                                      <!-- 3. 返回水源補水 -->
-                                      <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
+                                      <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
                                         <next>
-                                          <block type="drone_move_cm"><field name="DIR">BACKWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
+                                          <block type="drone_release_water">
                                             <next>
-                                              <block type="drone_collect_water">
+                                              <!-- 3. 前往終點 (14,14) -->
+                                              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
                                                 <next>
-                                                  <!-- 4. 前往第二個火場 (1,9) -->
-                                                  <block type="drone_move_cm"><field name="DIR">BACKWARD</field><value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+                                                  <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">1350</field></block></value>
                                                     <next>
-                                                      <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">900</field></block></value>
+                                                      <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">900</field></block></value>
                                                         <next>
-                                                          <block type="drone_release_water">
+                                                          <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1950</field></block></value>
                                                             <next>
-                                                              <!-- 5. 任務完成返航 -->
-                                                              <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">1200</field></block></value>
+                                                              <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
                                                                 <next>
                                                                   <block type="drone_land"></block>
                                                                 </next>
@@ -968,7 +968,7 @@ function loadMazeAnswer() {
   </block>
 </xml>`;
             Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(answerXml), workspace);
-            logToConsole("✅ 已載入任務二森林救援 [全火場攻略版] 參考答案。");
+            logToConsole("✅ 已載入任務二森林救援 [避障攻略版] 參考答案。");
         }
         return;
     }
@@ -995,12 +995,12 @@ function loadMazeAnswer() {
                 <next>
                   <block type="drone_move_cm">
                     <field name="DIR">LEFT</field>
-                    <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
-                    <next>
-                      <block type="drone_move_cm">
-                        <field name="DIR">BACKWARD</field>
-                        <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
-                        <next>
+            <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+            <next>
+              <block type="drone_move_cm">
+                <field name="DIR">BACKWARD</field>
+                <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+                <next>
                           <block type="drone_move_cm">
                             <field name="DIR">LEFT</field>
                             <value name="DIST"><block type="math_number"><field name="NUM">750</field></block></value>
@@ -1009,61 +1009,61 @@ function loadMazeAnswer() {
                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                 <next>
                                   <!-- 2. 避開牆壁 (1,4) 原路折返並前往 Beacon 2 (5,3) -->
-                                  <block type="drone_move_cm">
-                                    <field name="DIR">RIGHT</field>
+                  <block type="drone_move_cm">
+                    <field name="DIR">RIGHT</field>
                                     <value name="DIST"><block type="math_number"><field name="NUM">750</field></block></value>
-                                    <next>
-                                      <block type="drone_move_cm">
-                                        <field name="DIR">FORWARD</field>
-                                        <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+                    <next>
+                      <block type="drone_move_cm">
+                        <field name="DIR">FORWARD</field>
+                        <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+                        <next>
+                          <block type="drone_move_cm">
+                            <field name="DIR">RIGHT</field>
+                            <value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
+                            <next>
+                                  <block type="drone_move_cm">
+                                                <field name="DIR">FORWARD</field>
+                                    <value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
                                         <next>
                                           <block type="drone_move_cm">
-                                            <field name="DIR">RIGHT</field>
-                                            <value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
+                                            <field name="DIR">LEFT</field>
+                                                    <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
                                             <next>
                                               <block type="drone_move_cm">
-                                                <field name="DIR">FORWARD</field>
-                                                <value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
+                                                <field name="DIR">BACKWARD</field>
+                                                <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
                                                 <next>
                                                   <block type="drone_move_cm">
-                                                    <field name="DIR">LEFT</field>
-                                                    <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
-                                                    <next>
-                                                      <block type="drone_move_cm">
-                                                        <field name="DIR">BACKWARD</field>
-                                                        <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
-                                                        <next>
-                                                          <block type="drone_move_cm">
-                                                            <field name="DIR">RIGHT</field>
+                                                    <field name="DIR">RIGHT</field>
                                                             <value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
-                                                            <next>
-                                                              <block type="drone_hover">
+                                                    <next>
+                                                      <block type="drone_hover">
                                                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
-                                                                <next>
-                                                                  <!-- 3. 前往第三個 Beacon (7,8) -->
-                                                                  <block type="drone_move_cm">
-                                                                    <field name="DIR">LEFT</field>
+                                                        <next>
+                                                          <!-- 3. 前往第三個 Beacon (7,8) -->
+                                                          <block type="drone_move_cm">
+                                                            <field name="DIR">LEFT</field>
                                                                     <value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
-                                                                    <next>
-                                                                      <block type="drone_move_cm">
+                                                            <next>
+                                                              <block type="drone_move_cm">
                                                                         <field name="DIR">FORWARD</field>
-                                                                        <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
-                                                                        <next>
-                                                                          <block type="drone_move_cm">
+                                                                <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
+                                                                <next>
+                                                                  <block type="drone_move_cm">
                                                                             <field name="DIR">LEFT</field>
                                                                             <value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
-                                                                            <next>
-                                                                              <block type="drone_hover">
+                                                                    <next>
+                                                                      <block type="drone_hover">
                                                                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
-                                                                                <next>
-                                                                                  <!-- 4. 衝向出口 -->
-                                                                                  <block type="drone_move_cm">
+                                                                        <next>
+                                                                          <!-- 4. 衝向出口 -->
+                                                                          <block type="drone_move_cm">
                                                                                     <field name="DIR">FORWARD</field>
-                                                                                    <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
-                                                                                    <next>
-                                                                                      <block type="drone_move_cm">
+                                                                            <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
+                                                                            <next>
+                                                                              <block type="drone_move_cm">
                                                                                         <field name="DIR">LEFT</field>
-                                                                                        <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
+                                                                                <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
                                                                                       </block>
                                                                                     </next>
                                                                                   </block>
@@ -1331,7 +1331,7 @@ async function animateAction(durationSec, updateFn, options = { canAbort: true }
                 resolve();
                 return;
             }
-
+            
             const elapsed = currentTime - startTime; 
             const progress = Math.min(elapsed / durationMs, 1);
             updateFn(progress);
@@ -1873,10 +1873,10 @@ function startChallengeMode() {
     logToConsole("🔥 挑戰模式：隨機迷宮已啟動！");
     logToConsole("⚠️ 迷宮將在點擊「執行」後隨機生成。");
     
-    // 顯示參考答案按鈕
+    // 隱藏參考答案按鈕
     const answerBtn = document.getElementById('maze-answer-btn');
-    if (answerBtn) answerBtn.style.display = 'inline-block';
-
+    if (answerBtn) answerBtn.style.display = 'none';
+    
     // 1. 切換場景
     currentGameMode = 'mission';
     currentSceneType = 'challenge_maze';
@@ -1892,6 +1892,73 @@ function startChallengeMode() {
         const xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"></block></xml>';
         const xml = Blockly.utils.xml.textToDom(xmlText);
         Blockly.Xml.domToWorkspace(xml, workspace);
+    }
+}
+
+// 顯示任務簡報
+function showMissionBriefing(missionId) {
+    console.log("showMissionBriefing called with:", missionId, "active:", activeMissionId);
+    
+    // 如果沒有傳入 missionId，嘗試使用 activeMissionId
+    const targetMissionId = missionId || activeMissionId;
+    
+    if (!targetMissionId) {
+        console.warn("No target mission ID found");
+        return;
+    }
+
+    const briefingModal = document.getElementById('mission-briefing');
+    const title = document.getElementById('briefing-title');
+    const content = document.getElementById('briefing-content');
+    const icon = document.getElementById('briefing-icon');
+    
+    if (!briefingModal || !title || !content) return;
+    
+    if (targetMissionId == 1) {
+        title.textContent = '任務一：隧道迷宮 (TUNNEL MAZE)';
+        icon.textContent = '🚇';
+        content.innerHTML = `
+            <h3 style="color: #4c6ef5; margin-top: 0;">🎯 任務目標 Mission Objective</h3>
+            <p>編寫程式控制無人機穿過隧道，並安全降落在終點。</p>
+            <p>Program the drone to navigate through the tunnel and land safely at the exit.</p>
+            
+            <h3 style="color: #ff9800; margin-top: 15px;">💡 提示 Tips</h3>
+            <ul style="padding-left: 20px; margin-top: 5px;">
+                <li>使用 <strong>[前] 距離感測器</strong> 偵測前方障礙物。<br>Use <strong>[Front] Range Sensor</strong> to detect obstacles.</li>
+                <li>當偵測到牆壁時，轉向 (90度) 並繼續飛行。<br>When a wall is detected, turn (90 degrees) and continue flying.</li>
+                <li>沿著隧道飛行直到抵達出口。<br>Follow the tunnel until you reach the exit.</li>
+                <li>收集沿途的信號標記點 (Beacons) 可獲得額外分數。<br>Collect Beacons along the way for extra points.</li>
+            </ul>
+        `;
+    } else if (targetMissionId == 2) {
+        title.textContent = '任務二：山火救援 (FOREST FIRE)';
+        icon.textContent = '🔥';
+        content.innerHTML = `
+            <h3 style="color: #4c6ef5; margin-top: 0;">🎯 任務目標 Mission Objective</h3>
+            <p>控制無人機前往水源取水，並撲滅森林中的火源。</p>
+            <p>Control the drone to collect water and extinguish fires in the forest.</p>
+            
+            <h3 style="color: #ff9800; margin-top: 15px;">💡 提示 Tips</h3>
+            <ul style="padding-left: 20px; margin-top: 5px;">
+                <li>注意避開樹木，它們是障礙物。<br>Avoid trees, they are obstacles.</li>
+                <li>前往藍色區域使用 <strong>[Collect Water]</strong> 積木取水。<br>Go to the blue area and use <strong>[Collect Water]</strong> block.</li>
+                <li>飛到火源上方使用 <strong>[Release Water]</strong> 積木滅火。<br>Fly over the fire and use <strong>[Release Water]</strong> block.</li>
+                <li>注意電池電量！<br>Watch your battery level!</li>
+            </ul>
+        `;
+    }
+    
+    briefingModal.style.display = 'flex';
+    // 添加 active class 以觸發動畫
+    setTimeout(() => briefingModal.classList.add('active'), 10);
+}
+
+// 關閉任務簡報
+function closeBriefing() {
+    const briefing = document.getElementById('mission-briefing');
+    if (briefing) {
+        briefing.classList.remove('active');
+        briefing.style.display = 'none';
     }
 }
 
@@ -1934,19 +2001,28 @@ function showMissionSelect() {
 // 啟動任務
 async function startMission(missionId) {
     currentGameMode = 'mission';
+    
+    // 立即設置 activeMissionId
+    if (missionId === 'training' || missionId === 1) {
+        activeMissionId = 1;
+    } else if (missionId === 2) {
+        activeMissionId = 2;
+    } else {
+        activeMissionId = null;
+    }
+    console.log("Mission started, activeMissionId set to:", activeMissionId);
+
     // 先顯示遊戲界面
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
     gameInterface.style.display = 'block';
     
-    // 顯示/隱藏參考答案按鈕
+    // 隱藏參考答案按鈕
     const answerBtn = document.getElementById('maze-answer-btn');
     if (answerBtn) {
-        // 增加模糊判斷 (==) 確保字串 "2" 或數字 2 都能通過
-        const shouldShow = (missionId == 1 || missionId == 2 || missionId === 'training');
-        answerBtn.style.display = shouldShow ? 'inline-block' : 'none';
-        console.log(`按鈕顯示狀態更新: missionId=${missionId}, show=${shouldShow}`);
+        answerBtn.style.display = 'none';
+        console.log(`按鈕顯示狀態更新: 參考答案按鈕已隱藏`);
     }
     
     // 確保積木區默認隱藏，並重置樣式
