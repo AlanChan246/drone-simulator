@@ -239,6 +239,8 @@ async function init3D() {
     // 監聽器
     window.addEventListener('resize', onWindowResize);
     container.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // 滑鼠事件
     container.addEventListener('mousedown', (e) => { 
         if (e.button === 0) isMouseDown = true; 
         else if (e.button === 2) {
@@ -250,6 +252,80 @@ async function init3D() {
     window.addEventListener('mouseup', () => { isMouseDown = false; isRightMouseDown = false; });
     window.addEventListener('mousemove', onMouseMove);
     container.addEventListener('wheel', onMouseWheel);
+
+    // 觸控事件 (支援 iPad)
+    let lastTouchX = 0, lastTouchY = 0;
+    let lastTouchDist = 0;
+
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isMouseDown = true;
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
+            mouseX = lastTouchX;
+            mouseY = lastTouchY;
+        } else if (e.touches.length === 2) {
+            isMouseDown = false;
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+            
+            // 雙指中心點作為移動起點
+            lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            mouseX = lastTouchX;
+            mouseY = lastTouchY;
+        }
+    }, { passive: false });
+
+    container.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // 防止頁面捲動
+        
+        if (e.touches.length === 1) {
+            // 單指旋轉
+            const touch = e.touches[0];
+            const dx = touch.clientX - lastTouchX;
+            const dy = touch.clientY - lastTouchY;
+            lastTouchX = touch.clientX;
+            lastTouchY = touch.clientY;
+            
+            camTheta -= dx * 0.5;
+            camPhi -= dy * 0.5;
+            camPhi = Math.max(10, Math.min(85, camPhi));
+            updateCameraPosition();
+        } else if (e.touches.length === 2) {
+            // 雙指縮放與移動
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // 縮放 (Zoom)
+            const zoomDelta = (lastTouchDist - dist) * 2;
+            camRadius += zoomDelta;
+            camRadius = Math.max(100, Math.min(1000, camRadius));
+            lastTouchDist = dist;
+
+            // 雙指移動 (Pan)
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            const pdx = centerX - lastTouchX;
+            const pdy = centerY - lastTouchY;
+            lastTouchX = centerX;
+            lastTouchY = centerY;
+
+            const rad = THREE.MathUtils.degToRad(camTheta);
+            camTarget.x -= (pdx * Math.cos(rad) + pdy * Math.sin(rad)) * 2;
+            camTarget.z -= (pdy * Math.cos(rad) - pdx * Math.sin(rad)) * 2;
+            
+            updateCameraPosition();
+        }
+    }, { passive: false });
+
+    container.addEventListener('touchend', () => {
+        isMouseDown = false;
+        lastTouchDist = 0;
+    });
+
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && waitingForKey) waitingForKey = false;
     });
