@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/blockly@9.3.3/blocks_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/javascript_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/msg/en.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=briefing-submit-bar">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -429,6 +429,11 @@
             <div class="result-body briefing-body" id="briefing-content">
                 <!-- 內容由 JS 動態注入 -->
             </div>
+            <div class="briefing-submit-bar" id="briefing-submit-bar" hidden>
+                <a class="brief-submit-link" id="briefing-submit-link" href="https://rfowp4av.paperform.co" target="_blank" rel="noopener noreferrer">
+                    開啟成績提交表格 ↗
+                </a>
+            </div>
             <div class="result-footer">
                 <button type="button" class="result-btn btn-continue" id="briefing-ok-btn" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
             </div>
@@ -477,6 +482,6 @@
     <script src="js/simulator.js?v=road-editor-hidden"></script>
     <script src="js/blockly_def.js"></script>
     <script src="js/mission2_answer.js"></script>
-    <script src="js/main.js?v=layout-flex-fix"></script>
+    <script src="js/main.js?v=briefing-submit-bar"></script>
 </body>
 </html>

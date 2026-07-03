@@ -2568,6 +2568,49 @@ body {
     line-height: 1.45;
 }
 
+.brief-submit {
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.briefing-submit-bar {
+    margin: 0 0 14px;
+    padding: 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.briefing-submit-bar .brief-submit-link {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 0;
+    box-sizing: border-box;
+}
+
+.brief-submit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: rgba(77, 171, 247, 0.18);
+    border: 1px solid rgba(77, 171, 247, 0.45);
+    color: #74c0fc;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.brief-submit-link:hover,
+.brief-submit-link:focus-visible {
+    background: rgba(77, 171, 247, 0.28);
+    border-color: rgba(77, 171, 247, 0.7);
+    color: #a5d8ff;
+    outline: none;
+}
+
 .brief-time-table {
     width: 100%;
     margin: 0 0 14px;

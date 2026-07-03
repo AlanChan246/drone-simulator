@@ -1379,8 +1379,8 @@ function loadMazeAnswer() {
     <next>
       <block type="drone_takeoff">
         <next>
-          <!-- 1. 前往通訊中繼站 (1,10) -->
-          <!-- 1. 前往通訊中繼站 (1,10) -->
+          <!-- 1. 前往通訊中繼站 (1,6) -->
+          <!-- 1. 前往通訊中繼站 (1,6) -->
           <block type="drone_move_cm">
             <field name="DIR">LEFT</field>
             <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
@@ -1404,7 +1404,7 @@ function loadMazeAnswer() {
                               <block type="drone_hover">
                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                 <next>
-                                  <!-- 2. 避開封路並前往結構安全掃描點 (5,3) -->
+                                  <!-- 2. 前往結構安全掃描點 (5,10) -->
                   <block type="drone_move_cm">
                     <field name="DIR">RIGHT</field>
                                     <value name="DIST"><block type="math_number"><field name="NUM">750</field></block></value>
@@ -1436,7 +1436,7 @@ function loadMazeAnswer() {
                                                       <block type="drone_hover">
                                                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                                         <next>
-                                                          <!-- 3. 前往環境感測點 (7,8) -->
+                                                          <!-- 3. 前往環境感測點 (9,1) -->
                                                           <block type="drone_move_cm">
                                                             <field name="DIR">LEFT</field>
                                                                     <value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
@@ -1652,37 +1652,30 @@ function resetSimulator() {
 
     // --- 重置任務狀態 ---
     closeBriefing();
-    takeoffTime = 0;           // 重置起飛計時
-    beaconsTriggered = 0;      // 重置巡檢回報計數
-    currentScore = 0;          // 重置分數
-    state.missionCompleted = false; // 重置完成狀態
-    
+    takeoffTime = 0;
+    currentScore = 0;
+    state.missionCompleted = false;
+    hasTakenOff = false;
+
+    if (typeof resetInspectionBeacons === 'function') {
+        resetInspectionBeacons();
+    }
+    if (typeof resetCityMissionState === 'function') {
+        resetCityMissionState();
+    } else {
+        state.hasWater = false;
+        if (typeof resetCityBattery === 'function') resetCityBattery();
+    }
+    if (typeof resetTunnelPatrolVisits === 'function') {
+        resetTunnelPatrolVisits();
+    }
+
     // 如果在隨機迷宮挑戰模式，重置後重新啟動輪換
     if (currentSceneType === 'challenge_maze') {
         if (typeof startMazeCycling === 'function') {
             startMazeCycling();
         }
     }
-    if (typeof beaconData !== 'undefined') {
-        beaconData.forEach(b => {
-            b.triggered = false;
-            b.hoverTimer = 0;
-            // 恢復巡檢回報點顏色 (青色)
-            if (b.mesh) {
-                b.mesh.traverse(child => {
-                    if (child.material) child.material.color.setHex(0x00adb5);
-                });
-            }
-        });
-    }
-    if (typeof forestChargeData !== 'undefined') {
-        forestChargeData.forEach(s => {
-            s.triggered = false;
-            s.hoverTimer = 0;
-        });
-    }
-    state.hasWater = false;
-    if (typeof resetCityBattery === 'function') resetCityBattery();
     if (typeof syncDroneToStart === 'function') {
         syncDroneToStart();
     } else {
@@ -2670,6 +2663,19 @@ function renderBriefMission2FireTable() {
         </table>`;
 }
 
+const MISSION_SUBMISSION_FORM_URL = 'https://rfowp4av.paperform.co';
+
+function updateBriefingSubmissionBar(missionId) {
+    const bar = document.getElementById('briefing-submit-bar');
+    const link = document.getElementById('briefing-submit-link');
+    if (!bar || !link) return;
+    const show = missionId == 1 || missionId == 2;
+    bar.hidden = !show;
+    if (show) {
+        link.href = MISSION_SUBMISSION_FORM_URL;
+    }
+}
+
 function renderBriefMapLegend(items) {
     return `
         <ul class="brief-legend">
@@ -2697,7 +2703,7 @@ function renderBriefMission2Legend() {
     return renderBriefMapLegend([
         { swatchClass: 'brief-legend-swatch--start', glyph: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木製起降平台' },
         { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；可選降落點' },
-        { swatchClass: 'brief-legend-swatch--fire', glyph: '', title: '火點', desc: '橙色火焰＋黑煙；飛到正上方 Release Water 滅火' },
+        { swatchClass: 'brief-legend-swatch--fire', glyph: 'A', title: '火點 A/B/C/D', desc: '火焰上方浮動標籤；金色 A 最優先（+200）' },
         { swatchClass: 'brief-legend-swatch--water', glyph: '', title: '水源', desc: '深藍色圓形水池；Collect Water 裝水' },
         { swatchClass: 'brief-legend-swatch--charge', glyph: '⚡', title: '充電站', desc: '黃色六角平台＋光環；hover ≥3 秒 +15 行（每站一次）' },
         { swatchClass: 'brief-legend-swatch--forest', glyph: '', title: '樹林／岩石', desc: '不可穿越；須繞路規劃' }
@@ -2777,7 +2783,8 @@ function showMissionBriefing(missionId) {
             ${SHOW_MISSION_REFERENCE_ANSWERS ? '<p class="brief-note">參考答案約 1000 分（3 巡檢 + 53 秒，極快段）。</p>' : ''}
             <h4 class="brief-section-title">提示 Tips</h4>
             <ul class="brief-tips">
-                <li>巡檢點懸停約 3 秒即回報；須在藍色球體上方。</li>
+                <li>巡檢點懸停約 3 秒即回報；須在青色球體上方。</li>
+                <li>通訊中繼站 (1,6)｜結構安全掃描點 (5,10)｜環境感測點 (9,1)</li>
                 <li>須沿路網飛行，不可翻越建築；禁用「飛至座標」積木。</li>
                 <li>終點須用<strong>降落</strong>積木完成，懸停不能結算。</li>
             </ul>
@@ -2881,6 +2888,8 @@ function showMissionBriefing(missionId) {
         `;
     }
     
+    updateBriefingSubmissionBar(targetMissionId);
+
     briefingModal.style.display = 'flex';
     // 添加 active class 以觸發動畫，並將焦點移至主要按鈕（模態無障礙）
     setTimeout(() => {

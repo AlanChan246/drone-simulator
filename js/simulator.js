@@ -21,9 +21,9 @@ let beaconData = [];        // 巡檢回報點座標與狀態（內部變數名�
 
 /** 任務一：依迷宮格 (i,j) 對應巡檢回報點名稱（坍塌廢墟搜救敘事） */
 const INSPECTION_CHECKPOINT_NAMES = {
-    '1,10': { label: '通訊中繼站', labelEn: 'Comms Relay' },
-    '5,3': { label: '結構安全掃描點', labelEn: 'Structural Scan' },
-    '7,8': { label: '環境感測點', labelEn: 'Environment Sensor' }
+    '1,6': { label: '通訊中繼站', labelEn: 'Comms Relay' },
+    '5,10': { label: '結構安全掃描點', labelEn: 'Structural Scan' },
+    '9,1': { label: '環境感測點', labelEn: 'Environment Sensor' }
 };
 
 /** 任務二 14×14 山火場：火點格 (i,j) → 優先級敘事（供 HUD／評分擴充） */
@@ -187,9 +187,10 @@ const DEFAULT_TUNNEL_ROAD_OVERRIDES = {
     '7,1': { key: 'cross', rot: 1 },
     '7,4': { key: 'cross', rot: 1 },
     '5,4': { key: 'bend', rot: 0 },
-    '5,3': { key: 'end', rot: 0 },
+    '5,3': { key: 'straight', rot: 0 },
     '3,5': { key: 'cross', rot: 1 },
     '1,5': { key: 'bend', rot: 1 },
+    '1,6': { key: 'straight', rot: 0 },
     '3,6': { key: 'bend', rot: 0 },
     '1,10': { key: 'bend', rot: 0 },
     '3,10': { key: 'bend', rot: 3 },
@@ -198,11 +199,11 @@ const DEFAULT_TUNNEL_ROAD_OVERRIDES = {
     '5,10': { key: 'bend', rot: 0 },
     '5,6': { key: 'bend', rot: 2 },
     '7,8': { key: 'cross', rot: 0 },
+    '9,1': { key: 'bend', rot: 1 },
     '10,10': { key: 'cross', rot: 1 },
     '10,11': { key: 'straight', rot: 0 },
     '10,8': { key: 'bend', rot: 2 },
-    '9,8': { key: 'cross', rot: 0 },
-    '9,1': { key: 'bend', rot: 1 }
+    '9,8': { key: 'cross', rot: 0 }
 };
 /** 試用一 8×8 預設路面（路面編輯器調校） */
 const DEFAULT_PRACTICE_ROAD_OVERRIDES = {
@@ -2118,15 +2119,15 @@ function createMazeMap() {
     // 2. 迷宮設計 (1: 牆壁, 0: 通路, 2: 指揮所 Alpha, 3: 集結區 Bravo, 4: 巡檢回報點)
     const mazeGrid = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 4, 1],
+        [1, 2, 0, 0, 1, 0, 4, 0, 0, 0, 0, 1],
         [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
         [1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
-        [1, 0, 1, 4, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 4, 1],
         [1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 4, 1, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+        [1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 3], // 將終點 3 移到最右側邊界牆壁位置
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
@@ -2827,6 +2828,8 @@ function buildForestGridScene(forestGrid, logLabel) {
                 const h = getForestHeight(x, z);
                 const fireGroup = new THREE.Group();
                 fireGroup.position.set(x, h, z);
+                fireGroup.userData.isForestFire = true;
+                fireGroup.userData.fireIJ = i + ',' + j;
                 environmentGroup.add(fireGroup);
 
                 // 1. 營火燃料基底
@@ -2882,6 +2885,9 @@ function buildForestGridScene(forestGrid, logLabel) {
                         smoke.material.opacity = 0.2 * (1 - t / 400);
                     });
                 }
+
+                // 5. 火點優先序標籤（A/B/C/D）
+                createFireSiteLabel(fireGroup, i, j);
             } else if (val === 5) {
                 // --- 寫實水源設計（全平地：水面略低於地面） ---
                 const waterH = h + 1;
@@ -3030,6 +3036,94 @@ function createLandingPad(x, z, yCm) {
     const pad = new THREE.Mesh(geometry, material);
     pad.rotation.x = -Math.PI / 2; pad.position.set(x, y, z);
     return pad;
+}
+
+/** 任務二：由格座標取得火點字母標籤（A–D） */
+function getFireSiteLetterFromCell(i, j) {
+    const site = getActiveFireSites()[i + ',' + j];
+    if (!site || !site.label) return null;
+    const match = site.label.match(/([A-D])\s*$/);
+    return match ? match[1] : null;
+}
+
+/** 任務二：火點浮動標籤貼圖（A 點金色高亮） */
+function createFireLabelTexture(letter, isPriority) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const cx = size / 2;
+    const cy = size / 2;
+    const radius = 100;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    if (isPriority) {
+        ctx.fillStyle = 'rgba(255, 213, 79, 0.94)';
+        ctx.fill();
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = '#e65100';
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = 'rgba(32, 18, 12, 0.9)';
+        ctx.fill();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#ff6b35';
+        ctx.stroke();
+    }
+
+    ctx.font = `bold ${isPriority ? 128 : 112}px Arial, "Microsoft JhengHei", sans-serif`;
+    ctx.fillStyle = isPriority ? '#b71c1c' : '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, cx, cy + 4);
+
+    if (isPriority) {
+        ctx.font = 'bold 30px Arial, "Microsoft JhengHei", sans-serif';
+        ctx.fillStyle = '#5d4037';
+        ctx.fillText('+200', cx, cy + 64);
+    }
+
+    return canvas;
+}
+
+/** 任務二：在火點上方建立 A/B/C/D 浮動標籤 */
+function createFireSiteLabel(fireGroup, i, j) {
+    const letter = getFireSiteLetterFromCell(i, j);
+    if (!letter) return null;
+
+    const site = getActiveFireSites()[i + ',' + j];
+    const sites = getActiveFireSites();
+    let maxPriority = 0;
+    Object.keys(sites).forEach((key) => {
+        const p = sites[key].priority || 0;
+        if (p > maxPriority) maxPriority = p;
+    });
+    const isPriority = !!(site && site.priority >= maxPriority && maxPriority > 0);
+
+    const texture = new THREE.CanvasTexture(createFireLabelTexture(letter, isPriority));
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+    });
+    const sprite = new THREE.Sprite(material);
+    const labelSize = isPriority ? 76 : 66;
+    const baseY = 98;
+    sprite.position.set(0, baseY, 0);
+    sprite.scale.set(labelSize, labelSize, 1);
+    sprite.renderOrder = 12;
+    sprite.userData.fireLabel = letter;
+
+    if (!window.mazeAnimations) window.mazeAnimations = [];
+    window.mazeAnimations.push(() => {
+        sprite.position.y = baseY + Math.sin(Date.now() * 0.003 + letter.charCodeAt(0) * 0.4) * 7;
+    });
+
+    fireGroup.add(sprite);
+    return sprite;
 }
 
 /**
@@ -3949,6 +4043,62 @@ if (typeof window !== 'undefined') {
     window.MISSION2_TIME_TIERS = MISSION2_TIME_TIERS;
     window.awardMission2FireScore = awardMission2FireScore;
     window.maybeFinishCityMission = maybeFinishCityMission;
+    window.resetInspectionBeacons = resetInspectionBeacons;
+    window.resetCityMissionState = resetCityMissionState;
+    window.resetTunnelPatrolVisits = resetTunnelPatrolVisits;
+}
+
+function resetInspectionBeacons() {
+    beaconsTriggered = 0;
+    beaconData.forEach((beacon) => {
+        beacon.triggered = false;
+        beacon.hoverTimer = 0;
+        if (!beacon.mesh) return;
+        beacon.mesh.traverse((child) => {
+            if (!child.isMesh || !child.material) return;
+            child.material.color.setHex(0x00adb5);
+            if (child.material.emissive) {
+                child.material.emissive.setHex(0x00adb5);
+                child.material.emissiveIntensity = 0.5;
+            }
+        });
+    });
+}
+
+function resetForestChargeStations() {
+    forestChargeData.forEach((station) => {
+        station.triggered = false;
+        station.hoverTimer = 0;
+        if (!station.mesh || station.mesh.children.length < 2) return;
+        const pad = station.mesh.children[0];
+        const bolt = station.mesh.children[1];
+        if (pad.material) {
+            pad.material.color.setHex(0x8a7028);
+        }
+        if (bolt.material) {
+            bolt.material.color.setHex(0xb8a050);
+            if (bolt.material.emissive) {
+                bolt.material.emissive.setHex(0x806820);
+                bolt.material.emissiveIntensity = 0.28;
+            }
+        }
+    });
+}
+
+function resetForestFires() {
+    if (typeof environmentGroup === 'undefined') return;
+    environmentGroup.traverse((obj) => {
+        if (obj.userData && obj.userData.isForestFire) {
+            obj.visible = true;
+        }
+    });
+}
+
+function resetCityMissionState() {
+    resetCityBattery();
+    resetForestFires();
+    resetForestChargeStations();
+    state.hasWater = false;
 }
 
 function resetCityBattery() {
@@ -3978,13 +4128,10 @@ function findCityInteractionCell(matchVal) {
 }
 
 function hideForestFireAt(i, j) {
-    const targetX = j * currentCellSize + mazeOffsetX + currentCellSize / 2;
-    const targetZ = i * currentCellSize + mazeOffsetZ + currentCellSize / 2;
+    const key = i + ',' + j;
     if (typeof environmentGroup === 'undefined') return;
-    environmentGroup.children.forEach(obj => {
-        const dx = Math.abs(obj.position.x - targetX);
-        const dz = Math.abs(obj.position.z - targetZ);
-        if (obj instanceof THREE.Group && dx < 30 && dz < 30) {
+    environmentGroup.traverse((obj) => {
+        if (obj.userData && obj.userData.isForestFire && obj.userData.fireIJ === key) {
             obj.visible = false;
         }
     });
