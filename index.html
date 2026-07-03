@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drone Simulator - Modular</title>
+    <title>Drone Simulator</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚁</text></svg>">
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -12,127 +12,249 @@
     <script src="https://unpkg.com/blockly@9.3.3/javascript_compressed.js"></script>
     <script src="https://unpkg.com/blockly@9.3.3/msg/en.js"></script>
     <link rel="stylesheet" href="style.css">
+    <script>
+        window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
+        /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
+        window.isDroneSimFileOrigin = function () {
+            return !!window.__DRONE_SIM_FILE_ORIGIN__;
+        };
+    </script>
 </head>
 <body>
-    <!-- 主菜单画面 -->
-    <div id="main-menu" class="menu-screen">
-        <div class="menu-content">
-            <div class="menu-left">
-                <div class="menu-logo">
-                    <h1 class="logo-title">SKYGUARD</h1>
-                    <p class="logo-tagline">Code to rescue</p>
-                </div>
-                <div class="menu-buttons">
-                    <button class="menu-btn" onclick="showMissionSelect()">COMPETITION</button>
-                    <button class="menu-btn" onclick="startFreePlay()">FREE PLAY</button>
-                    <!-- 隱藏主選單其他按鈕 -->
-                    <button class="menu-btn" onclick="showBasecamp()" style="display: none;">BASECAMP</button>
-                    <button class="menu-btn" onclick="showYourMissions()" style="display: none;">YOUR MISSIONS</button>
-                    <button class="menu-btn" onclick="showLoadScene()" style="display: none;">LOAD SCENE</button>
-                    <button class="menu-btn" onclick="quitGame()" style="display: none;">QUIT</button>
-                </div>
+    <!-- file:// 開啟時：瀏覽器禁止載入 GLB，必須改用 http://localhost -->
+    <div id="file-origin-blocker" class="file-origin-blocker" hidden role="alert" aria-live="assertive">
+        <div class="file-origin-card">
+            <h1 class="file-origin-title">請用本機網頁伺服器開啟專案</h1>
+            <p class="file-origin-lead">目前是以 <code>file://</code> 開啟頁面，瀏覽器會擋下 3D 模型載入（Cross-Origin / 本地檔案安全限制），因此無人機與建築 GLB 都無法讀取。這不是程式 bug，請改在專案根目錄啟動 HTTP 後再開網址。</p>
+            <p class="file-origin-steps"><strong>步驟：</strong>在終端機進入本專案資料夾後執行其一：</p>
+            <pre class="file-origin-code">python3 -m http.server 8080</pre>
+            <p class="file-origin-url">於瀏覽器開啟 <strong>http://localhost:8080</strong>（或終端機顯示的埠號）。</p>
+            <p class="file-origin-hint">Windows 若沒有 <code>python3</code>，可試 <code>py -m http.server 8080</code>；或使用 VS Code 的 <strong>Live Server</strong> 擴充功能。專案亦提供 <code>npm start</code>（見 package.json）。</p>
+        </div>
+    </div>
+    <script>
+        (function () {
+            if (window.__DRONE_SIM_FILE_ORIGIN__) {
+                var el = document.getElementById('file-origin-blocker');
+                if (el) el.removeAttribute('hidden');
+            }
+        })();
+    </script>
+    <!-- 主選單：模式優先 hub（方向 B） -->
+    <div id="main-menu" class="menu-screen menu-screen--hub">
+        <header class="hub-header" role="banner">
+            <div class="hub-header__brand">
+                <span class="hub-header__title">Drone Simulator</span>
+                <span class="hub-header__tagline">Code to rescue</span>
             </div>
-            <div class="menu-right">
-                <div class="menu-preview" id="main-menu-preview">
-                    <!-- 3D 預覽將在這裡渲染 -->
-                </div>
-                <div class="feature-cards">
-                    <div class="feature-card">
-                        <div class="feature-icon">🧩</div>
-                        <h3>Blockly 編程</h3>
-                        <p>使用視覺化積木進行編程</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🎮</div>
-                        <h3>3D 模擬</h3>
-                        <p>即時 3D 無人機飛行模擬</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🎯</div>
-                        <h3>任務挑戰</h3>
-                        <p>完成各種任務挑戰</p>
-                    </div>
-                </div>
+        </header>
+        <main class="hub-main" id="main-menu-content" aria-labelledby="hub-main-heading">
+            <h1 class="hub-main__h1" id="hub-main-heading">選擇你的體驗</h1>
+            <p class="hub-main__lead">用積木程式操控無人機，在震後街區與災區場景中完成救災任務。</p>
+            <div class="hub-preview-wrap" aria-hidden="true">
+                <div class="menu-preview hub-menu-preview" id="main-menu-preview"></div>
             </div>
+            <div class="hub-mode-cards">
+                <article class="mode-card">
+                    <h2 class="mode-card__title">競賽任務</h2>
+                    <ul class="mode-card__list">
+                        <li>任務目標與計分</li>
+                        <li>巡檢回報與計時加分</li>
+                    </ul>
+                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🏆</span></div>
+                    <button type="button" class="menu-btn mode-card__cta" onclick="showMissionSelect()">進入競賽</button>
+                </article>
+                <article class="mode-card">
+                    <h2 class="mode-card__title">試用關卡</h2>
+                    <ul class="mode-card__list">
+                        <li>縮小版任務一／二</li>
+                        <li>免密碼、比賽前練習</li>
+                    </ul>
+                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🧪</span></div>
+                    <button type="button" class="menu-btn mode-card__cta" onclick="showPracticeSelect()">進入試用</button>
+                </article>
+                <article class="mode-card">
+                    <h2 class="mode-card__title">自由練習</h2>
+                    <ul class="mode-card__list">
+                        <li>自由探索場景</li>
+                        <li>適合測試程式</li>
+                    </ul>
+                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🎮</span></div>
+                    <button type="button" class="menu-btn mode-card__cta" onclick="startFreePlay()">開始練習</button>
+                </article>
+            </div>
+            <p class="hub-onboarding" hidden>第一次使用？<a href="#" class="hub-onboarding__link">觀看導覽</a></p>
+        </main>
+        <div class="hub-legacy-actions" hidden>
+            <button type="button" class="menu-btn" onclick="showBasecamp()" style="display: none;" tabindex="-1">BASECAMP</button>
+            <button type="button" class="menu-btn" onclick="showYourMissions()" style="display: none;" tabindex="-1">YOUR MISSIONS</button>
+            <button type="button" class="menu-btn" onclick="showLoadScene()" style="display: none;" tabindex="-1">LOAD SCENE</button>
+            <button type="button" class="menu-btn" onclick="quitGame()" style="display: none;" tabindex="-1">QUIT</button>
         </div>
     </div>
 
-    <!-- 任務選擇畫面 -->
-    <div id="mission-select-menu" class="menu-screen" style="display: none;">
-        <button class="back-btn" onclick="showMainMenu()">←</button>
-        <div class="mission-select-content">
-            <div class="mission-select-header">
-                <h1>COMPETITION MISSIONS</h1>
+    <!-- 任務選擇畫面（與主選單 hub 頂列對齊） -->
+    <div id="mission-select-menu" class="menu-screen menu-screen--mission" style="display: none;">
+        <header class="hub-header hub-header--mission" role="banner">
+            <button type="button" class="back-btn back-btn--header" onclick="showMainMenu()" aria-label="返回主選單">←</button>
+            <div class="hub-header__brand">
+                <span class="hub-header__title">Drone Simulator</span>
+                <span class="hub-header__tagline">Code to rescue</span>
             </div>
-            <div class="mission-select-body">
-                <div class="mission-list">
-                    <button class="mission-btn" onclick="startMission(1)">MISSION 1</button>
-                    <!-- 暫時隱藏 MISSION 2 -->
-                    <button class="mission-btn" onclick="startMission(2)" style="display: none;">MISSION 2</button>
+            <div class="hub-header__spacer" aria-hidden="true"></div>
+        </header>
+        <main class="mission-select-main" role="main" aria-labelledby="mission-select-heading">
+            <div class="mission-select-content">
+                <div class="mission-select-header">
+                    <h1 class="mission-select-title" id="mission-select-heading">競賽任務</h1>
+                    <p class="mission-select-subtitle">選擇救災關卡（需密碼解鎖 · 計分與任務目標）</p>
                 </div>
-                <div class="mission-preview" id="mission-preview">
-                    <!-- 3D 場景預覽將在這裡渲染 -->
+                <div class="mission-select-body">
+                    <div class="mission-list">
+                        <button type="button" class="mission-btn mission-btn--active" data-mission-preview="1" onmouseenter="setMissionPreview(1)" onfocus="setMissionPreview(1)" onclick="startMission(1)">任務一：坍塌廢墟搜救</button>
+                        <button type="button" class="mission-btn" data-mission-preview="2" onmouseenter="setMissionPreview(2)" onfocus="setMissionPreview(2)" onclick="startMission(2)">任務二：山火智能應對</button>
+                    </div>
+                    <div class="mission-preview" id="mission-preview" aria-live="polite">
+                        <img class="mission-preview__img mission-preview__img--active" id="mission-preview-img-1" src="assets/images/mission-preview-1.png" alt="任務一：坍塌廢墟搜救場景預覽">
+                        <img class="mission-preview__img" id="mission-preview-img-2" src="assets/images/mission-preview-2.png" alt="任務二：山火智能應對場景預覽">
+                        <p class="mission-preview__caption" id="mission-preview-caption">任務一：坍塌廢墟搜救</p>
+                    </div>
+                </div>
+                <div class="mission-select-footer" aria-hidden="true">
+                    <div class="footer-logo footer-logo--mission">
+                        <p class="footer-logo__muted">Drone Simulator</p>
+                    </div>
                 </div>
             </div>
-            <div class="mission-select-footer">
-                <div class="footer-logo">
-                    <h2>SKYGUARD</h2>
-                    <p>CODE TO RESCUE</p>
+        </main>
+    </div>
+
+    <!-- 試用關卡選擇畫面 -->
+    <div id="practice-select-menu" class="menu-screen menu-screen--mission menu-screen--practice" style="display: none;">
+        <header class="hub-header hub-header--mission" role="banner">
+            <button type="button" class="back-btn back-btn--header" onclick="showMainMenu()" aria-label="返回主選單">←</button>
+            <div class="hub-header__brand">
+                <span class="hub-header__title">Drone Simulator</span>
+                <span class="hub-header__tagline">Code to rescue</span>
+            </div>
+            <div class="hub-header__spacer" aria-hidden="true"></div>
+        </header>
+        <main class="mission-select-main" role="main" aria-labelledby="practice-select-heading">
+            <div class="mission-select-content">
+                <div class="mission-select-header">
+                    <h1 class="mission-select-title" id="practice-select-heading">試用關卡</h1>
+                    <p class="mission-select-subtitle">縮小版任務 · 免密碼 · 非正式比賽地圖</p>
+                </div>
+                <div class="mission-select-body">
+                    <div class="mission-list">
+                        <button type="button" class="mission-btn mission-btn--active mission-btn--practice" data-mission-preview="practice1" onmouseenter="setPracticePreview('practice1')" onfocus="setPracticePreview('practice1')" onclick="startMission('practice1')">試用一：坍塌廢墟搜救（入門）</button>
+                        <button type="button" class="mission-btn mission-btn--practice" data-mission-preview="practice2" onmouseenter="setPracticePreview('practice2')" onfocus="setPracticePreview('practice2')" onclick="startMission('practice2')">試用二：山火智能應對（入門）</button>
+                    </div>
+                    <div class="mission-preview" id="practice-preview" aria-live="polite">
+                        <img class="mission-preview__img mission-preview__img--active" id="practice-preview-img-1" src="assets/images/mission-preview-1.png" alt="試用一：坍塌廢墟搜救場景預覽">
+                        <img class="mission-preview__img" id="practice-preview-img-2" src="assets/images/mission-preview-2.png" alt="試用二：山火智能應對場景預覽">
+                        <p class="mission-preview__caption" id="practice-preview-caption">試用一：坍塌廢墟搜救（8×8 · 1 巡檢點）</p>
+                    </div>
+                </div>
+                <div class="mission-select-footer" aria-hidden="true">
+                    <div class="footer-logo footer-logo--mission">
+                        <p class="footer-logo__muted">Drone Simulator · Practice</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- 遊戲界面（預設隱藏） -->
     <div id="game-interface" style="display: none;">
         <div class="top-bar">
             <button class="back-btn-game" onclick="returnToMissionSelect()" title="返回任務選擇">← 返回</button>
-            <button class="control-btn toggle-blockly-btn" onclick="toggleBlocklyPanel()" title="顯示/隱藏積木區" id="toggle-blockly-btn">📦 顯示積木區</button>
+            <button type="button" class="control-btn toggle-blockly-btn" id="toggle-blockly-btn" onclick="toggleBlocklyPanel()" aria-expanded="false" aria-controls="blocklyDiv" aria-label="顯示積木區" title="顯示積木區">📦 顯示積木區</button>
             <button class="control-btn" onclick="showMissionBriefing()" title="任務說明" id="mission-briefing-btn">📋 任務說明</button>
-            <!-- 隱藏參考答案按鈕 -->
+            <!-- 任務一／任務二顯示；預設隱藏，由 updateMazeAnswerButtonVisibility 控制 -->
             <button class="control-btn" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none; background-color: #ff9800; color: white;">💡 參考答案</button>
             <!-- 隱藏場景選擇下拉選單 -->
             <select class="scene-select" id="scene-select" onchange="changeScene(this.value)" style="display: none;">
                 <option value="free">場景: 自由飛行</option>
-                <option value="tunnel">任務一: 隧道迷宮</option>
-                <option value="city">任務二: 山火應對</option>
+                <option value="tunnel">任務一: 坍塌廢墟搜救</option>
+                <option value="city">任務二: 山火智能應對</option>
             </select>
+            <button type="button" class="control-btn camera-mode-btn" onclick="toggleCameraMode()" id="camera-mode-btn" title="切換視角">🎥 視角: 跟隨中</button>
+            <button type="button" class="control-btn road-editor-top-btn road-editor-ui" onclick="toggleRoadEditorMode()" id="road-editor-toggle-btn" hidden aria-hidden="true" title="編輯試用關卡路面（僅試用一）">🛣️ 路面編輯</button>
+        </div>
+
+        <!-- 首次進入遊戲介面：Blockly 尋址提示（localStorage 見 main.js） -->
+        <div id="blockly-discover-toast" class="discover-toast" role="status" aria-live="polite" hidden aria-hidden="true">
+            <p class="discover-toast-text">第一次玩嗎？請按上方「顯示積木區」開啟 Blockly 面板，編好程式後再按右下角的「執行」讓無人機動作。</p>
+            <button type="button" class="discover-toast-dismiss" onclick="dismissBlocklyDiscoverToast()" aria-label="關閉提示">知道了</button>
         </div>
         
-        <!-- 右上角设置菜单 -->
-        <div class="settings-menu" id="settings-menu">
-            <button class="settings-toggle-btn" onclick="toggleSettingsMenu()" title="設置">⚙️</button>
-            <div class="settings-panel" id="settings-panel" style="display: none;">
-                <div class="settings-item">
-                    <label for="speed-slider">速度:</label>
-                    <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
-                    <span id="speed-display">1.0x</span>
-                </div>
-                <div class="settings-item">
-                    <button class="settings-btn" onclick="toggleCameraMode()" id="camera-mode-btn">🎥 視角: 跟隨中</button>
-                </div>
+        <div id="road-editor-panel" class="road-editor-panel road-editor-ui" hidden aria-hidden="true">
+            <h3 class="road-editor-title">路面編輯</h3>
+            <p id="road-editor-cell-info" class="road-editor-info">點選 3D 畫布上的路面格</p>
+            <label class="road-editor-label">
+                模型
+                <select id="road-editor-piece" class="road-editor-select" disabled onchange="roadEditorOnPieceChange(this.value)">
+                    <option value="straight">straight 直線</option>
+                    <option value="bend">bend 彎道</option>
+                    <option value="cross">cross 十字</option>
+                    <option value="tee">tee 三叉</option>
+                    <option value="end">end 死巷</option>
+                </select>
+            </label>
+            <div class="road-editor-actions">
+                <button type="button" class="road-editor-btn" onclick="roadEditorRotate(1)">↻ 轉 90°</button>
+                <button type="button" class="road-editor-btn" onclick="roadEditorResetCell()">恢復自動</button>
             </div>
+            <div class="road-editor-actions">
+                <button type="button" class="road-editor-btn road-editor-btn--secondary" onclick="exportRoadOverrides()">匯出 JSON</button>
+                <button type="button" class="road-editor-btn road-editor-btn--secondary" onclick="roadEditorClearAllOverrides()">全部清除</button>
+            </div>
+            <p class="road-editor-hint">左鍵點格 · R 轉 90° · 設定存於瀏覽器（試用一獨立儲存）</p>
+            <button type="button" class="road-editor-btn road-editor-btn--close" onclick="toggleRoadEditorMode(false)">關閉編輯</button>
         </div>
         
         <!-- 右下角浮动控制面板 -->
         <div class="floating-control-panel">
-            <div class="execution-progress" id="execution-progress" style="display: none;">
+            <!-- aria-atomic：每次進度變更時整段「執行中: n/m」一併報讀；更新頻率為「每個指令一步」而非逐幀，polite 通常可接受 -->
+            <div class="execution-progress" id="execution-progress" style="display: none;" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
                 <span>執行中: <span id="progress-text">0/0</span></span>
             </div>
             <div class="control-buttons-group">
-                <button class="floating-btn btn-run" onclick="runBlocklyCode()" title="執行">▶</button>
-                <button class="floating-btn btn-stop" onclick="emergencyStop()" title="停止">⬛</button>
-                <button class="floating-btn btn-reset" onclick="resetSimulator()" title="重置">⟳</button>
+                <button type="button" class="floating-btn btn-run" id="run-blockly-btn" onclick="runBlocklyCode()" title="執行" aria-label="執行程式">▶</button>
+                <button type="button" class="floating-btn btn-stop" onclick="emergencyStop()" title="停止" aria-label="緊急停止">⬛</button>
+                <button type="button" class="floating-btn btn-reset" onclick="resetSimulator()" title="重置" aria-label="重置模擬">⟳</button>
             </div>
         </div>
         <div class="main-container">
             <div id="blocklyDiv" class="blockly-panel">
                 <div class="blockly-resizer" id="blockly-resizer"></div>
-                <div class="blockly-zoom-controls">
-                    <button class="zoom-btn" onclick="zoomBlockly('in')" title="放大">+</button>
-                    <button class="zoom-btn" onclick="zoomBlockly('out')" title="縮小">−</button>
-                    <button class="zoom-btn" onclick="zoomBlockly('reset')" title="重置">⌂</button>
-                </div>
+                <header class="blockly-toolbar" aria-label="積木區工具列">
+                    <div class="blockly-toolbar__brand">
+                        <span class="blockly-toolbar__icon" aria-hidden="true">🧩</span>
+                        <span class="blockly-toolbar__title">程式積木</span>
+                    </div>
+                    <div class="blockly-toolbar__actions">
+                        <div class="blockly-toolbar__group" role="group" aria-label="匯入與匯出">
+                            <button type="button" class="blockly-tool-btn blockly-tool-btn--import" onclick="triggerBlocklyImport()" title="從 XML 檔匯入積木" aria-label="匯入積木程式">
+                                <span class="blockly-tool-btn__glyph" aria-hidden="true">↑</span>
+                                <span class="blockly-tool-btn__label">匯入</span>
+                            </button>
+                            <button type="button" class="blockly-tool-btn blockly-tool-btn--export" onclick="exportBlocklyWorkspace()" title="匯出積木程式為 XML" aria-label="匯出積木程式">
+                                <span class="blockly-tool-btn__glyph" aria-hidden="true">↓</span>
+                                <span class="blockly-tool-btn__label">匯出</span>
+                            </button>
+                        </div>
+                        <span class="blockly-toolbar__divider" aria-hidden="true"></span>
+                        <div class="blockly-toolbar__group" role="group" aria-label="縮放">
+                            <button type="button" class="blockly-tool-btn blockly-tool-btn--icon" onclick="zoomBlockly('out')" title="縮小" aria-label="積木區縮小">−</button>
+                            <button type="button" class="blockly-tool-btn blockly-tool-btn--icon" onclick="zoomBlockly('in')" title="放大" aria-label="積木區放大">+</button>
+                            <button type="button" class="blockly-tool-btn blockly-tool-btn--icon" onclick="zoomBlockly('reset')" title="重設縮放" aria-label="積木區縮放重設">⌂</button>
+                        </div>
+                    </div>
+                </header>
+                <div id="blockly-workspace" class="blockly-workspace"></div>
+                <input type="file" id="blockly-import-input" accept=".xml,text/xml,application/xml" hidden onchange="handleBlocklyImportFile(this)">
             </div>
             <div id="canvas-container" class="canvas-panel">
                 <div class="hud" id="hud-display">Status: LANDED<br>Alt: 0 cm</div>
@@ -140,7 +262,7 @@
                 <div id="console-panel">
                     <div class="console-header">
                         <span>>_ Console Output</span>
-                        <button onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;">🗑️ Clear</button>
+                        <button type="button" onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;" aria-label="清除主控台內容">🗑️ Clear</button>
                     </div>
                     <div id="console-content"></div>
                 </div>
@@ -168,7 +290,7 @@
             <block type="drone_move_cm">
                 <value name="DIST"><shadow type="math_number"><field name="NUM">50</field></shadow></value>
             </block>
-            <block type="drone_goto_xyz">
+            <block type="drone_goto_xyz" id="toolbox-goto-xyz-block">
                 <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 <value name="Z"><shadow type="math_number"><field name="NUM">0.8</field></shadow></value>
@@ -257,22 +379,22 @@
         <category name="Functions" colour="#d65cd6" custom="PROCEDURE"></category>
     </xml>
     <!-- 任務結算彈窗 -->
-    <div id="result-modal" class="modal-overlay" style="display: none;">
+    <div id="result-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
         <div class="result-card">
             <div class="result-header">
-                <h2>任務完成！ MISSION COMPLETE</h2>
+                <h2 id="result-modal-title">任務完成！ MISSION COMPLETE</h2>
                 <div class="result-icon">🏆</div>
             </div>
             <div class="result-body">
                 <table class="result-table">
                     <tr>
-                        <td>信號標記點 (Beacons)</td>
+                        <td id="res-row1-label">巡檢回報 (Inspections)</td>
                         <td id="res-beacons">0 / 3</td>
                         <td id="res-beacons-score">+0</td>
                     </tr>
                     <tr>
-                        <td>成功抵達出口</td>
-                        <td>YES</td>
+                        <td id="res-row2-label">抵達終點</td>
+                        <td id="res-row2-status">YES</td>
                         <td id="res-exit-score">+200</td>
                     </tr>
                     <tr>
@@ -285,33 +407,76 @@
                         <td id="res-total">0</td>
                     </tr>
                 </table>
+                <div id="res-grade-block" class="result-grade-block" hidden>
+                    <span id="res-grade-badge" class="result-grade-badge"></span>
+                    <p id="res-grade-desc" class="result-grade-desc"></p>
+                </div>
             </div>
             <div class="result-footer">
-                <button class="result-btn btn-challenge" id="challenge-btn" onclick="closeResultModal(); startChallengeMode();" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white;">🔥 挑戰隨機迷宮</button>
-                <button class="result-btn btn-retry" onclick="closeResultModal(); resetSimulator();">重試一次</button>
+                <button class="result-btn btn-retry" id="result-retry-btn" onclick="closeResultModal(); resetSimulator();">重試一次</button>
                 <button class="result-btn btn-continue" onclick="closeResultModal(); returnToMissionSelect();">返回選單</button>
             </div>
         </div>
     </div>
 
     <!-- 任務簡報面板 -->
-    <div id="mission-briefing" class="modal-overlay" style="display: none;">
-        <div class="result-card" style="border-color: #4c6ef5;">
+    <div id="mission-briefing" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
+        <div class="result-card briefing-card">
             <div class="result-header">
                 <h2 id="briefing-title">任務簡報 MISSION BRIEF</h2>
                 <div class="result-icon" id="briefing-icon">📋</div>
             </div>
-            <div class="result-body" id="briefing-content" style="text-align: left; color: #ffffff; line-height: 1.6;">
+            <div class="result-body briefing-body" id="briefing-content">
                 <!-- 內容由 JS 動態注入 -->
             </div>
             <div class="result-footer">
-                <button class="result-btn btn-continue" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
+                <button type="button" class="result-btn btn-continue" id="briefing-ok-btn" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
             </div>
         </div>
     </div>
 
-    <script src="js/simulator.js"></script>
+    <!-- 課堂用非阻斷訊息：role="status" + aria-live="polite" 不強制打斷讀屏；連續提示併讀取捨（註：極短時間內多則仍可能合併播報） -->
+    <div id="app-message-banner" class="app-message-banner app-message--info" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <div class="app-message-inner">
+            <div class="app-message-copy">
+                <p class="app-message-title" id="app-message-title"></p>
+                <p class="app-message-body" id="app-message-body"></p>
+                <p class="app-message-next" id="app-message-next" hidden></p>
+            </div>
+            <button type="button" id="app-message-close" class="app-message-close">關閉</button>
+        </div>
+    </div>
+
+    <!-- 競賽任務密碼解鎖 -->
+    <div id="competition-password-modal" class="app-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="competition-password-title" hidden>
+        <div class="app-confirm-card">
+            <h2 id="competition-password-title" class="app-confirm-heading">競賽任務解鎖</h2>
+            <p class="app-confirm-text">請輸入競賽密碼以進入正式任務一／任務二。<br>正式密碼會於比賽當日提供。</p>
+            <label class="competition-password-label" for="competition-password-input">密碼</label>
+            <input type="password" id="competition-password-input" class="competition-password-input" autocomplete="off" spellcheck="false">
+            <p id="competition-password-error" class="competition-password-error" hidden role="alert">密碼錯誤，請再試一次。</p>
+            <div class="app-confirm-actions">
+                <button type="button" id="competition-password-cancel" class="app-confirm-btn app-confirm-btn--secondary">取消</button>
+                <button type="button" id="competition-password-ok" class="app-confirm-btn app-confirm-btn--primary">解鎖</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 輕量確認對話框（取代原生 confirm；鍵盤／Esc／焦點還原） -->
+    <div id="app-confirm-modal" class="app-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" hidden>
+        <div class="app-confirm-card">
+            <h2 id="app-confirm-title" class="app-confirm-heading">請確認</h2>
+            <p id="app-confirm-text" class="app-confirm-text"></p>
+            <div class="app-confirm-actions">
+                <button type="button" id="app-confirm-cancel" class="app-confirm-btn app-confirm-btn--secondary">取消</button>
+                <button type="button" id="app-confirm-ok" class="app-confirm-btn app-confirm-btn--primary">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/simulator.js?v=road-editor-hidden"></script>
     <script src="js/blockly_def.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/mission2_answer.js"></script>
+    <script src="js/main.js?v=layout-flex-fix"></script>
 </body>
 </html>

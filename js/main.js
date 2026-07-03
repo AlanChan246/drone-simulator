@@ -7,13 +7,197 @@ let workspace = null;
 // 保存積木區寬度（百分比）
 let savedBlocklyWidth = 30; // 默認 30%
 
+// Blockly 自動儲存（依任務分開存於 localStorage）
+const BLOCKLY_AUTOSAVE_PREFIX = 'drone-simulator:v1:blockly-workspace:';
+const BLOCKLY_AUTOSAVE_DEBOUNCE_MS = 500;
+let blocklyAutosaveContextKey = null;
+let blocklyAutosaveLoadedKey = null;
+let blocklyAutosaveTimer = null;
+let blocklyAutosaveRestoring = false;
+let blocklyAutosaveBeforeUnloadHooked = false;
+
+function getBlocklyAutosaveKey() {
+    if (activeMissionId === 'challenge'
+        || (typeof currentSceneType !== 'undefined' && currentSceneType === 'challenge_maze')) {
+        return 'challenge';
+    }
+    if (currentGameMode === 'freeplay') return 'freeplay';
+    if (activeMissionId === 'practice1') return 'practice-1';
+    if (activeMissionId === 'practice2') return 'practice-2';
+    if (activeMissionId === 1 || activeMissionId === 'training') return 'mission-1';
+    if (activeMissionId === 2) return 'mission-2';
+    if (typeof currentSceneType !== 'undefined') {
+        if (currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice') {
+            return currentSceneType === 'tunnel_practice' ? 'practice-1' : 'mission-1';
+        }
+        if (currentSceneType === 'city' || currentSceneType === 'city_practice') {
+            return currentSceneType === 'city_practice' ? 'practice-2' : 'mission-2';
+        }
+    }
+    return 'freeplay';
+}
+
+function isTunnelMissionScene() {
+    return typeof currentSceneType !== 'undefined'
+        && (currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice');
+}
+
+function isCityMissionScene() {
+    return typeof currentSceneType !== 'undefined'
+        && (currentSceneType === 'city' || currentSceneType === 'city_practice');
+}
+
+function getBlocklyAutosaveStorageKey(contextKey) {
+    return BLOCKLY_AUTOSAVE_PREFIX + (contextKey || getBlocklyAutosaveKey());
+}
+
+function saveBlocklyWorkspaceToKey(ws, contextKey) {
+    if (!ws || blocklyAutosaveRestoring || typeof Blockly === 'undefined') return;
+    try {
+        const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(ws));
+        localStorage.setItem(getBlocklyAutosaveStorageKey(contextKey), xml);
+    } catch (err) {
+        console.warn('[blockly-autosave] 無法寫入 localStorage', err);
+    }
+}
+
+function restoreBlocklyWorkspaceFromKey(ws, contextKey) {
+    if (!ws || typeof Blockly === 'undefined') return;
+    let raw;
+    try {
+        raw = localStorage.getItem(getBlocklyAutosaveStorageKey(contextKey));
+    } catch (err) {
+        return;
+    }
+    if (!raw) return;
+    try {
+        blocklyAutosaveRestoring = true;
+        ws.clear();
+        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(raw), ws);
+        console.log('[blockly-autosave] 已還原:', contextKey);
+    } catch (err) {
+        console.warn('[blockly-autosave] 還原失敗', err);
+    } finally {
+        blocklyAutosaveRestoring = false;
+    }
+}
+
+function flushBlocklyAutosave() {
+    if (blocklyAutosaveTimer !== null) {
+        clearTimeout(blocklyAutosaveTimer);
+        blocklyAutosaveTimer = null;
+    }
+    if (!workspace || !blocklyAutosaveLoadedKey) return;
+    saveBlocklyWorkspaceToKey(workspace, blocklyAutosaveLoadedKey);
+}
+
+function scheduleBlocklyAutosave() {
+    if (blocklyAutosaveTimer !== null) clearTimeout(blocklyAutosaveTimer);
+    blocklyAutosaveTimer = setTimeout(() => {
+        blocklyAutosaveTimer = null;
+        flushBlocklyAutosave();
+    }, BLOCKLY_AUTOSAVE_DEBOUNCE_MS);
+}
+
+function onBlocklyContextChanged() {
+    const newKey = getBlocklyAutosaveKey();
+    blocklyAutosaveContextKey = newKey;
+
+    if (blocklyAutosaveTimer !== null) {
+        clearTimeout(blocklyAutosaveTimer);
+        blocklyAutosaveTimer = null;
+    }
+
+    if (!workspace) {
+        blocklyAutosaveLoadedKey = null;
+        return;
+    }
+
+    if (blocklyAutosaveLoadedKey && blocklyAutosaveLoadedKey !== newKey) {
+        saveBlocklyWorkspaceToKey(workspace, blocklyAutosaveLoadedKey);
+        restoreBlocklyWorkspaceFromKey(workspace, newKey);
+    } else if (!blocklyAutosaveLoadedKey) {
+        restoreBlocklyWorkspaceFromKey(workspace, newKey);
+    }
+
+    blocklyAutosaveLoadedKey = newKey;
+}
+
+function initBlocklyAutosave(ws) {
+    if (!ws || ws._autosaveInitialized) return;
+    ws._autosaveInitialized = true;
+
+    ws.addChangeListener((event) => {
+        if (blocklyAutosaveRestoring) return;
+        if (event.type === Blockly.Events.FINISHED_LOADING) return;
+        if (!blocklyAutosaveLoadedKey) {
+            blocklyAutosaveLoadedKey = getBlocklyAutosaveKey();
+        }
+        scheduleBlocklyAutosave();
+    });
+
+    const key = blocklyAutosaveContextKey || getBlocklyAutosaveKey();
+    blocklyAutosaveContextKey = key;
+    restoreBlocklyWorkspaceFromKey(ws, key);
+    blocklyAutosaveLoadedKey = key;
+
+    if (!blocklyAutosaveBeforeUnloadHooked) {
+        blocklyAutosaveBeforeUnloadHooked = true;
+        window.addEventListener('beforeunload', flushBlocklyAutosave);
+    }
+}
+
 // 執行控制變數
-let executionSpeed = 1.0; // 執行速度倍數（1.0 = 正常速度）
+const executionSpeed = 3.0; // 固定執行速度（3×，不可由 UI 調整）
 let currentGameMode = 'mission'; // 當前遊戲模式 ('mission' 或 'freeplay')
 let activeMissionId = null; // 當前活動的任務 ID
+let lastMissionMenu = 'competition'; // 'competition' | 'practice'
+const COMPETITION_PASSWORD = '4G2ab8';
+const COMPETITION_UNLOCK_KEY = 'drone-simulator:competition-unlocked';
 let currentExecutingBlockId = null; // 當前執行的積木 ID
 let blockToCommandMap = new Map(); // 積木 ID 到命令索引的映射
 let commandToBlockMap = new Map(); // 命令索引到積木 ID 的映射
+
+/** 重新計算 3D 畫布與 Blockly 工作區尺寸（視窗 resize、瀏覽器縮放、面板切換後呼叫） */
+let gameUiLayoutRefreshTimer = null;
+let gameUiLayoutRefreshHooked = false;
+
+function refreshGameUILayout() {
+    const gameInterface = document.getElementById('game-interface');
+    if (!gameInterface || gameInterface.style.display === 'none') return;
+
+    gameInterface.offsetHeight;
+
+    if (typeof onWindowResize === 'function') {
+        onWindowResize();
+    }
+    if (workspace && typeof Blockly !== 'undefined') {
+        const blocklyDiv = document.getElementById('blocklyDiv');
+        if (blocklyDiv && blocklyDiv.classList.contains('visible')) {
+            Blockly.svgResize(workspace);
+        }
+    }
+}
+
+function scheduleGameUILayoutRefresh() {
+    if (gameUiLayoutRefreshTimer !== null) {
+        clearTimeout(gameUiLayoutRefreshTimer);
+    }
+    gameUiLayoutRefreshTimer = setTimeout(() => {
+        gameUiLayoutRefreshTimer = null;
+        refreshGameUILayout();
+    }, 100);
+}
+
+function initGameUiLayoutRefresh() {
+    if (gameUiLayoutRefreshHooked) return;
+    gameUiLayoutRefreshHooked = true;
+    window.addEventListener('resize', scheduleGameUILayoutRefresh);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleGameUILayoutRefresh);
+        window.visualViewport.addEventListener('scroll', scheduleGameUILayoutRefresh);
+    }
+}
 
 // 初始化 Blockly 工作區（在積木區顯示時調用）
 function initBlockly() {
@@ -33,7 +217,7 @@ function initBlockly() {
                 return null;
             }
             
-            workspace = Blockly.inject('blocklyDiv', {
+            workspace = Blockly.inject('blockly-workspace', {
                 toolbox: document.getElementById('toolbox'),
                 scrollbars: true, 
                 trashcan: true,
@@ -47,50 +231,304 @@ function initBlockly() {
                 }
             });
             console.log("Blockly workspace initialized");
+            initBlocklyAutosave(workspace);
             
             // 初始化後立即調整大小
             setTimeout(() => {
-                if (workspace && typeof Blockly !== 'undefined') {
-                    // 確保積木區面板是顯示狀態
-                    const blocklyDiv = document.getElementById('blocklyDiv');
-                    if (blocklyDiv && blocklyDiv.classList.contains('visible')) {
-                        Blockly.svgResize(workspace);
-                        // 重置縮放比例
-                        blocklyZoom = 1.0;
-                        workspace.setScale(blocklyZoom);
-                        console.log("Blockly workspace resized after initialization");
-                    }
-                }
-                // 初始化寬度調整功能
+                blocklyZoom = 1.0;
+                if (workspace) workspace.setScale(blocklyZoom);
+                refreshGameUILayout();
                 initBlocklyResizer();
+                updateGotoXyzToolboxVisibility();
             }, 100);
-            
-            // 添加窗口大小調整監聽器
-            let resizeTimeout;
-            const handleResize = () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    if (workspace && typeof Blockly !== 'undefined' && blocklyDiv.classList.contains('visible')) {
-                        Blockly.svgResize(workspace);
-                    }
-                }, 100);
-            };
-            window.addEventListener('resize', handleResize);
+
+            initGameUiLayoutRefresh();
         }
     } else {
         // 如果已初始化，調整大小以適應容器
         if (workspace && typeof Blockly !== 'undefined') {
             const blocklyDiv = document.getElementById('blocklyDiv');
             if (blocklyDiv && blocklyDiv.classList.contains('visible')) {
-                // 使用 requestAnimationFrame 確保在下一幀調整
                 requestAnimationFrame(() => {
-                    Blockly.svgResize(workspace);
+                    refreshGameUILayout();
                 });
             }
         }
     }
     return workspace;
 }
+
+// --- 課堂／無障礙：非阻斷訊息與輕量確認（取代 alert／confirm）---
+// 橫幅使用 role="status" + aria-live="polite"：新訊息會播報但不強制打斷讀屏；未用 role="alert" 以免覆蓋教師口述。
+let _appMessageAutoHideTimer = null;
+let _appConfirmResolve = null;
+let _appConfirmPrevFocus = null;
+let _appConfirmFocusTrapHandler = null;
+
+function _getAppConfirmFocusables() {
+    const modal = document.getElementById('app-confirm-modal');
+    if (!modal) return [];
+    return Array.from(
+        modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter(el => !el.hidden && el.offsetParent !== null);
+}
+
+function _installAppConfirmFocusTrap() {
+    _removeAppConfirmFocusTrap();
+    _appConfirmFocusTrapHandler = function (e) {
+        if (e.key !== 'Tab') return;
+        const modal = document.getElementById('app-confirm-modal');
+        if (!modal || modal.hasAttribute('hidden')) return;
+        const focusables = _getAppConfirmFocusables();
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
+    document.addEventListener('keydown', _appConfirmFocusTrapHandler, true);
+}
+
+function _removeAppConfirmFocusTrap() {
+    if (_appConfirmFocusTrapHandler) {
+        document.removeEventListener('keydown', _appConfirmFocusTrapHandler, true);
+        _appConfirmFocusTrapHandler = null;
+    }
+}
+
+function hideAppMessage() {
+    const el = document.getElementById('app-message-banner');
+    if (el) {
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+    }
+    if (_appMessageAutoHideTimer) {
+        clearTimeout(_appMessageAutoHideTimer);
+        _appMessageAutoHideTimer = null;
+    }
+}
+
+function showAppMessage(opts) {
+    const el = document.getElementById('app-message-banner');
+    if (!el) {
+        console.warn('app-message-banner missing');
+        return;
+    }
+    const titleEl = document.getElementById('app-message-title');
+    const bodyEl = document.getElementById('app-message-body');
+    const nextEl = document.getElementById('app-message-next');
+    const variant = opts.variant === 'warn' || opts.variant === 'error' ? opts.variant : 'info';
+    el.classList.remove('app-message--info', 'app-message--warn', 'app-message--error');
+    el.classList.add('app-message--' + variant);
+    if (titleEl) titleEl.textContent = opts.title || '';
+    if (bodyEl) bodyEl.textContent = opts.body || '';
+    if (nextEl) {
+        if (opts.nextStep) {
+            nextEl.hidden = false;
+            nextEl.textContent = opts.nextStep;
+        } else {
+            nextEl.hidden = true;
+            nextEl.textContent = '';
+        }
+    }
+    el.hidden = false;
+    el.removeAttribute('aria-hidden');
+    if (_appMessageAutoHideTimer) {
+        clearTimeout(_appMessageAutoHideTimer);
+        _appMessageAutoHideTimer = null;
+    }
+    if (opts.autoHideMs && opts.autoHideMs > 0) {
+        _appMessageAutoHideTimer = setTimeout(hideAppMessage, opts.autoHideMs);
+    }
+    const shouldFocusClose = opts.focusClose === true || ((opts.focusClose !== false) && (variant === 'warn' || variant === 'error'));
+    if (shouldFocusClose) {
+        requestAnimationFrame(() => {
+            const btn = document.getElementById('app-message-close');
+            if (btn && typeof btn.focus === 'function') {
+                try { btn.focus(); } catch (_) { /* ignore */ }
+            }
+        });
+    }
+}
+
+function finishAppConfirm(result) {
+    if (!_appConfirmResolve) return;
+    _removeAppConfirmFocusTrap();
+    const modal = document.getElementById('app-confirm-modal');
+    if (modal) {
+        modal.setAttribute('hidden', '');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    const resolveFn = _appConfirmResolve;
+    _appConfirmResolve = null;
+    resolveFn(!!result);
+    const prev = _appConfirmPrevFocus;
+    _appConfirmPrevFocus = null;
+    requestAnimationFrame(() => {
+        if (prev && typeof prev.focus === 'function') {
+            try { prev.focus(); } catch (_) { /* ignore */ }
+        }
+    });
+}
+
+function showAppConfirm(message, options) {
+    options = options || {};
+    return new Promise((resolve) => {
+        const modal = document.getElementById('app-confirm-modal');
+        const textEl = document.getElementById('app-confirm-text');
+        const titleEl = document.getElementById('app-confirm-title');
+        const okBtn = document.getElementById('app-confirm-ok');
+        const cancelBtn = document.getElementById('app-confirm-cancel');
+        if (!modal || !textEl || !titleEl || !okBtn || !cancelBtn) {
+            resolve(false);
+            return;
+        }
+        if (_appConfirmResolve) {
+            finishAppConfirm(false);
+        }
+        titleEl.textContent = options.title || '請確認';
+        textEl.textContent = message;
+        okBtn.textContent = options.confirmLabel || '確認';
+        cancelBtn.textContent = options.cancelLabel || '取消';
+        _appConfirmPrevFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        _appConfirmResolve = resolve;
+        modal.removeAttribute('hidden');
+        modal.removeAttribute('aria-hidden');
+        _installAppConfirmFocusTrap();
+        requestAnimationFrame(() => {
+            try { okBtn.focus(); } catch (_) { /* ignore */ }
+        });
+    });
+}
+
+function initAppFeedbackUI() {
+    initCompetitionPasswordUI();
+    const closeMsg = document.getElementById('app-message-close');
+    if (closeMsg && !closeMsg.dataset.appFeedbackBound) {
+        closeMsg.dataset.appFeedbackBound = '1';
+        closeMsg.addEventListener('click', hideAppMessage);
+    }
+    const ok = document.getElementById('app-confirm-ok');
+    const cancel = document.getElementById('app-confirm-cancel');
+    if (ok && !ok.dataset.appFeedbackBound) {
+        ok.dataset.appFeedbackBound = '1';
+        ok.addEventListener('click', () => finishAppConfirm(true));
+    }
+    if (cancel && !cancel.dataset.appFeedbackBound) {
+        cancel.dataset.appFeedbackBound = '1';
+        cancel.addEventListener('click', () => finishAppConfirm(false));
+    }
+}
+
+window.showAppMessage = showAppMessage;
+window.hideAppMessage = hideAppMessage;
+window.showAppConfirm = showAppConfirm;
+
+function isCompetitionUnlocked() {
+    try {
+        return sessionStorage.getItem(COMPETITION_UNLOCK_KEY) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function setCompetitionUnlocked() {
+    try {
+        sessionStorage.setItem(COMPETITION_UNLOCK_KEY, '1');
+    } catch (_) { /* ignore */ }
+}
+
+let _competitionPasswordResolve = null;
+let _competitionPasswordPrevFocus = null;
+
+function finishCompetitionPasswordPrompt(unlocked) {
+    const modal = document.getElementById('competition-password-modal');
+    const input = document.getElementById('competition-password-input');
+    const err = document.getElementById('competition-password-error');
+    if (modal) {
+        modal.setAttribute('hidden', '');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    if (input) input.value = '';
+    if (err) err.hidden = true;
+    const resolve = _competitionPasswordResolve;
+    _competitionPasswordResolve = null;
+    const prev = _competitionPasswordPrevFocus;
+    _competitionPasswordPrevFocus = null;
+    if (resolve) resolve(!!unlocked);
+    if (prev && typeof prev.focus === 'function') {
+        requestAnimationFrame(() => { try { prev.focus(); } catch (_) { /* ignore */ } });
+    }
+}
+
+function showCompetitionPasswordPrompt() {
+    if (isCompetitionUnlocked()) return Promise.resolve(true);
+    return new Promise((resolve) => {
+        const modal = document.getElementById('competition-password-modal');
+        const input = document.getElementById('competition-password-input');
+        const err = document.getElementById('competition-password-error');
+        if (!modal || !input) {
+            resolve(false);
+            return;
+        }
+        if (_competitionPasswordResolve) finishCompetitionPasswordPrompt(false);
+        _competitionPasswordPrevFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        _competitionPasswordResolve = resolve;
+        if (err) err.hidden = true;
+        input.value = '';
+        modal.removeAttribute('hidden');
+        modal.removeAttribute('aria-hidden');
+        requestAnimationFrame(() => { try { input.focus(); } catch (_) { /* ignore */ } });
+    });
+}
+
+function initCompetitionPasswordUI() {
+    const ok = document.getElementById('competition-password-ok');
+    const cancel = document.getElementById('competition-password-cancel');
+    const input = document.getElementById('competition-password-input');
+    if (ok && !ok.dataset.competitionBound) {
+        ok.dataset.competitionBound = '1';
+        ok.addEventListener('click', () => {
+            const val = input ? input.value : '';
+            if (val === COMPETITION_PASSWORD) {
+                setCompetitionUnlocked();
+                finishCompetitionPasswordPrompt(true);
+                return;
+            }
+            const err = document.getElementById('competition-password-error');
+            if (err) err.hidden = false;
+            if (input) input.select();
+        });
+    }
+    if (cancel && !cancel.dataset.competitionBound) {
+        cancel.dataset.competitionBound = '1';
+        cancel.addEventListener('click', () => finishCompetitionPasswordPrompt(false));
+    }
+    if (input && !input.dataset.competitionBound) {
+        input.dataset.competitionBound = '1';
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                ok && ok.click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                finishCompetitionPasswordPrompt(false);
+            }
+        });
+    }
+}
+
+window.isCompetitionUnlocked = isCompetitionUnlocked;
+window.showCompetitionPasswordPrompt = showCompetitionPasswordPrompt;
+window.showPracticeSelect = showPracticeSelect;
+
 // --- Console 介面功能 ---
 function logToConsole(msg) {
     const contentDiv = document.getElementById('console-content');
@@ -127,28 +565,6 @@ function toggleCameraMode() {
     }
 }
 
-// 切换设置菜单
-function toggleSettingsMenu() {
-    const panel = document.getElementById('settings-panel');
-    if (panel) {
-        const isVisible = panel.style.display !== 'none';
-        panel.style.display = isVisible ? 'none' : 'block';
-    }
-}
-
-// 点击外部关闭设置菜单
-document.addEventListener('click', function(event) {
-    const settingsMenu = document.getElementById('settings-menu');
-    const settingsPanel = document.getElementById('settings-panel');
-    const settingsToggle = document.querySelector('.settings-toggle-btn');
-    
-    if (settingsMenu && settingsPanel && settingsToggle) {
-        // 如果点击的不是设置菜单内的元素，则关闭菜单
-        if (!settingsMenu.contains(event.target) && settingsPanel.style.display !== 'none') {
-            settingsPanel.style.display = 'none';
-        }
-    }
-});
 // --- 程式碼執行邏輯 ---
 
 function runBlocklyCode() {
@@ -167,7 +583,12 @@ function runBlocklyCode() {
     // 確保 workspace 已初始化
     const currentWorkspace = initBlockly();
     if (!currentWorkspace) {
-        alert("Blockly 工作區未初始化！");
+        showAppMessage({
+            variant: 'warn',
+            title: 'Blockly 尚未就緒',
+            body: '積木區尚未開啟或未完成初始化，無法執行程式。',
+            nextStep: '下一步：請先按頂部「顯示積木區」開啟 Blockly，再按「執行」。'
+        });
         return;
     }
     
@@ -233,6 +654,7 @@ function runBlocklyCode() {
             const commandGeneratingBlocks = [
                 'event_wait_key', 'drone_takeoff', 'drone_land', 'drone_hover',
                 'drone_move_time', 'drone_move_cm', 'drone_goto_xyz', 'drone_turn_degree',
+                'drone_collect_water', 'drone_release_water',
                 'drone_turn_time', 'drone_set_variable', 'drone_turn_heading', 'drone_move_complex',
                 'drone_move_complex_infinite', 'drone_set_color', 'drone_set_led_color', 
                 'drone_set_led_rgb', 'drone_led_off', 'drone_led_sequence', 'drone_set_heading',
@@ -260,11 +682,12 @@ function runBlocklyCode() {
             setCurrentBlockForCodeGen(block);
         });
         
-        // 執行同步代碼以填充 cmdQueue
-        eval(code);
-        
-        // 恢復原始 push 方法
-        cmdQueue.push = originalPush;
+        try {
+            // 執行同步代碼以填充 cmdQueue
+            eval(code);
+        } finally {
+            cmdQueue.push = originalPush;
+        }
         
         // 建立命令索引到積木塊 ID 的映射
         // 如果命令有 _blockId 屬性，使用它；否則使用 blockIdQueue
@@ -280,13 +703,25 @@ function runBlocklyCode() {
         });
         
     } catch (e) { 
-        alert("Code Error: " + e); 
+        showAppMessage({
+            variant: 'error',
+            title: '程式產生錯誤',
+            body: String(e),
+            nextStep: '請檢查積木連接是否完整，或從主控台查看詳細訊息。',
+            focusClose: true
+        });
         console.error("Code generation error:", e);
         return; 
     }
     
     if (cmdQueue.length === 0) { 
-        alert("請拖曳積木!"); 
+        showAppMessage({
+            variant: 'warn',
+            title: '沒有可執行的指令',
+            body: '工作區內沒有產生任何飛行指令。',
+            nextStep: '下一步：請從左側拖入積木（例如「程式開始」與「起飛」），並連接後再執行。',
+            focusClose: false
+        });
         return; 
     }
     
@@ -391,6 +826,12 @@ async function executeCommandLive(cmd) {
  */
 async function dispatchCommand(cmd) {
     if (!cmd) return;
+    if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
+        && cmd.type && cmd.type.startsWith('move_')) {
+        logToConsole('⚠️ 電力耗盡！請找黃色充電站懸停補電（+15 行），或返回基地。');
+        if (typeof emergencyStop === 'function') emergencyStop();
+        return;
+    }
     const param = parseFloat(cmd.param);
     
     // 飛行狀態檢查 (起飛、LED、等按鍵除外)
@@ -441,8 +882,20 @@ async function dispatchCommand(cmd) {
             }, { canAbort: false }); 
             state.isFlying = false; 
             break;
-        case 'hover': await wait(param * 1000); break;
+        case 'hover':
+            await wait(param * 1000);
+            if (isCityMissionScene() && typeof creditForestChargeHover === 'function') {
+                creditForestChargeHover(param);
+            } else if (isTunnelMissionScene() && typeof creditTunnelInspectionHover === 'function') {
+                creditTunnelInspectionHover(param);
+            }
+            break;
         case 'goto_xyz':
+            if (isTunnelMissionScene()) {
+                logToConsole('⚠️ 任務一禁止使用「飛至座標 (Goto XYZ)」；請沿可通行路網飛行。');
+                await wait(100);
+                break;
+            }
             const startPos = { x: state.x, y: state.y, z: state.z };
             let lastGoto_p = 0;
             await animateAction(2.0, p => {
@@ -591,6 +1044,7 @@ async function dispatchCommand(cmd) {
             }
             break;
     }
+    if (isCityMissionScene()) consumeCityBatteryLine(cmd);
     // 每個指令結束後的小停頓，讓視覺更平滑
     await wait(200);
 }
@@ -613,6 +1067,7 @@ function buildBlockCommandMapping(workspace) {
         const commandGeneratingBlocks = [
             'event_wait_key', 'drone_takeoff', 'drone_land', 'drone_hover',
             'drone_move_time', 'drone_move_cm', 'drone_goto_xyz', 'drone_turn_degree',
+            'drone_collect_water', 'drone_release_water',
             'drone_turn_time', 'drone_set_variable', 'drone_turn_heading', 'drone_move_complex',
             'drone_move_complex_infinite', 'drone_set_color', 'drone_set_led_color', 
             'drone_set_led_rgb', 'drone_led_off', 'drone_led_sequence', 'drone_set_heading',
@@ -654,18 +1109,9 @@ function buildBlockCommandMapping(workspace) {
 }
 
 
-// 更新執行速度
-function updateExecutionSpeed() {
-    const slider = document.getElementById('speed-slider');
-    const display = document.getElementById('speed-display');
-    if (slider && display) {
-        executionSpeed = parseFloat(slider.value);
-        display.textContent = executionSpeed.toFixed(1) + 'x';
-    }
-}
-
 // 載入任務一參考答案
 function loadMazeAnswer() {
+    if (!SHOW_MISSION_REFERENCE_ANSWERS) return;
     if (!workspace) {
         toggleBlocklyPanel();
         setTimeout(loadMazeAnswer, 300);
@@ -674,16 +1120,24 @@ function loadMazeAnswer() {
 
     // 🔥 隨機迷宮挑戰模式答案
     if (currentSceneType === 'challenge_maze') {
-        const choice = prompt("請選擇挑戰難度：\n1. 高小組 (感應器優先級 - 右手法則)\n2. 中學組 (單線 LiDAR - 記憶回溯)", "1");
-        
-        if (choice === "1") {
-            workspace.clear();
-            const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"><next><block type="drone_takeoff"><next><block type="controls_whileUntil"><field name="MODE">WHILE</field><value name="BOOL"><block type="logic_boolean"><field name="BOOL">TRUE</field></block></value><statement name="DO"><block type="controls_if"><mutation elseif="1" else="1"></mutation><value name="IF0"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">right</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">120</field></block></value></block></value><statement name="DO0"><block type="drone_turn_degree"><field name="DIR">RIGHT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value><next><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></next></block></statement><value name="IF1"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">front</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">100</field></block></value></block></value><statement name="DO1"><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></statement><statement name="ELSE"><block type="drone_turn_degree"><field name="DIR">LEFT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value></block></statement></block></statement></block></next></block></next></block></xml>`;
-            Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), workspace);
-            logToConsole("✅ 已載入 [高小組] 參考答案");
-        } else if (choice === "2") {
-            workspace.clear();
-            const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml">
+        showAppConfirm(
+            '載入高小組參考答案？（感應器優先級 · 右手法則）',
+            { title: '挑戰難度', confirmLabel: '高小組', cancelLabel: '改選中學組' }
+        ).then((isPrimary) => {
+            if (isPrimary) {
+                workspace.clear();
+                const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"><next><block type="drone_takeoff"><next><block type="controls_whileUntil"><field name="MODE">WHILE</field><value name="BOOL"><block type="logic_boolean"><field name="BOOL">TRUE</field></block></value><statement name="DO"><block type="controls_if"><mutation elseif="1" else="1"></mutation><value name="IF0"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">right</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">120</field></block></value></block></value><statement name="DO0"><block type="drone_turn_degree"><field name="DIR">RIGHT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value><next><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></next></block></statement><value name="IF1"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">front</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">100</field></block></value></block></value><statement name="DO1"><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></statement><statement name="ELSE"><block type="drone_turn_degree"><field name="DIR">LEFT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value></block></statement></block></statement></block></next></block></next></block></xml>`;
+                Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), workspace);
+                logToConsole("✅ 已載入 [高小組] 參考答案");
+                return;
+            }
+            showAppConfirm(
+                '載入中學組參考答案？（單線 LiDAR · 記憶回溯）',
+                { title: '挑戰難度', confirmLabel: '中學組', cancelLabel: '取消' }
+            ).then((ok) => {
+                if (!ok) return;
+                workspace.clear();
+                const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml">
   <variables>
     <variable id="v1">path_history</variable>
   </variables>
@@ -887,104 +1341,46 @@ function loadMazeAnswer() {
 </xml>`;
             Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), workspace);
             logToConsole("✅ 已載入 [中學組] 智慧導航參考答案");
-        }
+            });
+        });
         return;
     }
 
-    // 🔥 任務二：森林救援答案 (繞路導航版)
-    // 🔥 任務二：森林救援答案 (多火場循環版)
-    // 🔥 任務二：森林救援答案 (避障攻略版)
-    if (currentSceneType === 'city') {
-        if (confirm("這將會清除當前積木並載入「任務二：森林救援」避障攻略版參考答案，確定嗎？")) {
+    // 🔥 任務二：14×14 最優路線（4 火 · 配對水源 · 1 充電 · 終點降落）
+    if (isCityMissionScene()) {
+        showAppConfirm('這將會清除當前積木並載入「任務二：山火智能應對」最優路線參考答案，確定嗎？', { title: '載入參考答案' }).then((ok) => {
+            if (!ok) return;
             workspace.clear();
-            const answerXml = `<xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="event_start" x="20" y="20">
-    <next>
-      <block type="drone_takeoff">
-        <next>
-          <!-- 1. 前往水源 (3,3)：繞過森林障礙 -->
-          <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
-            <next>
-              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1350</field></block></value>
-                <next>
-                  <block type="drone_move_cm"><field name="DIR">BACKWARD</field><value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
-                    <next>
-                      <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">1050</field></block></value>
-                        <next>
-                          <block type="drone_collect_water">
-                            <next>
-                              <!-- 2. 前往火場 (6,7) -->
-                              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1050</field></block></value>
-                                <next>
-                                  <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
-                                    <next>
-                                      <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
-                                        <next>
-                                          <block type="drone_release_water">
-                                            <next>
-                                              <!-- 3. 前往終點 (14,14) -->
-                                              <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">600</field></block></value>
-                                                <next>
-                                                  <block type="drone_move_cm"><field name="DIR">RIGHT</field><value name="DIST"><block type="math_number"><field name="NUM">1350</field></block></value>
-                                                    <next>
-                                                      <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">900</field></block></value>
-                                                        <next>
-                                                          <block type="drone_move_cm"><field name="DIR">LEFT</field><value name="DIST"><block type="math_number"><field name="NUM">1950</field></block></value>
-                                                            <next>
-                                                              <block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
-                                                                <next>
-                                                                  <block type="drone_land"></block>
-                                                                </next>
-                                                              </block>
-                                                            </next>
-                                                          </block>
-                                                        </next>
-                                                      </block>
-                                                    </next>
-                                                  </block>
-                                                </next>
-                                              </block>
-                                            </next>
-                                          </block>
-                                        </next>
-                                      </block>
-                                    </next>
-                                  </block>
-                                </next>
-                              </block>
-                            </next>
-                          </block>
-                        </next>
-                      </block>
-                    </next>
-                  </block>
-                </next>
-              </block>
-            </next>
-          </block>
-        </next>
-      </block>
-    </next>
-  </block>
-</xml>`;
+            const answerXml = typeof MISSION2_ANSWER_XML !== 'undefined'
+                ? MISSION2_ANSWER_XML
+                : null;
+            if (!answerXml) {
+                logToConsole('⚠️ 找不到任務二參考答案（mission2_answer.js）。');
+                return;
+            }
             Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(answerXml), workspace);
-            logToConsole("✅ 已載入任務二森林救援 [避障攻略版] 參考答案。");
-        }
+            logToConsole('✅ 已載入任務二 [最優路線] 參考答案：4 火 → 受災區降落。');
+        });
         return;
     }
 
-    if (confirm("這將會清除當前積木並載入「相對移動版」參考答案，確定嗎？")) {
+    showAppConfirm('這將會清除當前積木並載入「任務一：坍塌廢墟搜救」參考答案（含三處巡檢點與 Bravo 降落），確定嗎？', { title: '載入參考答案' }).then((ok) => {
+        if (!ok) return;
+        if (currentSceneType !== 'tunnel') {
+            logToConsole('⚠️ 參考答案僅適用於任務一（坍塌廢墟搜救）。');
+            return;
+        }
         workspace.clear();
         
-        // 使用相對移動積木 (move_cm)，避開牆壁並觸發 3 個 Beacons
+        // 使用相對移動積木 (move_cm)，避開建築並完成巡檢回報點
         const answerXml = `
 <xml xmlns="https://developers.google.com/blockly/xml">
   <block type="event_start" x="20" y="20">
     <next>
       <block type="drone_takeoff">
         <next>
-          <!-- 1. 前往第一個 Beacon (1,10) -->
-          <!-- 1. 前往第一個 Beacon (1,10) -->
+          <!-- 1. 前往通訊中繼站 (1,10) -->
+          <!-- 1. 前往通訊中繼站 (1,10) -->
           <block type="drone_move_cm">
             <field name="DIR">LEFT</field>
             <value name="DIST"><block type="math_number"><field name="NUM">300</field></block></value>
@@ -1008,7 +1404,7 @@ function loadMazeAnswer() {
                               <block type="drone_hover">
                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                 <next>
-                                  <!-- 2. 避開牆壁 (1,4) 原路折返並前往 Beacon 2 (5,3) -->
+                                  <!-- 2. 避開封路並前往結構安全掃描點 (5,3) -->
                   <block type="drone_move_cm">
                     <field name="DIR">RIGHT</field>
                                     <value name="DIST"><block type="math_number"><field name="NUM">750</field></block></value>
@@ -1040,7 +1436,7 @@ function loadMazeAnswer() {
                                                       <block type="drone_hover">
                                                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                                         <next>
-                                                          <!-- 3. 前往第三個 Beacon (7,8) -->
+                                                          <!-- 3. 前往環境感測點 (7,8) -->
                                                           <block type="drone_move_cm">
                                                             <field name="DIR">LEFT</field>
                                                                     <value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value>
@@ -1056,7 +1452,7 @@ function loadMazeAnswer() {
                                                                       <block type="drone_hover">
                                                                                 <value name="DURATION"><block type="math_number"><field name="NUM">3.5</field></block></value>
                                                                         <next>
-                                                                          <!-- 4. 衝向出口 -->
+                                                                          <!-- 4. 前往疏散集結區 Bravo -->
                                                                           <block type="drone_move_cm">
                                                                                     <field name="DIR">FORWARD</field>
                                                                             <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
@@ -1064,6 +1460,9 @@ function loadMazeAnswer() {
                                                                               <block type="drone_move_cm">
                                                                                         <field name="DIR">LEFT</field>
                                                                                 <value name="DIST"><block type="math_number"><field name="NUM">450</field></block></value>
+                                                                                <next>
+                                                                                  <block type="drone_land"></block>
+                                                                                </next>
                                                                                       </block>
                                                                                     </next>
                                                                                   </block>
@@ -1112,28 +1511,28 @@ function loadMazeAnswer() {
         try {
             const xml = Blockly.utils.xml.textToDom(answerXml); // 使用最新 API
             Blockly.Xml.domToWorkspace(xml, workspace);
-            logToConsole("✅ 已載入任務一完美避障版答案。");
+            logToConsole("✅ 已載入任務一參考答案（Alpha → 三巡檢點 → Bravo 降落）。");
         } catch (e) {
             console.error("載入答案失敗:", e);
-            alert("載入答案失敗！");
+            showAppMessage({
+                variant: 'error',
+                title: '載入答案失敗',
+                body: e && e.message ? String(e.message) : '無法將參考答案寫入工作區。',
+                nextStep: '請確認已開啟積木區，或重新整理頁面後再試。',
+                focusClose: true
+            });
         }
-    }
+    });
 }
 // --- 任務特定功能派發器 ---
 async function dispatchCollectWater() {
     console.log("💧 正在執行取水指令...");
-    
-    // 檢查是否在水源格位 (val === 5)
-    const gridX = Math.floor((state.x - mazeOffsetX + currentCellSize/2) / currentCellSize);
-    const gridZ = Math.floor((state.z - mazeOffsetZ + currentCellSize/2) / currentCellSize);
-    
-    let isOnWater = false;
-    if (currentMazeGrid && gridZ >= 0 && gridZ < currentMazeGrid.length && gridX >= 0 && gridX < currentMazeGrid[0].length) {
-        if (currentMazeGrid[gridZ][gridX] === 5) isOnWater = true;
-    }
+    const cell = typeof findCityInteractionCell === 'function'
+        ? findCityInteractionCell(5)
+        : null;
 
-    if (isOnWater) {
-        await wait(2000); // 取水動畫時間
+    if (cell) {
+        await wait(2000);
         state.hasWater = true;
         logToConsole("✅ 取水成功！水箱已滿。");
         updateHUD();
@@ -1150,35 +1549,28 @@ async function dispatchReleaseWater() {
         return;
     }
 
-    // 精確計算當前格位
-    const gridX = Math.floor((state.x - mazeOffsetX) / currentCellSize);
-    const gridZ = Math.floor((state.z - mazeOffsetZ) / currentCellSize);
-    
-    let isOnFire = false;
-    if (currentMazeGrid && gridZ >= 0 && gridZ < currentMazeGrid.length && gridX >= 0 && gridX < currentMazeGrid[0].length) {
-        if (currentMazeGrid[gridZ][gridX] === 4) isOnFire = true;
-    }
+    const cell = typeof findCityInteractionCell === 'function'
+        ? findCityInteractionCell(4)
+        : null;
 
-    if (isOnFire) {
+    if (cell) {
         await wait(2000); 
         state.hasWater = false;
-        logToConsole("🌊 滅火成功！成功撲滅一處火源。");
-        
-        // 視覺效果：熄滅當前格位的火焰 (檢查 X 與 Z)
-        const targetX = gridX * currentCellSize + mazeOffsetX + currentCellSize/2;
-        const targetZ = gridZ * currentCellSize + mazeOffsetZ + currentCellSize/2;
-
-        if (typeof environmentGroup !== 'undefined') {
-            environmentGroup.children.forEach(obj => {
-                // 同時判定 X, Z 座標是否匹配火源位置
-                const dx = Math.abs(obj.position.x - targetX);
-                const dz = Math.abs(obj.position.z - targetZ);
-                if (obj instanceof THREE.Group && dx < 20 && dz < 20) {
-                    obj.visible = false; 
-                }
-            });
-        }
+        if (typeof hideForestFireAt === 'function') hideForestFireAt(cell.i, cell.j);
+        if (typeof firesExtinguished !== 'undefined') firesExtinguished++;
+        const pts = (typeof awardMission2FireScore === 'function')
+            ? awardMission2FireScore(cell.i, cell.j)
+            : 0;
+        const site = typeof FOREST_FIRE_SITES !== 'undefined'
+            ? FOREST_FIRE_SITES[`${cell.i},${cell.j}`]
+            : null;
+        const label = site ? site.label : `(${cell.i},${cell.j})`;
+        const scoreMsg = pts > 0 ? ` (+${pts} 分)` : '';
+        logToConsole(`🌊 滅火成功！${label} 已撲滅。${scoreMsg}（${firesExtinguished}/4）`);
         updateHUD();
+        if (typeof maybeFinishCityMission === 'function') {
+            maybeFinishCityMission();
+        }
     } else {
         logToConsole("❌ 滅火失敗：下方沒有火源。請對準火焰中心執行。");
     }
@@ -1188,7 +1580,7 @@ function updateHUD() {
     const hud = document.getElementById('hud-display');
     if (!hud) return;
     
-    const alt = (currentSceneType === 'city') ? (state.y - getForestHeight(state.x, state.z)) : state.y;
+    const alt = isCityMissionScene() ? (state.y - getForestHeight(state.x, state.z)) : state.y;
     const waterStatus = state.hasWater ? '<span style="color:#00adb5">FULL</span>' : '<span style="color:#aaa">EMPTY</span>';
     
     hud.innerHTML = `
@@ -1202,6 +1594,34 @@ function updateHUD() {
 setInterval(updateHUD, 200);
 
 // --- 重置與停止功能 ---
+
+/** 暫時隱藏任務一／二「💡 參考答案」按鈕（改為 true 可重新開放） */
+const SHOW_MISSION_REFERENCE_ANSWERS = false;
+
+function updateMazeAnswerButtonVisibility() {
+    const answerBtn = document.getElementById('maze-answer-btn');
+    if (!answerBtn) return;
+    const show = SHOW_MISSION_REFERENCE_ANSWERS
+        && typeof currentSceneType !== 'undefined'
+        && (currentSceneType === 'tunnel' || currentSceneType === 'city');
+    answerBtn.style.display = show ? '' : 'none';
+}
+window.updateMazeAnswerButtonVisibility = updateMazeAnswerButtonVisibility;
+
+function updateGotoXyzToolboxVisibility() {
+    const blockEl = document.getElementById('toolbox-goto-xyz-block');
+    if (blockEl) {
+        const hide = isTunnelMissionScene();
+        blockEl.style.display = hide ? 'none' : '';
+    }
+    if (workspace && typeof workspace.updateToolbox === 'function') {
+        const toolboxEl = document.getElementById('toolbox');
+        if (toolboxEl) {
+            workspace.updateToolbox(toolboxEl);
+        }
+    }
+}
+window.updateGotoXyzToolboxVisibility = updateGotoXyzToolboxVisibility;
 
 function resetSimulator() {
     state.stopSignal = true; 
@@ -1231,8 +1651,9 @@ function resetSimulator() {
     commandToBlockMap.clear();
 
     // --- 重置任務狀態 ---
+    closeBriefing();
     takeoffTime = 0;           // 重置起飛計時
-    beaconsTriggered = 0;      // 重置 Beacon 計數
+    beaconsTriggered = 0;      // 重置巡檢回報計數
     currentScore = 0;          // 重置分數
     state.missionCompleted = false; // 重置完成狀態
     
@@ -1246,7 +1667,7 @@ function resetSimulator() {
         beaconData.forEach(b => {
             b.triggered = false;
             b.hoverTimer = 0;
-            // 恢復 Beacon 顏色 (青色)
+            // 恢復巡檢回報點顏色 (青色)
             if (b.mesh) {
                 b.mesh.traverse(child => {
                     if (child.material) child.material.color.setHex(0x00adb5);
@@ -1254,8 +1675,14 @@ function resetSimulator() {
             }
         });
     }
-
-    // --- 重置無人機位置 ---
+    if (typeof forestChargeData !== 'undefined') {
+        forestChargeData.forEach(s => {
+            s.triggered = false;
+            s.hoverTimer = 0;
+        });
+    }
+    state.hasWater = false;
+    if (typeof resetCityBattery === 'function') resetCityBattery();
     if (typeof syncDroneToStart === 'function') {
         syncDroneToStart();
     } else {
@@ -1361,16 +1788,19 @@ function highlightBlock(blockId, highlight = true) {
     }
 }
 
-// 更新執行進度顯示
+// 更新執行進度顯示（#execution-progress 為 live region；隱藏時 aria-hidden + 重設文字，避免讀屏讀到過期進度）
 function updateProgress(current, total) {
     const progressDiv = document.getElementById('execution-progress');
     const progressText = document.getElementById('progress-text');
     if (progressDiv && progressText) {
         if (total > 0) {
+            progressDiv.setAttribute('aria-hidden', 'false');
             progressDiv.style.display = 'flex';
             progressText.textContent = `${current}/${total}`;
         } else {
+            progressDiv.setAttribute('aria-hidden', 'true');
             progressDiv.style.display = 'none';
+            progressText.textContent = '0/0';
         }
     }
 }
@@ -1398,6 +1828,13 @@ async function executeQueue() {
             console.log("執行被停止");
             break;
         }
+
+        if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
+            && cmd.type && cmd.type.startsWith('move_')) {
+            logToConsole('⚠️ 電力耗盡！請找黃色充電站懸停補電（+15 行），或返回基地。');
+            if (typeof emergencyStop === 'function') emergencyStop();
+            break;
+        }
         
         // 更新進度
         updateProgress(i + 1, cmdQueue.length);
@@ -1423,6 +1860,12 @@ async function executeQueue() {
         }
 
         switch (cmd.type) {
+            case 'collect_water':
+                await dispatchCollectWater();
+                break;
+            case 'release_water':
+                await dispatchReleaseWater();
+                break;
             case 'wait_key': await waitKey(); break;
             case 'takeoff': 
                 await animateAction(1.5, p => state.y = Math.max(state.y, p * 80), { canAbort: false }); 
@@ -1450,7 +1893,14 @@ async function executeQueue() {
                     }
                 }
                 break;
-            case 'hover': await wait(param * 1000); break;
+            case 'hover':
+            await wait(param * 1000);
+            if (isCityMissionScene() && typeof creditForestChargeHover === 'function') {
+                creditForestChargeHover(param);
+            } else if (isTunnelMissionScene() && typeof creditTunnelInspectionHover === 'function') {
+                creditTunnelInspectionHover(param);
+            }
+            break;
             case 'set_color': 
                 if(droneLedMesh) {
                     // 更新顏色和透明度（開啟狀態）
@@ -1557,6 +2007,11 @@ async function executeQueue() {
                 });
                 break;
             case 'goto_xyz':
+                if (isTunnelMissionScene()) {
+                    logToConsole('⚠️ 任務一禁止使用「飛至座標 (Goto XYZ)」；請沿可通行路網飛行。');
+                    await wait(100);
+                    break;
+                }
                     const gx = state.x, gY = state.y, gz = state.z;
                     await animateAction(2.0, p => {
                         state.x = gx + (cmd.x - gx)*p;
@@ -1610,6 +2065,7 @@ async function executeQueue() {
                 }
                 break;
         }
+        if (isCityMissionScene()) consumeCityBatteryLine(cmd);
         await wait(200);
     }
     
@@ -1693,6 +2149,57 @@ async function waitForElementSize(element, maxRetries = 30) {
     return false;
 }
 
+// 同步積木區切換鈕的輔助科技狀態（aria-expanded 與標籤需與 #blocklyDiv 是否含 .visible 一致）
+function setBlocklyToggleA11y(panelExpanded) {
+    const toggleBtn = document.getElementById('toggle-blockly-btn');
+    if (!toggleBtn) return;
+    toggleBtn.setAttribute('aria-expanded', panelExpanded ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-controls', 'blocklyDiv');
+    toggleBtn.setAttribute('aria-label', panelExpanded ? '隱藏積木區' : '顯示積木區');
+    toggleBtn.title = panelExpanded ? '隱藏積木區' : '顯示積木區';
+}
+
+const BLOCKLY_DISCOVER_LS_KEY = 'drone-simulator:v1:blockly-discover-dismissed';
+let blocklyDiscoverToastTimerId = null;
+
+function dismissBlocklyDiscoverToast() {
+    const el = document.getElementById('blockly-discover-toast');
+    if (el) {
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+    }
+    if (blocklyDiscoverToastTimerId !== null) {
+        clearTimeout(blocklyDiscoverToastTimerId);
+        blocklyDiscoverToastTimerId = null;
+    }
+    try {
+        localStorage.setItem(BLOCKLY_DISCOVER_LS_KEY, '1');
+    } catch (err) {
+        /* 私人瀏覽等情境無法持久化，略過 */
+    }
+}
+
+function maybeShowBlocklyDiscoverToast() {
+    try {
+        if (localStorage.getItem(BLOCKLY_DISCOVER_LS_KEY)) return;
+    } catch (err) {
+        return;
+    }
+    const gi = document.getElementById('game-interface');
+    if (!gi || gi.style.display === 'none') return;
+    const el = document.getElementById('blockly-discover-toast');
+    if (!el) return;
+    el.hidden = false;
+    el.removeAttribute('aria-hidden');
+    if (blocklyDiscoverToastTimerId !== null) {
+        clearTimeout(blocklyDiscoverToastTimerId);
+    }
+    blocklyDiscoverToastTimerId = setTimeout(() => {
+        blocklyDiscoverToastTimerId = null;
+        dismissBlocklyDiscoverToast();
+    }, 14000);
+}
+
 // 切換積木區顯示/隱藏
 function toggleBlocklyPanel() {
     const blocklyPanel = document.getElementById('blocklyDiv');
@@ -1719,13 +2226,10 @@ function toggleBlocklyPanel() {
         blocklyPanel.style.flex = '0 0 0';
         blocklyPanel.style.width = '0';
         toggleBtn.textContent = '📦 顯示積木區';
-        toggleBtn.title = '顯示積木區';
         
         // 等待動畫完成後調整 3D 渲染器大小（動畫時間 150ms）
         setTimeout(() => {
-            if (typeof onWindowResize === 'function') {
-                onWindowResize();
-            }
+            refreshGameUILayout();
         }, 200);
     } else {
         // 顯示積木區 - 恢復之前保存的寬度
@@ -1735,7 +2239,6 @@ function toggleBlocklyPanel() {
         blocklyPanel.style.flex = `0 0 ${savedBlocklyWidth}%`;
         blocklyPanel.style.width = `${savedBlocklyWidth}%`;
         toggleBtn.textContent = '📦 隱藏積木區';
-        toggleBtn.title = '隱藏積木區';
         
         // 確保 Blockly 已初始化（只在顯示時初始化）
         if (!workspace) {
@@ -1744,27 +2247,17 @@ function toggleBlocklyPanel() {
                 initBlockly();
             }, 50);
         } else {
-            // 如果已初始化，確保正確顯示
             setTimeout(() => {
-                if (workspace && typeof Blockly !== 'undefined') {
-                    Blockly.svgResize(workspace);
-                }
+                refreshGameUILayout();
             }, 100);
         }
-        
-        // 等待動畫完成後調整 Blockly 和 3D 渲染器大小（動畫時間 150ms）
+
         setTimeout(() => {
-            if (workspace && typeof Blockly !== 'undefined') {
-                Blockly.svgResize(workspace);
-            }
-            // 調整 3D 渲染器大小
-            if (typeof onWindowResize === 'function') {
-                onWindowResize();
-            }
-            // 初始化寬度調整功能
+            refreshGameUILayout();
             initBlocklyResizer();
         }, 200);
     }
+    setBlocklyToggleA11y(blocklyPanel.classList.contains('visible'));
 }
 
 // 積木區縮放控制
@@ -1793,6 +2286,160 @@ function zoomBlockly(direction) {
     }
     
     console.log(`Blockly zoom: ${(blocklyZoom * 100).toFixed(0)}%`);
+}
+
+function ensureBlocklyWorkspaceReady() {
+    const blocklyDiv = document.getElementById('blocklyDiv');
+    if (!blocklyDiv || !blocklyDiv.classList.contains('visible')) {
+        showAppMessage({
+            variant: 'warn',
+            title: '積木區尚未開啟',
+            body: '請先按頂部「顯示積木區」開啟面板。',
+            nextStep: '開啟後即可匯出或匯入積木程式。'
+        });
+        return null;
+    }
+    return initBlockly();
+}
+
+function getBlocklyWorkspaceXmlText(ws) {
+    if (!ws || typeof Blockly === 'undefined') return null;
+    return Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(ws));
+}
+
+function applyBlocklyWorkspaceXmlText(xmlText) {
+    const ws = ensureBlocklyWorkspaceReady();
+    if (!ws) return false;
+    try {
+        blocklyAutosaveRestoring = true;
+        ws.clear();
+        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), ws);
+        if (!blocklyAutosaveLoadedKey) {
+            blocklyAutosaveLoadedKey = getBlocklyAutosaveKey();
+        }
+        flushBlocklyAutosave();
+        return true;
+    } catch (err) {
+        console.error('[blockly-io] 匯入失敗', err);
+        return false;
+    } finally {
+        blocklyAutosaveRestoring = false;
+    }
+}
+
+function exportBlocklyWorkspace() {
+    const ws = ensureBlocklyWorkspaceReady();
+    if (!ws) return;
+
+    const xmlText = getBlocklyWorkspaceXmlText(ws);
+    if (!xmlText) {
+        showAppMessage({
+            variant: 'error',
+            title: '匯出失敗',
+            body: '無法讀取目前積木工作區。',
+            focusClose: true
+        });
+        return;
+    }
+
+    const contextKey = getBlocklyAutosaveKey();
+    const filename = `drone-blockly-${contextKey}.xml`;
+
+    try {
+        const blob = new Blob([xmlText], { type: 'application/xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('[blockly-io] 下載失敗', err);
+        showAppMessage({
+            variant: 'error',
+            title: '匯出失敗',
+            body: '無法建立下載檔案。',
+            nextStep: '請再試一次，或從主控台查看錯誤訊息。',
+            focusClose: true
+        });
+        return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(xmlText).catch(() => {});
+    }
+
+    logToConsole(`📤 已匯出積木程式：${filename}`);
+    showAppMessage({
+        variant: 'info',
+        title: '匯出成功',
+        body: `已下載 ${filename}。`,
+        nextStep: '可分享此 XML 檔，或使用「匯入」還原積木。',
+        autoHideMs: 6000,
+        focusClose: false
+    });
+}
+
+function triggerBlocklyImport() {
+    if (!ensureBlocklyWorkspaceReady()) return;
+    const input = document.getElementById('blockly-import-input');
+    if (input) input.click();
+}
+
+function handleBlocklyImportFile(inputEl) {
+    const file = inputEl && inputEl.files && inputEl.files[0];
+    inputEl.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const xmlText = typeof reader.result === 'string' ? reader.result.trim() : '';
+        if (!xmlText) {
+            showAppMessage({
+                variant: 'error',
+                title: '匯入失敗',
+                body: '檔案是空的或無法讀取。',
+                focusClose: true
+            });
+            return;
+        }
+
+        showAppConfirm('匯入將取代目前積木程式，確定嗎？', {
+            title: '匯入積木',
+            confirmLabel: '匯入',
+            cancelLabel: '取消'
+        }).then((ok) => {
+            if (!ok) return;
+            if (applyBlocklyWorkspaceXmlText(xmlText)) {
+                logToConsole(`📥 已匯入積木程式：${file.name}`);
+                showAppMessage({
+                    variant: 'info',
+                    title: '匯入成功',
+                    body: `已載入 ${file.name}。`,
+                    nextStep: '變更已自動儲存至目前任務。',
+                    autoHideMs: 6000,
+                    focusClose: false
+                });
+            } else {
+                showAppMessage({
+                    variant: 'error',
+                    title: '匯入失敗',
+                    body: 'XML 格式無效或與目前積木版本不相容。',
+                    nextStep: '請確認檔案為本模擬器匯出的 Blockly XML。',
+                    focusClose: true
+                });
+            }
+        });
+    };
+    reader.onerror = () => {
+        showAppMessage({
+            variant: 'error',
+            title: '匯入失敗',
+            body: '無法讀取所選檔案。',
+            focusClose: true
+        });
+    };
+    reader.readAsText(file);
 }
 
 // 初始化積木區寬度調整功能
@@ -1861,41 +2508,202 @@ function returnToMissionSelect() {
     closeResultModal();
     if (currentGameMode === 'freeplay') {
         showMainMenu();
+    } else if (lastMissionMenu === 'practice') {
+        document.getElementById('game-interface').style.display = 'none';
+        document.getElementById('mission-select-menu').style.display = 'none';
+        document.getElementById('practice-select-menu').style.display = 'flex';
+        document.getElementById('main-menu').style.display = 'none';
     } else {
         document.getElementById('game-interface').style.display = 'none';
         document.getElementById('mission-select-menu').style.display = 'flex';
+        document.getElementById('practice-select-menu').style.display = 'none';
         document.getElementById('main-menu').style.display = 'none';
     }
 }
 
 // 🔥 挑戰模式：隨機迷宮
 function startChallengeMode() {
-    logToConsole("🔥 挑戰模式：隨機迷宮已啟動！");
-    logToConsole("⚠️ 迷宮將在點擊「執行」後隨機生成。");
-    
-    // 隱藏參考答案按鈕
-    const answerBtn = document.getElementById('maze-answer-btn');
-    if (answerBtn) answerBtn.style.display = 'none';
-    
-    // 1. 切換場景
+    activeMissionId = 'challenge';
     currentGameMode = 'mission';
-    currentSceneType = 'challenge_maze';
-    loadScene('challenge_maze'); 
-    
-    // 2. 確保同步起點 (loadScene 內部會調用 createChallengeMaze 並設置 spawnPosition)
-    resetSimulator(); 
-    logToConsole(`📍 起點已同步: (${state.x}, ${state.z})`);
+    logToConsole('🔥 挑戰模式：隨機市區迷宮已啟動！');
+    logToConsole('💡 使用感應器自動導航；藍／綠箭嘴標示起點與終點。');
+    changeScene('challenge_maze');
+    logToConsole(`📍 起點已同步: (${state.x.toFixed(0)}, ${state.z.toFixed(0)})`);
 
-    // 3. 清除積木
-    if (confirm("挑戰模式需要編寫「自動導航」積木 (使用感應器)。是否清除當前積木？")) {
+    onBlocklyContextChanged();
+
+    showAppConfirm('挑戰模式需要編寫「自動導航」積木（使用感應器）。是否清除當前積木？', { title: '挑戰模式' }).then((ok) => {
+        if (!ok || !workspace) return;
         workspace.clear();
         const xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"></block></xml>';
         const xml = Blockly.utils.xml.textToDom(xmlText);
         Blockly.Xml.domToWorkspace(xml, workspace);
-    }
+    });
 }
 
 // 顯示任務簡報
+const MISSION1_GRADE_TIERS = [
+    { min: 920, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '3/3 巡檢 + 抵達終點 + 極速完成' },
+    { min: 720, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成交班並有多項巡檢加分' },
+    { min: 550, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '完成終點基本交班' }
+];
+
+function getMission1Grade(total) {
+    const score = Math.floor(Number(total) || 0);
+    for (const tier of MISSION1_GRADE_TIERS) {
+        if (score >= tier.min) return Object.assign({ score }, tier);
+    }
+    return {
+        score,
+        min: 0,
+        label: '待加強',
+        labelEn: 'Keep Trying',
+        css: 'grade-0',
+        desc: '尚未達三等門檻（550 分）— 請確認已在終點降落'
+    };
+}
+
+const MISSION2_GRADE_TIERS = [
+    { min: 950, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '撲滅 4 處火點 + 高效率完成' },
+    { min: 750, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成滅火任務並有一定時間獎' },
+    { min: 550, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '撲滅全部火點（基本達標）' }
+];
+
+const PRACTICE1_GRADE_TIERS = [
+    { min: 450, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '巡檢 + 抵達終點 + 快速完成' },
+    { min: 350, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成交班並有巡檢加分' },
+    { min: 300, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '完成終點基本交班' }
+];
+
+const PRACTICE2_GRADE_TIERS = [
+    { min: 550, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '撲滅 2 處火點 + 高效率完成' },
+    { min: 450, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成滅火並有一定時間獎' },
+    { min: 400, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '撲滅全部火點（基本達標）' }
+];
+
+function getPractice1Grade(total) {
+    const score = Math.floor(Number(total) || 0);
+    for (const tier of PRACTICE1_GRADE_TIERS) {
+        if (score >= tier.min) return Object.assign({ score }, tier);
+    }
+    return {
+        score,
+        min: 0,
+        label: '待加強',
+        labelEn: 'Keep Trying',
+        css: 'grade-0',
+        desc: '尚未達三等門檻（300 分）— 請確認已在終點降落'
+    };
+}
+
+function getPractice2Grade(total) {
+    const score = Math.floor(Number(total) || 0);
+    for (const tier of PRACTICE2_GRADE_TIERS) {
+        if (score >= tier.min) return Object.assign({ score }, tier);
+    }
+    return {
+        score,
+        min: 0,
+        label: '待加強',
+        labelEn: 'Keep Trying',
+        css: 'grade-0',
+        desc: '尚未達三等門檻（400 分）— 請確認已撲滅 2 處火點'
+    };
+}
+
+function getMission2Grade(total) {
+    const score = Math.floor(Number(total) || 0);
+    for (const tier of MISSION2_GRADE_TIERS) {
+        if (score >= tier.min) return Object.assign({ score }, tier);
+    }
+    return {
+        score,
+        min: 0,
+        label: '待加強',
+        labelEn: 'Keep Trying',
+        css: 'grade-0',
+        desc: '尚未達三等門檻（550 分）— 請確認已撲滅 4 處火點'
+    };
+}
+
+function renderBriefGradeGrid(tiers) {
+    const list = tiers || MISSION1_GRADE_TIERS;
+    return `
+        <div class="brief-grade-grid">
+            ${list.map((t, i) => {
+                const next = list[i - 1];
+                const range = next ? `${t.min}–${next.min - 1}` : `≥${t.min}`;
+                return `<div class="brief-grade brief-grade--${i + 1}">
+                    <span class="brief-grade-label">${t.label}</span>
+                    <span class="brief-grade-range">${range} 分</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+function renderBriefTimeTierTable(tiers, overtimeLabel) {
+    const tierList = tiers
+        || (typeof window !== 'undefined' && window.TUNNEL_MISSION_TIME_TIERS)
+        || [];
+    const overtime = overtimeLabel || '超過 3 分鐘';
+    const rows = tierList.map(t =>
+        `<tr><td>${t.label}</td><td>+${t.bonus}</td></tr>`
+    ).join('');
+    return `
+        <table class="brief-time-table">
+            <thead><tr><th>完成時間</th><th>加分</th></tr></thead>
+            <tbody>${rows}<tr><td>${overtime}</td><td>+0</td></tr></tbody>
+        </table>`;
+}
+
+function renderBriefMission2FireTable() {
+    return `
+        <table class="brief-time-table">
+            <thead><tr><th>火點</th><th>加分</th></tr></thead>
+            <tbody>
+                <tr><td>火點 A（最優先）</td><td>+200</td></tr>
+                <tr><td>火點 B</td><td>+150</td></tr>
+                <tr><td>火點 C</td><td>+125</td></tr>
+                <tr><td>火點 D</td><td>+100</td></tr>
+                <tr><td>撲滅 4/4 完成獎</td><td>+200</td></tr>
+            </tbody>
+        </table>`;
+}
+
+function renderBriefMapLegend(items) {
+    return `
+        <ul class="brief-legend">
+            ${items.map(item => `
+                <li class="brief-legend-item">
+                    <span class="brief-legend-swatch ${item.swatchClass}" aria-hidden="true">${item.glyph || ''}</span>
+                    <span class="brief-legend-copy">
+                        <strong>${item.title}</strong>
+                        <span>${item.desc}</span>
+                    </span>
+                </li>
+            `).join('')}
+        </ul>`;
+}
+
+function renderBriefMission1Legend() {
+    return renderBriefMapLegend([
+        { swatchClass: 'brief-legend-swatch--start', glyph: '↓', title: '起點', desc: '藍色懸浮箭嘴；木製平台起飛' },
+        { swatchClass: 'brief-legend-swatch--beacon', glyph: '', title: '巡檢回報點', desc: '青色光球＋光環；懸停約 3 秒回報' },
+        { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點', desc: '綠色路面區＋綠色懸浮箭嘴；須降落交班' }
+    ]);
+}
+
+function renderBriefMission2Legend() {
+    return renderBriefMapLegend([
+        { swatchClass: 'brief-legend-swatch--start', glyph: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木製起降平台' },
+        { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；可選降落點' },
+        { swatchClass: 'brief-legend-swatch--fire', glyph: '', title: '火點', desc: '橙色火焰＋黑煙；飛到正上方 Release Water 滅火' },
+        { swatchClass: 'brief-legend-swatch--water', glyph: '', title: '水源', desc: '深藍色圓形水池；Collect Water 裝水' },
+        { swatchClass: 'brief-legend-swatch--charge', glyph: '⚡', title: '充電站', desc: '黃色六角平台＋光環；hover ≥3 秒 +15 行（每站一次）' },
+        { swatchClass: 'brief-legend-swatch--forest', glyph: '', title: '樹林／岩石', desc: '不可穿越；須繞路規劃' }
+    ]);
+}
+
 function showMissionBriefing(missionId) {
     console.log("showMissionBriefing called with:", missionId, "active:", activeMissionId);
     
@@ -1907,6 +2715,8 @@ function showMissionBriefing(missionId) {
         return;
     }
 
+    _modalFocusBriefingReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
     const briefingModal = document.getElementById('mission-briefing');
     const title = document.getElementById('briefing-title');
     const content = document.getElementById('briefing-content');
@@ -1914,43 +2724,172 @@ function showMissionBriefing(missionId) {
     
     if (!briefingModal || !title || !content) return;
     
-    if (targetMissionId == 1) {
-        title.textContent = '任務一：隧道迷宮 (TUNNEL MAZE)';
-        icon.textContent = '🚇';
+    if (targetMissionId === 'challenge') {
+        title.textContent = '挑戰模式：隨機迷宮';
+        icon.textContent = '🔥';
         content.innerHTML = `
-            <h3 style="color: #4c6ef5; margin-top: 0;">🎯 任務目標 Mission Objective</h3>
-            <p>編寫程式控制無人機穿過隧道，並安全降落在終點。</p>
-            <p>Program the drone to navigate through the tunnel and land safely at the exit.</p>
-            
-            <h3 style="color: #ff9800; margin-top: 15px;">💡 提示 Tips</h3>
-            <ul style="padding-left: 20px; margin-top: 5px;">
-                <li>使用 <strong>[前] 距離感測器</strong> 偵測前方障礙物。<br>Use <strong>[Front] Range Sensor</strong> to detect obstacles.</li>
-                <li>當偵測到牆壁時，轉向 (90度) 並繼續飛行。<br>When a wall is detected, turn (90 degrees) and continue flying.</li>
-                <li>沿著隧道飛行直到抵達出口。<br>Follow the tunnel until you reach the exit.</li>
-                <li>收集沿途的信號標記點 (Beacons) 可獲得額外分數。<br>Collect Beacons along the way for extra points.</li>
+            <p class="brief-lead">
+                每次生成隨機 13×13 迷宮，用感應器積木自動導航至終點。
+                <span class="brief-lead-en">Random 13×13 maze — navigate with sensor blocks.</span>
+            </p>
+            <h4 class="brief-section-title">提示 Tips</h4>
+            <ul class="brief-tips">
+                <li>按「執行」鎖定迷宮並開始計時。</li>
+                <li>建築不可翻越；建議用前／左／右距離感測搭配轉向。</li>
+            </ul>
+        `;
+    } else if (targetMissionId == 1) {
+        title.textContent = '任務一：坍塌廢墟搜救';
+        icon.textContent = '🏙️';
+        content.innerHTML = `
+            <p class="brief-lead">
+                地震後通訊中斷，沿可通行路網把情報從起點送到終點。
+                <span class="brief-lead-en">Navigate open streets from start to finish after the quake.</span>
+            </p>
+            <ol class="brief-steps">
+                <li class="brief-step">
+                    <span class="brief-step-icon">🛫</span>
+                    <span class="brief-step-title">起點</span>
+                    <span class="brief-step-sub">藍色箭嘴</span>
+                </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">📡</span>
+                    <span class="brief-step-title">巡檢回報（可選）</span>
+                    <span class="brief-step-sub">各 +100</span>
+                </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">🛬</span>
+                    <span class="brief-step-title">終點</span>
+                    <span class="brief-step-sub">+200</span>
+                </li>
+            </ol>
+            <h4 class="brief-section-title">地圖圖示 Map Legend</h4>
+            ${renderBriefMission1Legend()}
+            <h4 class="brief-section-title">計分方式 Scoring</h4>
+            <div class="brief-score-chips">
+                <div class="brief-score-chip"><strong>+100</strong><span>每處巡檢</span></div>
+                <div class="brief-score-chip"><strong>+200</strong><span>去到終點</span></div>
+            </div>
+            <h4 class="brief-section-title">時間獎 Time Bonus</h4>
+            ${renderBriefTimeTierTable()}
+            <h4 class="brief-section-title">等級門檻 Grades</h4>
+            ${renderBriefGradeGrid(MISSION1_GRADE_TIERS)}
+            ${SHOW_MISSION_REFERENCE_ANSWERS ? '<p class="brief-note">參考答案約 1000 分（3 巡檢 + 53 秒，極快段）。</p>' : ''}
+            <h4 class="brief-section-title">提示 Tips</h4>
+            <ul class="brief-tips">
+                <li>巡檢點懸停約 3 秒即回報；須在藍色球體上方。</li>
+                <li>須沿路網飛行，不可翻越建築；禁用「飛至座標」積木。</li>
+                <li>終點須用<strong>降落</strong>積木完成，懸停不能結算。</li>
             </ul>
         `;
     } else if (targetMissionId == 2) {
-        title.textContent = '任務二：山火救援 (FOREST FIRE)';
+        title.textContent = '任務二：山火智能應對';
         icon.textContent = '🔥';
         content.innerHTML = `
-            <h3 style="color: #4c6ef5; margin-top: 0;">🎯 任務目標 Mission Objective</h3>
-            <p>控制無人機前往水源取水，並撲滅森林中的火源。</p>
-            <p>Control the drone to collect water and extinguish fires in the forest.</p>
-            
-            <h3 style="color: #ff9800; margin-top: 15px;">💡 提示 Tips</h3>
-            <ul style="padding-left: 20px; margin-top: 5px;">
-                <li>注意避開樹木，它們是障礙物。<br>Avoid trees, they are obstacles.</li>
-                <li>前往藍色區域使用 <strong>[Collect Water]</strong> 積木取水。<br>Go to the blue area and use <strong>[Collect Water]</strong> block.</li>
-                <li>飛到火源上方使用 <strong>[Release Water]</strong> 積木滅火。<br>Fly over the fire and use <strong>[Release Water]</strong> block.</li>
-                <li>注意電池電量！<br>Watch your battery level!</li>
+            <p class="brief-lead">
+                水箱每次僅 1 次水量，須反覆取水、依優先序撲滅 4 處火點。
+                <span class="brief-lead-en">Reload at water sources and fight 4 fires by priority.</span>
+            </p>
+            <ol class="brief-steps">
+                <li class="brief-step">
+                    <span class="brief-step-icon">🛫</span>
+                    <span class="brief-step-title">基地起飛</span>
+                    <span class="brief-step-sub">藍色箭嘴</span>
+                </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">💧</span>
+                    <span class="brief-step-title">取水補給</span>
+                    <span class="brief-step-sub">藍色水源</span>
+                </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">🔥</span>
+                    <span class="brief-step-title">滅火（A 最優先）</span>
+                    <span class="brief-step-sub">4 處火點</span>
+                </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">⚡</span>
+                    <span class="brief-step-title">充電站（可選）</span>
+                    <span class="brief-step-sub">hover 3s +15 行</span>
+                </li>
+            </ol>
+            <h4 class="brief-section-title">地圖圖示 Map Legend</h4>
+            ${renderBriefMission2Legend()}
+            <h4 class="brief-section-title">電池規則 Battery</h4>
+            <div class="brief-score-chips">
+                <div class="brief-score-chip"><strong>20 行</strong><span>起飛電量</span></div>
+                <div class="brief-score-chip"><strong>1 行</strong><span>每次 move cm</span></div>
+                <div class="brief-score-chip"><strong>+15 行</strong><span>每充電站一次</span></div>
+            </div>
+            <h4 class="brief-section-title">計分方式 Scoring</h4>
+            ${renderBriefMission2FireTable()}
+            <h4 class="brief-section-title">時間獎 Time Bonus</h4>
+            ${renderBriefTimeTierTable(window.MISSION2_TIME_TIERS, '超過 10 分鐘')}
+            <h4 class="brief-section-title">等級門檻 Grades</h4>
+            ${renderBriefGradeGrid(MISSION2_GRADE_TIERS)}
+            <p class="brief-note">撲滅 4 處火點即完成任務；滅火愈快、優先序愈佳，分數愈高。${SHOW_MISSION_REFERENCE_ANSWERS ? '參考路線約 1050 分。' : ''}</p>
+            <p class="brief-note">轉向／取水／滅火／起降不計行。連續同方向可合併距離以省電。</p>
+            <h4 class="brief-section-title">地圖座標 Map</h4>
+            <ul class="brief-tips">
+                <li>火點 A (2,12) 最優先 → B (4,10) → C (11,5) → D (12,10)</li>
+                <li>水源 (1,4)、(4,8)、(9,7)、(12,3) — 最近的不一定最省路。</li>
+                <li>充電站 (3,5)、(6,8)、(10,7) — 每站 hover ≥3 秒補一次。</li>
+                <li>格線每格 150 cm；在水源格 Collect、火點格 Release。</li>
+            </ul>
+        `;
+    } else if (targetMissionId === 'practice1') {
+        title.textContent = '試用一：坍塌廢墟搜救（入門）';
+        icon.textContent = '🧪';
+        content.innerHTML = `
+            <p class="brief-lead">
+                <strong>試用關卡 · 非正式比賽地圖。</strong> 8×8 縮小版，1 處巡檢回報點，機制與任務一相同。
+                <span class="brief-lead-en">Practice map — 8×8 intro with one inspection checkpoint.</span>
+            </p>
+            <ol class="brief-steps">
+                <li class="brief-step"><span class="brief-step-icon">🛫</span><span class="brief-step-title">起點</span><span class="brief-step-sub">藍色箭嘴</span></li>
+                <li class="brief-step"><span class="brief-step-icon">📡</span><span class="brief-step-title">巡檢（可選）</span><span class="brief-step-sub">+100</span></li>
+                <li class="brief-step"><span class="brief-step-icon">🛬</span><span class="brief-step-title">終點降落</span><span class="brief-step-sub">+200</span></li>
+            </ol>
+            <h4 class="brief-section-title">等級門檻 Grades</h4>
+            ${renderBriefGradeGrid(PRACTICE1_GRADE_TIERS)}
+            <h4 class="brief-section-title">提示 Tips</h4>
+            <ul class="brief-tips">
+                <li>正式競賽任務需密碼解鎖；此關卡供比賽前練習。</li>
+                <li>須沿路網飛行並在 Bravo 格降落結算。</li>
+            </ul>
+        `;
+    } else if (targetMissionId === 'practice2') {
+        title.textContent = '試用二：山火智能應對（入門）';
+        icon.textContent = '🧪';
+        content.innerHTML = `
+            <p class="brief-lead">
+                <strong>試用關卡 · 非正式比賽地圖。</strong> 8×8 縮小版，2 處火點、1 水源、1 充電站。
+                <span class="brief-lead-en">Practice map — 8×8 intro with 2 fires.</span>
+            </p>
+            <ol class="brief-steps">
+                <li class="brief-step"><span class="brief-step-icon">🛫</span><span class="brief-step-title">基地起飛</span></li>
+                <li class="brief-step"><span class="brief-step-icon">💧</span><span class="brief-step-title">取水</span></li>
+                <li class="brief-step"><span class="brief-step-icon">🔥</span><span class="brief-step-title">撲滅 2 處火點</span></li>
+                <li class="brief-step"><span class="brief-step-icon">⚡</span><span class="brief-step-title">充電站（可選）</span></li>
+            </ol>
+            <h4 class="brief-section-title">等級門檻 Grades</h4>
+            ${renderBriefGradeGrid(PRACTICE2_GRADE_TIERS)}
+            <h4 class="brief-section-title">提示 Tips</h4>
+            <ul class="brief-tips">
+                <li>火點 A (3,6) 優先於 B (5,5)；水源在 (1,4)。</li>
+                <li>正式競賽為 14×14、4 火點，需密碼解鎖。</li>
             </ul>
         `;
     }
     
     briefingModal.style.display = 'flex';
-    // 添加 active class 以觸發動畫
-    setTimeout(() => briefingModal.classList.add('active'), 10);
+    // 添加 active class 以觸發動畫，並將焦點移至主要按鈕（模態無障礙）
+    setTimeout(() => {
+        briefingModal.classList.add('active');
+        const ok = document.getElementById('briefing-ok-btn');
+        try {
+            if (ok && typeof ok.focus === 'function') ok.focus();
+        } catch (_) { /* ignore */ }
+    }, 10);
 }
 
 // 關閉任務簡報
@@ -1960,12 +2899,17 @@ function closeBriefing() {
         briefing.classList.remove('active');
         briefing.style.display = 'none';
     }
+    // 任務說明主要由頂列 #mission-briefing-btn 開啟；若焦點來源無法還原則回到該鈕。
+    _restoreModalFocus(_modalFocusBriefingReturn, 'mission-briefing-btn');
+    _modalFocusBriefingReturn = null;
 }
 
 // 顯示主選單
 function showMainMenu() {
     document.getElementById('main-menu').style.display = 'flex';
     document.getElementById('mission-select-menu').style.display = 'none';
+    const practiceMenu = document.getElementById('practice-select-menu');
+    if (practiceMenu) practiceMenu.style.display = 'none';
     document.getElementById('game-interface').style.display = 'none';
     
     // 初始化主菜單 3D 預覽（等待 DOM 更新和 Three.js 載入）
@@ -1987,8 +2931,11 @@ function showMainMenu() {
 
 // 顯示任務選擇畫面
 function showMissionSelect() {
+    lastMissionMenu = 'competition';
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'flex';
+    const practiceMenu = document.getElementById('practice-select-menu');
+    if (practiceMenu) practiceMenu.style.display = 'none';
     document.getElementById('game-interface').style.display = 'none';
     
     // 清理主菜單預覽
@@ -1998,32 +2945,59 @@ function showMissionSelect() {
     updateMissionPreview();
 }
 
+function showPracticeSelect() {
+    lastMissionMenu = 'practice';
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('mission-select-menu').style.display = 'none';
+    document.getElementById('practice-select-menu').style.display = 'flex';
+    document.getElementById('game-interface').style.display = 'none';
+    cleanupMainMenuPreview();
+    updatePracticePreview();
+}
+
 // 啟動任務
 async function startMission(missionId) {
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
+        console.warn('Drone Simulator：請用本機 HTTP 開啟（勿雙擊 index.html）。畫面上方應有說明。');
+        return;
+    }
+
+    const isCompetitionMission = missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
+    if (isCompetitionMission) {
+        const unlocked = await showCompetitionPasswordPrompt();
+        if (!unlocked) return;
+    }
+
+    if (missionId === 'practice1' || missionId === 'practice2') {
+        lastMissionMenu = 'practice';
+    } else if (isCompetitionMission) {
+        lastMissionMenu = 'competition';
+    }
+
     currentGameMode = 'mission';
     
-    // 立即設置 activeMissionId
-    if (missionId === 'training' || missionId === 1) {
+    if (missionId === 'practice1') {
+        activeMissionId = 'practice1';
+    } else if (missionId === 'practice2') {
+        activeMissionId = 'practice2';
+    } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
         activeMissionId = 1;
-    } else if (missionId === 2) {
+    } else if (missionId === 2 || missionId === '2') {
         activeMissionId = 2;
     } else {
         activeMissionId = null;
     }
     console.log("Mission started, activeMissionId set to:", activeMissionId);
 
+    closeBriefing();
+
     // 先顯示遊戲界面
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'none';
+    const practiceMenu = document.getElementById('practice-select-menu');
+    if (practiceMenu) practiceMenu.style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
-    gameInterface.style.display = 'block';
-    
-    // 隱藏參考答案按鈕
-    const answerBtn = document.getElementById('maze-answer-btn');
-    if (answerBtn) {
-        answerBtn.style.display = 'none';
-        console.log(`按鈕顯示狀態更新: 參考答案按鈕已隱藏`);
-    }
+    gameInterface.style.display = 'flex';
     
     // 確保積木區默認隱藏，並重置樣式
     const blocklyPanel = document.getElementById('blocklyDiv');
@@ -2037,7 +3011,7 @@ async function startMission(missionId) {
         blocklyPanel.style.width = '';
         blocklyPanel.style.transition = '';
         toggleBtn.textContent = '📦 顯示積木區';
-        toggleBtn.title = '顯示積木區';
+        setBlocklyToggleA11y(false);
     }
     
     // 強制瀏覽器重新計算佈局
@@ -2045,6 +3019,10 @@ async function startMission(missionId) {
     
     // 等待界面渲染完成（增加等待時間）
     await new Promise(resolve => setTimeout(resolve, 200));
+    initGameUiLayoutRefresh();
+    scheduleGameUILayoutRefresh();
+    
+    setTimeout(() => maybeShowBlocklyDiscoverToast(), 400);
     
     // 注意：Blockly 現在只在用戶點擊顯示按鈕時才初始化
     
@@ -2102,10 +3080,22 @@ async function startMission(missionId) {
     }
     
     // 根據任務 ID 設置場景
-    if (missionId === 'training' || missionId === 1) {
+    if (missionId === 'practice1') {
+        changeScene('tunnel_practice');
+        logToConsole('🧪 試用一：8×8 坍塌廢墟搜救（1 巡檢點 · 免密碼練習）');
+        logToConsole('💡 機制與正式任務一相同，地圖較小。');
+    } else if (missionId === 'practice2') {
+        changeScene('city_practice');
+        logToConsole('🧪 試用二：8×8 山火智能應對（2 火點 · 免密碼練習）');
+        logToConsole('💡 機制與正式任務二相同，地圖較小。');
+    } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
         changeScene('tunnel');
-    } else if (missionId === 2) {
+        logToConsole('📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。');
+        logToConsole('💡 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。');
+    } else if (missionId === 2 || missionId === '2') {
         changeScene('city');
+        logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
+        logToConsole('💡 藍／綠箭嘴標示起點與受災區；火 A(2,12) 最優先。');
     } else {
         changeScene('free');
     }
@@ -2115,20 +3105,31 @@ async function startMission(missionId) {
     if (typeof onWindowResize === 'function') {
         onWindowResize();
     }
+
+    if (shouldAutoShowMissionBriefing(missionId)) {
+        showMissionBriefing(activeMissionId);
+    }
+
+    onBlocklyContextChanged();
+}
+
+function shouldAutoShowMissionBriefing(missionId) {
+    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2'
+        || missionId === 'practice1' || missionId === 'practice2';
 }
 
 // 啟動自由遊戲
 async function startFreePlay() {
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
+        console.warn('Drone Simulator：請用本機 HTTP 開啟（勿雙擊 index.html）。畫面上方應有說明。');
+        return;
+    }
     currentGameMode = 'freeplay';
     // 先顯示遊戲界面
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
-    gameInterface.style.display = 'block';
-    
-    // 隱藏參考答案按鈕
-    const answerBtn = document.getElementById('maze-answer-btn');
-    if (answerBtn) answerBtn.style.display = 'none';
+    gameInterface.style.display = 'flex';
     
     // 確保積木區默認隱藏，並重置樣式
     const blocklyPanel = document.getElementById('blocklyDiv');
@@ -2142,16 +3143,18 @@ async function startFreePlay() {
         blocklyPanel.style.width = '';
         blocklyPanel.style.transition = '';
         toggleBtn.textContent = '📦 顯示積木區';
-        toggleBtn.title = '顯示積木區';
+        setBlocklyToggleA11y(false);
     }
     
     // 強制瀏覽器重新計算佈局
     gameInterface.offsetHeight; // 觸發重排
     
-    // 等待界面渲染完成（增加等待時間）
+    // 等待界面渲染完成
     await new Promise(resolve => setTimeout(resolve, 200));
+    initGameUiLayoutRefresh();
+    scheduleGameUILayoutRefresh();
     
-    // 注意：Blockly 現在只在用戶點擊顯示按鈕時才初始化
+    setTimeout(() => maybeShowBlocklyDiscoverToast(), 400);
     
     // 確保 3D 引擎已初始化
     if (typeof init3D === 'function') {
@@ -2162,14 +3165,10 @@ async function startFreePlay() {
             return;
         }
         
-        // 使用輔助函數等待容器準備好
         const isReady = await waitForElementSize(canvasContainer, 30);
         
         if (!isReady) {
             console.error("Canvas container not ready after retries");
-            console.error("Container element:", canvasContainer);
-            console.error("Container computed style:", window.getComputedStyle(canvasContainer));
-            console.error("Parent container:", canvasContainer.parentElement);
             return;
         }
         
@@ -2178,15 +3177,11 @@ async function startFreePlay() {
             await init3D();
             console.log("3D engine initialized successfully");
             
-            // 初始化後，再次更新大小以確保使用正確的容器尺寸
             await new Promise(resolve => setTimeout(resolve, 100));
             if (typeof onWindowResize === 'function') {
                 onWindowResize();
-                console.log("Resized renderer after initialization");
             }
         } else {
-            console.log("3D engine already initialized");
-            // 即使已初始化，也更新大小
             if (typeof onWindowResize === 'function') {
                 onWindowResize();
             }
@@ -2216,28 +3211,48 @@ async function startFreePlay() {
             Blockly.svgResize(workspace);
         }
     }
+
+    onBlocklyContextChanged();
 }
 
 // 顯示基地營
 function showBasecamp() {
-    alert('BASECAMP 功能開發中...');
+    showAppMessage({
+        variant: 'info',
+        title: 'BASECAMP',
+        body: '此功能尚在開發中。',
+        autoHideMs: 6000,
+        focusClose: false
+    });
 }
 
 // 顯示您的任務
 function showYourMissions() {
-    alert('YOUR MISSIONS 功能開發中...');
+    showAppMessage({
+        variant: 'info',
+        title: 'YOUR MISSIONS',
+        body: '此功能尚在開發中。',
+        autoHideMs: 6000,
+        focusClose: false
+    });
 }
 
 // 載入場景
 function showLoadScene() {
-    alert('LOAD SCENE 功能開發中...');
+    showAppMessage({
+        variant: 'info',
+        title: 'LOAD SCENE',
+        body: '此功能尚在開發中。',
+        autoHideMs: 6000,
+        focusClose: false
+    });
 }
 
 // 退出遊戲
 function quitGame() {
-    if (confirm('確定要退出遊戲嗎？')) {
-        window.close();
-    }
+    showAppConfirm('確定要退出遊戲嗎？', { title: '退出遊戲', confirmLabel: '退出', cancelLabel: '取消' }).then((ok) => {
+        if (ok) window.close();
+    });
 }
 
 // 初始化執行控制（頁面加載時）
@@ -2248,12 +3263,7 @@ if (document.readyState === 'loading') {
 }
 
 function initExecutionControls() {
-    // 速度滑塊監聽器
-    const speedSlider = document.getElementById('speed-slider');
-    if (speedSlider) {
-        speedSlider.addEventListener('input', updateExecutionSpeed);
-        updateExecutionSpeed(); // 初始化顯示
-    }
+    initAppFeedbackUI();
 }
 
 // 主菜單 3D 預覽場景變數
@@ -2268,6 +3278,10 @@ async function initMainMenuPreview() {
     const previewContainer = document.getElementById('main-menu-preview');
     if (!previewContainer) {
         console.error('❌ main-menu-preview container not found');
+        return;
+    }
+
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
         return;
     }
     
@@ -2777,29 +3791,125 @@ function cleanupMainMenuPreview() {
     mainMenuDrone = null;
 }
 
-// 更新任務預覽場景（簡化版，後續可擴展）
+const MISSION_PREVIEW_META = {
+    1: { caption: '任務一：坍塌廢墟搜救' },
+    2: { caption: '任務二：山火智能應對' }
+};
+
+const PRACTICE_PREVIEW_META = {
+    practice1: { caption: '試用一：坍塌廢墟搜救（8×8 · 1 巡檢點）', imgIndex: 1 },
+    practice2: { caption: '試用二：山火智能應對（8×8 · 2 火點）', imgIndex: 2 }
+};
+
+function setPracticePreview(missionId) {
+    const meta = PRACTICE_PREVIEW_META[missionId];
+    if (!meta) return;
+
+    document.querySelectorAll('#practice-preview .mission-preview__img').forEach(img => {
+        img.classList.toggle('mission-preview__img--active', Number(img.id.replace('practice-preview-img-', '')) === meta.imgIndex);
+    });
+
+    document.querySelectorAll('#practice-select-menu .mission-btn[data-mission-preview]').forEach(btn => {
+        btn.classList.toggle('mission-btn--active', btn.dataset.missionPreview === missionId);
+    });
+
+    const caption = document.getElementById('practice-preview-caption');
+    if (caption) caption.textContent = meta.caption;
+}
+
+function updatePracticePreview() {
+    setPracticePreview('practice1');
+}
+
+function setMissionPreview(missionId) {
+    const id = Number(missionId);
+    if (!MISSION_PREVIEW_META[id]) return;
+
+    document.querySelectorAll('#mission-preview .mission-preview__img').forEach(img => {
+        img.classList.toggle('mission-preview__img--active', Number(img.id.replace('mission-preview-img-', '')) === id);
+    });
+
+    document.querySelectorAll('#mission-select-menu .mission-btn[data-mission-preview]').forEach(btn => {
+        btn.classList.toggle('mission-btn--active', Number(btn.dataset.missionPreview) === id);
+    });
+
+    const caption = document.getElementById('mission-preview-caption');
+    if (caption) caption.textContent = MISSION_PREVIEW_META[id].caption;
+}
+
 function updateMissionPreview() {
-    const previewContainer = document.getElementById('mission-preview');
-    if (previewContainer && typeof THREE !== 'undefined') {
-        // 這裡可以創建一個簡化的 3D 預覽場景
-        // 暫時留空，後續可以實現
-    }
+    setMissionPreview(1);
 }
 
 // 【關鍵修正】最後必須呼叫 init3D() 來啟動 simulator.js 裡的場景
 // 確保 DOM 載入完成後執行
-// 初始化執行控制
-window.addEventListener('load', () => {
-    // 速度滑塊監聽器
-    const speedSlider = document.getElementById('speed-slider');
-    if (speedSlider) {
-        speedSlider.addEventListener('input', updateExecutionSpeed);
-        updateExecutionSpeed(); // 初始化顯示
-    }
-});
+// --- 任務結算彈窗功能（含模態無障礙：焦點、Esc、還原觸發點）---
+/** 關閉模態前保存的焦點，供還原（HTMLElement 或 null） */
+let _modalFocusResultReturn = null;
+let _modalFocusBriefingReturn = null;
 
-    // --- 任務結算彈窗功能 ---
+function _isUsableFocusReturn(el) {
+    if (!el || !(el instanceof HTMLElement)) return false;
+    if (el === document.body || el === document.documentElement) return false;
+    return true;
+}
+
+function _isModalOverlayVisible(el) {
+    if (!el) return false;
+    const st = window.getComputedStyle(el);
+    return st.display !== 'none' && st.visibility !== 'hidden';
+}
+
+/** 關閉模態後還原焦點；若保存點不適用則使用 fallbackId 對應元素 */
+function _restoreModalFocus(saved, fallbackId) {
+    requestAnimationFrame(() => {
+        if (_isUsableFocusReturn(saved)) {
+            try {
+                saved.focus();
+                return;
+            } catch (_) { /* ignore */ }
+        }
+        const fb = document.getElementById(fallbackId);
+        if (fb && typeof fb.focus === 'function') {
+            try {
+                fb.focus();
+            } catch (_) { /* ignore */ }
+        }
+    });
+}
+
+document.addEventListener('keydown', function onModalEscapeKeydown(e) {
+    if (e.key !== 'Escape') return;
+    const pwModal = document.getElementById('competition-password-modal');
+    if (pwModal && !pwModal.hasAttribute('hidden')) {
+        e.preventDefault();
+        e.stopPropagation();
+        finishCompetitionPasswordPrompt(false);
+        return;
+    }
+    const appConfirm = document.getElementById('app-confirm-modal');
+    if (appConfirm && !appConfirm.hasAttribute('hidden')) {
+        e.preventDefault();
+        e.stopPropagation();
+        finishAppConfirm(false);
+        return;
+    }
+    const briefing = document.getElementById('mission-briefing');
+    const result = document.getElementById('result-modal');
+    const resultShown = result && _isModalOverlayVisible(result);
+    const briefingShown = briefing && _isModalOverlayVisible(briefing);
+    if (!resultShown && !briefingShown) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (resultShown) {
+        window.closeResultModal();
+    } else {
+        closeBriefing();
+    }
+}, true);
+
 window.showResultModal = function(data) {
+    _modalFocusResultReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     console.log("🏆 顯示結算彈窗:", data);
     logToConsole("📊 任務完成！正在顯示成績單...");
     
@@ -2807,16 +3917,65 @@ window.showResultModal = function(data) {
     const elBeacons = document.getElementById('res-beacons');
     const elBeaconsScore = document.getElementById('res-beacons-score');
     const elExitScore = document.getElementById('res-exit-score');
+    const elRow1Label = document.getElementById('res-row1-label');
+    const elRow2Label = document.getElementById('res-row2-label');
+    const elRow2Status = document.getElementById('res-row2-status');
     const elTime = document.getElementById('res-time');
     const elTimeBonus = document.getElementById('res-time-bonus');
     const elTotal = document.getElementById('res-total');
 
-    if (elBeacons) elBeacons.innerText = `${data.beacons} / 3`;
-    if (elBeaconsScore) elBeaconsScore.innerText = `+${data.beaconsScore}`;
-    if (elExitScore) elExitScore.innerText = `+${data.exitScore}`;
-    if (elTime) elTime.innerText = `${data.time}s`;
+    const isMission1 = data.mission === 1
+        || (isTunnelMissionScene() && data.mission !== 2);
+    const isMission2 = data.mission === 2
+        || (isCityMissionScene() && data.mission !== 1);
+
+    if (elRow1Label) {
+        elRow1Label.textContent = data.row1Label || (isMission2 ? '撲滅火點' : '巡檢回報 (Inspections)');
+    }
+    if (elRow2Label) {
+        elRow2Label.textContent = data.row2Label || (isMission2 ? '任務完成' : '抵達終點');
+    }
+    const requiredBeacons = typeof getRequiredBeacons === 'function' ? getRequiredBeacons() : 3;
+    const requiredFires = typeof getRequiredFires === 'function' ? getRequiredFires() : 4;
+    const isPractice = !!data.isPractice || activeMissionId === 'practice1' || activeMissionId === 'practice2';
+
+    if (elBeacons) {
+        elBeacons.innerText = data.row1Count
+            || (isMission2 ? `${data.beacons ?? 0} / ${requiredFires}` : `${data.beacons ?? 0} / ${requiredBeacons}`);
+    }
+    if (elBeaconsScore) elBeaconsScore.innerText = `+${data.row1Score ?? data.beaconsScore ?? 0}`;
+    if (elRow2Status) elRow2Status.innerText = data.row2Status || 'YES';
+    if (elExitScore) elExitScore.innerText = `+${data.row2Score ?? data.exitScore ?? 0}`;
+    if (elTime) elTime.innerText = data.timeTierLabel ? `${data.time}s · ${data.timeTierLabel}` : `${data.time}s`;
     if (elTimeBonus) elTimeBonus.innerText = `+${data.timeBonus}`;
     if (elTotal) elTotal.innerText = data.total;
+
+    const gradeBlock = document.getElementById('res-grade-block');
+    const gradeBadge = document.getElementById('res-grade-badge');
+    const gradeDesc = document.getElementById('res-grade-desc');
+    if (gradeBlock && gradeBadge && gradeDesc) {
+        let grade = null;
+        if (isPractice && isMission2 && typeof getPractice2Grade === 'function') {
+            grade = getPractice2Grade(data.total);
+            gradeDesc.textContent = `${grade.desc}（試用門檻：一等 ≥550｜二等 450–549｜三等 400–449）`;
+        } else if (isPractice && isMission1 && typeof getPractice1Grade === 'function') {
+            grade = getPractice1Grade(data.total);
+            gradeDesc.textContent = `${grade.desc}（試用門檻：一等 ≥450｜二等 350–449｜三等 300–349）`;
+        } else if (isMission2 && typeof getMission2Grade === 'function') {
+            grade = getMission2Grade(data.total);
+            gradeDesc.textContent = `${grade.desc}（門檻：一等 ≥950｜二等 750–949｜三等 550–749）`;
+        } else if (isMission1 && typeof getMission1Grade === 'function') {
+            grade = getMission1Grade(data.total);
+            gradeDesc.textContent = `${grade.desc}（門檻：一等 ≥920｜二等 720–919｜三等 550–719）`;
+        }
+        if (grade) {
+            gradeBadge.textContent = `${grade.label} · ${grade.labelEn}`;
+            gradeBadge.className = `result-grade-badge ${grade.css}`;
+            gradeBlock.hidden = false;
+        } else {
+            gradeBlock.hidden = true;
+        }
+    }
     
     const modal = document.getElementById('result-modal');
     if (modal) {
@@ -2824,9 +3983,22 @@ window.showResultModal = function(data) {
         modal.style.setProperty('display', 'flex', 'important');
         modal.classList.add('active'); // 增加一個 class 輔助
         console.log("✅ 成績單已設置為可見");
+        requestAnimationFrame(() => {
+            try {
+                const toFocus = modal.querySelector('#result-retry-btn') || modal.querySelector('button');
+                if (toFocus && typeof toFocus.focus === 'function') toFocus.focus();
+            } catch (_) { /* ignore */ }
+        });
     } else {
         console.error("❌ 找不到 result-modal 元素");
-        alert(`任務完成！總得分：${data.total}`);
+        showAppMessage({
+            variant: 'info',
+            title: '任務完成',
+            body: `總得分：${data.total}`,
+            nextStep: '若未看到成績單面板，請重新整理頁面或檢查頁面是否封鎖彈出視窗。',
+            autoHideMs: 12000,
+            focusClose: false
+        });
     }
 }
 
@@ -2836,7 +4008,29 @@ window.closeResultModal = function() {
         modal.style.display = 'none';
         modal.classList.remove('active');
     }
+    // 成績單多由任務完成回呼開啟，開啟時焦點常在 document.body；此時還原到右下角「執行」較符合後續操作。
+    _restoreModalFocus(_modalFocusResultReturn, 'run-blockly-btn');
+    _modalFocusResultReturn = null;
 }
+
+/** 主控台：enableRoadMaskDebug() — main.js 覆寫 simulator.js 版（script 載入順序：simulator → main），提供快取舊版時的提示 */
+window.enableRoadMaskDebug = function () {
+    window.__DEBUG_ROAD_MASK__ = true;
+    if (typeof setupRoadMaskDebugListener === 'function') {
+        setupRoadMaskDebugListener();
+    }
+    if (typeof logRoadMaskDebugStatus === 'function') {
+        logRoadMaskDebugStatus();
+        console.log(
+            '[road-debug] 滑鼠在 3D 畫布上移動 → markRoadFixHere(2) 記 180° → copyRoadFixReport() 貼給 Cursor'
+        );
+        return;
+    }
+    console.error(
+        '[road-debug] simulator.js 未載入或版本過舊。請 Cmd+Shift+R（Windows: Ctrl+Shift+R）強制重新整理，' +
+        '並在 Network 分頁確認 js/simulator.js 為 200。'
+    );
+};
 
 window.addEventListener('load', () => {
     // 默認顯示主選單

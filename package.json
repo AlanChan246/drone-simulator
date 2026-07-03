@@ -1,0 +1,8 @@
+{
+  "name": "drone-simulator",
+  "private": true,
+  "description": "Local static server is required; browsers block GLB loading from file://",
+  "scripts": {
+    "start": "python3 -m http.server 8080"
+  }
+}

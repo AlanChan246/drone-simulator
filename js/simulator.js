@@ -16,8 +16,110 @@ let hasHoveredTower = false;
 let currentScore = 0;      
 let hasTakenOff = false;   
 let takeoffTime = 0;        // 新增：起飛時間
-let beaconsTriggered = 0;   // 新增：已觸發的標記點數量
-let beaconData = [];        // 新增：標記點座標與狀態
+let beaconsTriggered = 0;   // 已完成巡檢回報數（內部變數名保留）
+let beaconData = [];        // 巡檢回報點座標與狀態（內部變數名保留）
+
+/** 任務一：依迷宮格 (i,j) 對應巡檢回報點名稱（坍塌廢墟搜救敘事） */
+const INSPECTION_CHECKPOINT_NAMES = {
+    '1,10': { label: '通訊中繼站', labelEn: 'Comms Relay' },
+    '5,3': { label: '結構安全掃描點', labelEn: 'Structural Scan' },
+    '7,8': { label: '環境感測點', labelEn: 'Environment Sensor' }
+};
+
+/** 任務二 14×14 山火場：火點格 (i,j) → 優先級敘事（供 HUD／評分擴充） */
+const FOREST_FIRE_SITES = {
+    '2,12': { label: '火點 A', labelEn: 'Fire A', priority: 300, note: '受災區旁·最優先' },
+    '4,10': { label: '火點 B', labelEn: 'Fire B', priority: 250, note: '東北區' },
+    '11,5': { label: '火點 C', labelEn: 'Fire C', priority: 200, note: '西南區' },
+    '12,10': { label: '火點 D', labelEn: 'Fire D', priority: 180, note: '東南遠端' }
+};
+
+/** 試用任務一：8×8 巡檢點名稱 */
+const PRACTICE_INSPECTION_CHECKPOINT_NAMES = {
+    '1,6': { label: '通訊中繼站', labelEn: 'Comms Relay' }
+};
+
+/** 試用任務二：8×8 火點名稱 */
+const PRACTICE_FOREST_FIRE_SITES = {
+    '3,6': { label: '火點 A', labelEn: 'Fire A', priority: 300, note: '最優先' },
+    '5,5': { label: '火點 B', labelEn: 'Fire B', priority: 200, note: '次優先' }
+};
+
+const MISSION_SCENE_CONFIGS = {
+    tunnel: {
+        requiredBeacons: 3,
+        requiredFires: 4,
+        inspectionNames: INSPECTION_CHECKPOINT_NAMES,
+        fireSites: FOREST_FIRE_SITES,
+        isPractice: false,
+        resultMissionId: 1
+    },
+    tunnel_practice: {
+        requiredBeacons: 1,
+        requiredFires: 2,
+        inspectionNames: PRACTICE_INSPECTION_CHECKPOINT_NAMES,
+        fireSites: PRACTICE_FOREST_FIRE_SITES,
+        isPractice: true,
+        resultMissionId: 1
+    },
+    city: {
+        requiredBeacons: 3,
+        requiredFires: 4,
+        inspectionNames: INSPECTION_CHECKPOINT_NAMES,
+        fireSites: FOREST_FIRE_SITES,
+        isPractice: false,
+        resultMissionId: 2
+    },
+    city_practice: {
+        requiredBeacons: 1,
+        requiredFires: 2,
+        inspectionNames: PRACTICE_INSPECTION_CHECKPOINT_NAMES,
+        fireSites: PRACTICE_FOREST_FIRE_SITES,
+        isPractice: true,
+        resultMissionId: 2
+    }
+};
+
+let activeMissionConfig = MISSION_SCENE_CONFIGS.tunnel;
+
+function applyMissionConfigForScene(type) {
+    activeMissionConfig = MISSION_SCENE_CONFIGS[type] || {
+        requiredBeacons: 0,
+        requiredFires: 0,
+        inspectionNames: INSPECTION_CHECKPOINT_NAMES,
+        fireSites: FOREST_FIRE_SITES,
+        isPractice: false,
+        resultMissionId: 0
+    };
+}
+
+function getRequiredBeacons() {
+    return activeMissionConfig.requiredBeacons;
+}
+
+function getRequiredFires() {
+    return activeMissionConfig.requiredFires;
+}
+
+function isTunnelMissionScene() {
+    return currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice';
+}
+
+function isCityMissionScene() {
+    return currentSceneType === 'city' || currentSceneType === 'city_practice';
+}
+
+function getActiveInspectionNames() {
+    return activeMissionConfig.inspectionNames || INSPECTION_CHECKPOINT_NAMES;
+}
+
+function getActiveFireSites() {
+    return activeMissionConfig.fireSites || FOREST_FIRE_SITES;
+}
+/** 任務二：各格地表高度 (cm)，與 forestGrid 同尺寸 */
+let forestHeightGrid = null;
+/** 任務二：充電站（懸停 3 秒補電） */
+let forestChargeData = [];
 let spawnPosition = { x: 0, y: 0, z: 0, heading: 180 }; // 新增：場景起點記錄
 let targetPosition = { x: 0, z: 0 }; 
 let startPosition = { x: 0, y: 0, z: 0, heading: 180 }; // 新增：起始位置記錄
@@ -30,6 +132,108 @@ let currentCellSize = 0;
 let mazeOffsetX = 0;
 let mazeOffsetZ = 0;
 let lastSafePos = { x: 0, y: 0, z: 0 };
+/** 任務一道路片 Y（供 __DEBUG_ROAD_MASK__ 射線與平面相交） */
+let tunnelMazeRoadSurfaceY = 0.38;
+/** 任務一 Kenney 街區：最高飛行高度（cm），避免從高空穿越整張地圖 */
+const TUNNEL_KENNEY_MAX_FLIGHT_CM = 320;
+/** 任務一：抵達終點須低於此高度（cm）才算降落完成 */
+const TUNNEL_MISSION_EXIT_MAX_ALT_CM = 120;
+/** 任務一：低於此高度飛過的可通行格才計入「沿路網」紀錄（防高空捷徑） */
+const TUNNEL_LEGIT_PATROL_HEIGHT_CM = 150;
+/** 任務一：時間獎段位（由快到慢；超過最後一檔為 0） */
+const TUNNEL_MISSION_TIME_TIERS = [
+    { maxSec: 60, bonus: 500, label: '≤ 60 秒', labelShort: '極快' },
+    { maxSec: 90, bonus: 350, label: '≤ 90 秒', labelShort: '快' },
+    { maxSec: 120, bonus: 200, label: '≤ 2 分鐘', labelShort: '中等' },
+    { maxSec: 180, bonus: 80, label: '≤ 3 分鐘', labelShort: '慢' }
+];
+
+function getTunnelMissionTimeBonus(timeElapsedSec) {
+    const elapsed = Math.max(0, Math.floor(timeElapsedSec));
+    for (let i = 0; i < TUNNEL_MISSION_TIME_TIERS.length; i++) {
+        const tier = TUNNEL_MISSION_TIME_TIERS[i];
+        if (elapsed <= tier.maxSec) {
+            return { bonus: tier.bonus, label: tier.labelShort, tierIndex: i };
+        }
+    }
+    return { bonus: 0, label: '超時', tierIndex: -1 };
+}
+
+function computeTunnelMissionTimeBonus(timeElapsedSec) {
+    return getTunnelMissionTimeBonus(timeElapsedSec).bonus;
+}
+
+if (typeof window !== 'undefined') {
+    window.TUNNEL_MISSION_TIME_TIERS = TUNNEL_MISSION_TIME_TIERS;
+}
+
+let visitedWalkableCells = new Set();
+let tunnelStartCell = null;
+let tunnelGoalCell = null;
+let _tunnelFinishHintLastLog = 0;
+
+/** 路面編輯 UI；false = 隱藏按鈕（試用一路面已寫入 DEFAULT_PRACTICE_ROAD_OVERRIDES） */
+const ROAD_EDITOR_UI_ENABLED = false;
+
+/** 路面編輯模式（任務一／試用一）：覆寫格子的 Kenney 模型與旋轉 */
+const ROAD_EDITOR_STORAGE_KEY = 'drone-simulator-road-overrides-v2';
+const ROAD_EDITOR_PRACTICE_STORAGE_KEY = 'drone-simulator-road-overrides-practice-v1';
+/** 任務一預設路面（路面編輯器調校；localStorage 同名格可再覆寫） */
+const DEFAULT_TUNNEL_ROAD_OVERRIDES = {
+    '1,1': { key: 'end', rot: 0 },
+    '1,3': { key: 'bend', rot: 0 },
+    '3,3': { key: 'cross', rot: 1 },
+    '3,1': { key: 'bend', rot: 1 },
+    '7,1': { key: 'cross', rot: 1 },
+    '7,4': { key: 'cross', rot: 1 },
+    '5,4': { key: 'bend', rot: 0 },
+    '5,3': { key: 'end', rot: 0 },
+    '3,5': { key: 'cross', rot: 1 },
+    '1,5': { key: 'bend', rot: 1 },
+    '3,6': { key: 'bend', rot: 0 },
+    '1,10': { key: 'bend', rot: 0 },
+    '3,10': { key: 'bend', rot: 3 },
+    '3,8': { key: 'bend', rot: 1 },
+    '5,8': { key: 'cross', rot: 1 },
+    '5,10': { key: 'bend', rot: 0 },
+    '5,6': { key: 'bend', rot: 2 },
+    '7,8': { key: 'cross', rot: 0 },
+    '10,10': { key: 'cross', rot: 1 },
+    '10,11': { key: 'straight', rot: 0 },
+    '10,8': { key: 'bend', rot: 2 },
+    '9,8': { key: 'cross', rot: 0 },
+    '9,1': { key: 'bend', rot: 1 }
+};
+/** 試用一 8×8 預設路面（路面編輯器調校） */
+const DEFAULT_PRACTICE_ROAD_OVERRIDES = {
+    '1,1': { key: 'end', rot: 0 },
+    '1,3': { key: 'bend', rot: 0 },
+    '3,3': { key: 'cross', rot: 1 },
+    '3,1': { key: 'bend', rot: 1 },
+    '5,1': { key: 'cross', rot: 1 },
+    '5,3': { key: 'cross', rot: 3 },
+    '5,4': { key: 'cross', rot: 3 },
+    '6,3': { key: 'cross', rot: 1 },
+    '6,4': { key: 'cross', rot: 1 },
+    '6,5': { key: 'cross', rot: 1 },
+    '6,6': { key: 'cross', rot: 1 },
+    '6,7': { key: 'straight', rot: 0 },
+    '5,6': { key: 'cross', rot: 0 },
+    '4,6': { key: 'bend', rot: 0 },
+    '4,5': { key: 'cross', rot: 2 },
+    '3,5': { key: 'cross', rot: 0 },
+    '2,5': { key: 'cross', rot: 2 },
+    '2,6': { key: 'cross', rot: 2 },
+    '1,6': { key: 'cross', rot: 3 },
+    '1,5': { key: 'cross', rot: 0 }
+};
+const ROAD_PIECE_KEYS = ['straight', 'bend', 'cross', 'tee', 'end'];
+let roadEditorMode = false;
+let roadCellOverrides = {};
+const roadPieceByCell = {};
+let roadEditorSelection = null;
+let roadEditorHighlight = null;
+let _roadEditorClickInstalled = false;
 // 模型資產緩存
 const assets = {
     corridor: null,
@@ -44,8 +248,955 @@ const assets = {
     grass: null,
     stump: null,
     log: null,
-    lily: null
+    lily: null,
+    kenneyDistrictTemplates: [],
+    /** @type {{ straight: THREE.Object3D|null, bend: THREE.Object3D|null, cross: THREE.Object3D|null, tee: THREE.Object3D|null, end: THREE.Object3D|null }} */
+    kenneyRoads: {
+        straight: null,
+        bend: null,
+        cross: null,
+        tee: null,
+        end: null
+    },
+    /** 建築格底：Kenney roads 套件 road-square */
+    kenneyPlotTile: null
 };
+
+// 須以 setPath 載入：Kenney GLB 內嵌貼圖路徑為相對於檔案目錄的 Textures/colormap.png
+const KENNEY_COMMERCIAL_DIR = 'assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/';
+const KENNEY_DISTRICT_FILENAMES = [
+    'low-detail-building-a.glb',
+    'low-detail-building-f.glb',
+    'low-detail-building-i.glb',
+    'low-detail-building-wide-a.glb',
+    'building-g.glb',
+    'building-c.glb',
+    'building-skyscraper-a.glb',
+    'building-skyscraper-b.glb'
+];
+
+function prepareKenneyDistrictModel(root) {
+    root.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => {
+            if (!m) return;
+            if ('roughness' in m && m.roughness !== undefined) {
+                m.roughness = 0.72;
+                if ('metalness' in m && m.metalness !== undefined) m.metalness = Math.min(0.12, m.metalness);
+            }
+        });
+    });
+}
+
+async function loadKenneyDistrictTemplates() {
+    assets.kenneyDistrictTemplates = [];
+    // 每個檔案使用獨立 GLTFLoader + setPath，避免並行 load 時共用 loader 內部 path 狀態，
+    // 造成 Textures/colormap.png 解析到錯誤目錄而整體載入失敗。
+    const promises = KENNEY_DISTRICT_FILENAMES.map(name => new Promise(resolve => {
+        const fileLoader = new THREE.GLTFLoader();
+        fileLoader.setPath(KENNEY_COMMERCIAL_DIR);
+        fileLoader.load(name, (gltf) => {
+            prepareKenneyDistrictModel(gltf.scene);
+            assets.kenneyDistrictTemplates.push(gltf.scene);
+            console.log(`✅ Kenney district: ${name}`);
+            resolve();
+        }, undefined, (err) => {
+            console.error(`❌ Kenney district load failed (${name}):`, err);
+            resolve();
+        });
+    }));
+    await Promise.all(promises);
+    if (assets.kenneyDistrictTemplates.length === 0) {
+        console.warn('⚠️ 任務一街區：無 Kenney 建築載入，將使用盒子牆。（請用本機 http 伺服器開啟專案，勿用 file://）');
+    } else {
+        console.log(`🏙️ Kenney 街區建築模板：${assets.kenneyDistrictTemplates.length} 個`);
+    }
+}
+
+const KENNEY_ROADS_DIR = 'assets/models/kenney_city-kit-roads/Models/GLB format/';
+const KENNEY_COLORMAP_URL = KENNEY_ROADS_DIR + 'Textures/colormap.png';
+let _kenneyColormapTex = null;
+
+function applySrgbToTexture(tex) {
+    if (!tex) return;
+    if ('colorSpace' in tex && typeof THREE.SRGBColorSpace !== 'undefined') {
+        tex.colorSpace = THREE.SRGBColorSpace;
+    } else if ('encoding' in tex && typeof THREE.sRGBEncoding !== 'undefined') {
+        tex.encoding = THREE.sRGBEncoding;
+    }
+    tex.flipY = false;
+    tex.needsUpdate = true;
+}
+
+function getKenneyColormapTexture() {
+    if (!_kenneyColormapTex) {
+        _kenneyColormapTex = new THREE.TextureLoader().load(
+            KENNEY_COLORMAP_URL,
+            (tex) => applySrgbToTexture(tex),
+            undefined,
+            (err) => console.warn('⚠️ Kenney colormap 載入失敗:', err)
+        );
+        applySrgbToTexture(_kenneyColormapTex);
+    }
+    return _kenneyColormapTex;
+}
+
+function getKenneyRoadReferenceMaterial() {
+    const ref = assets.kenneyRoads && assets.kenneyRoads.straight;
+    if (!ref) return null;
+    let found = null;
+    ref.traverse(child => {
+        if (found || !child.isMesh || !child.material) return;
+        found = Array.isArray(child.material) ? child.material[0] : child.material;
+    });
+    return found;
+}
+
+/** 建築格地塊：保留 GLB 的 UV，貼圖與道路相同（tile-low 的 UV 常落在色票空白→全白） */
+function applyPlotMaterialsLikeRoad(root) {
+    const ref = getKenneyRoadReferenceMaterial();
+    const plotPhong = (ref && ref.map)
+        ? new THREE.MeshPhongMaterial({
+            map: ref.map,
+            color: ref.color && ref.color.clone ? ref.color.clone() : new THREE.Color(0xcccccc),
+            shininess: 14,
+            polygonOffset: true,
+            polygonOffsetFactor: 4,
+            polygonOffsetUnits: 4
+        })
+        : new THREE.MeshPhongMaterial({
+            color: 0x3a4552,
+            shininess: 10,
+            polygonOffset: true,
+            polygonOffsetFactor: 4,
+            polygonOffsetUnits: 4
+        });
+    root.traverse(child => {
+        if (!child.isMesh) return;
+        child.material = plotPhong.clone();
+        child.castShadow = false;
+        child.receiveShadow = true;
+    });
+}
+
+function createSimplePlotPlane(cellSize) {
+    const mat = new THREE.MeshPhongMaterial({
+        color: 0x3a4552,
+        shininess: 10,
+        polygonOffset: true,
+        polygonOffsetFactor: 4,
+        polygonOffsetUnits: 4
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(cellSize * 0.98, cellSize * 0.98), mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.receiveShadow = true;
+    return mesh;
+}
+
+function prepareKenneyPlotModel(root) {
+    root.traverse(child => {
+        if (!child.isMesh) return;
+        child.castShadow = false;
+        child.receiveShadow = true;
+    });
+    applyPlotMaterialsLikeRoad(root);
+}
+
+function createKenneyPlotInstance(cellSize, rotSteps) {
+    if (!assets.kenneyPlotTile) {
+        return createSimplePlotPlane(cellSize);
+    }
+    const group = createKenneyRoadInstance(assets.kenneyPlotTile, cellSize, rotSteps || 0);
+    applyPlotMaterialsLikeRoad(group);
+    return group;
+}
+
+function prepareKenneyRoadModel(root) {
+    root.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        child.castShadow = false;
+        child.receiveShadow = true;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => {
+            if (!m) return;
+            m.polygonOffset = true;
+            m.polygonOffsetFactor = 2;
+            m.polygonOffsetUnits = 2;
+            if ('roughness' in m && m.roughness !== undefined) {
+                m.roughness = 0.82;
+                if ('metalness' in m && m.metalness !== undefined) m.metalness = Math.min(0.06, m.metalness);
+            }
+        });
+    });
+}
+
+async function loadKenneyRoadTemplates() {
+    getKenneyColormapTexture();
+    assets.kenneyRoads = { straight: null, bend: null, cross: null, tee: null, end: null };
+    const files = {
+        straight: 'road-straight.glb',
+        bend: 'road-bend.glb',
+        cross: 'road-crossroad.glb',
+        tee: 'road-split.glb',
+        end: 'road-end.glb'
+    };
+    const entries = Object.entries(files);
+    await Promise.all(entries.map(([key, name]) => new Promise(resolve => {
+        const fileLoader = new THREE.GLTFLoader();
+        fileLoader.setPath(KENNEY_ROADS_DIR);
+        fileLoader.load(name, (gltf) => {
+            prepareKenneyRoadModel(gltf.scene);
+            assets.kenneyRoads[key] = gltf.scene;
+            console.log(`✅ Kenney road: ${name}`);
+            resolve();
+        }, undefined, (err) => {
+            console.error(`❌ Kenney road load failed (${name}):`, err);
+            resolve();
+        });
+    })));
+    const r = assets.kenneyRoads;
+    const ok = r.straight && r.bend && r.cross && r.tee && r.end;
+    if (!ok) {
+        console.warn('⚠️ 任務一：Kenney 道路未完整載入，將退回平面路面片。');
+    } else {
+        console.log('🛣️ Kenney 道路模板：straight / bend / cross / tee / end 已就緒');
+    }
+    assets.kenneyPlotTile = null;
+    await new Promise(resolve => {
+        const fileLoader = new THREE.GLTFLoader();
+        fileLoader.setPath(KENNEY_ROADS_DIR);
+        fileLoader.load('road-square.glb', (gltf) => {
+            prepareKenneyPlotModel(gltf.scene);
+            assets.kenneyPlotTile = gltf.scene;
+            console.log('✅ Kenney plot: road-square.glb（建築格底）');
+            resolve();
+        }, undefined, (err) => {
+            console.warn('⚠️ Kenney road-square 未載入，建築格改用灰色平面。', err);
+            resolve();
+        });
+    });
+}
+
+/**
+ * Kenney GLB/OBJ 實測（rot=0，世界 N=-Z E=+X S=+Z W=-X），再套 KENNEY_ROAD_PHASE_STEPS。
+ *
+ * | 資產 | rot=0 開口 |
+ * |------|------------|
+ * | road-straight | 車道沿 ±Z（mask 5→rot1, mask 10→rot0） |
+ * | road-bend | rot0 開口 **E+S**（mask 6→0, 3→1, 9→2, 12→3） |
+ * | road-split | **N+S+W**（幹道 ±Z，缺 E） |
+ * | road-end | **W** |
+ * | road-crossroad | 四向對稱 |
+ */
+/** 整包道路與迷宮軸若有固定偏差，只改此常數 0–3（每步 90°） */
+const KENNEY_ROAD_PHASE_STEPS = 0;
+
+let _roadMaskDebugInstalled = false;
+let _roadMaskDebugLastKey = '';
+let _roadMaskDebugLastT = 0;
+let _roadMaskDebugMissLogged = false;
+/** 滑鼠最後停留的可通行格（供 markRoadFixHere 使用） */
+let _roadMaskDebugLastCell = null;
+/** 收集要交給 Cursor 修改的路面旋轉備註 */
+const roadFixNotes = [];
+
+function isMazeWalkableCell(val) {
+    return val !== 1;
+}
+
+function mazeNeighborWalkable(grid, i, j, di, dj) {
+    const ni = i + di;
+    const nj = j + dj;
+    if (ni < 0 || nj < 0 || ni >= grid.length || nj >= grid[0].length) return false;
+    return isMazeWalkableCell(grid[ni][nj]);
+}
+
+function computeMazeRoadMask(grid, i, j) {
+    const N = mazeNeighborWalkable(grid, i, j, -1, 0) ? 1 : 0;
+    const E = mazeNeighborWalkable(grid, i, j, 0, 1) ? 2 : 0;
+    const S = mazeNeighborWalkable(grid, i, j, 1, 0) ? 4 : 0;
+    const W = mazeNeighborWalkable(grid, i, j, 0, -1) ? 8 : 0;
+    return N | E | S | W;
+}
+
+function roadCellKey(i, j) {
+    return i + ',' + j;
+}
+
+function getRoadEditorStorageKey() {
+    if (currentSceneType === 'tunnel_practice') return ROAD_EDITOR_PRACTICE_STORAGE_KEY;
+    return ROAD_EDITOR_STORAGE_KEY;
+}
+
+function getDefaultRoadOverrides() {
+    if (currentSceneType === 'tunnel_practice') return DEFAULT_PRACTICE_ROAD_OVERRIDES;
+    return DEFAULT_TUNNEL_ROAD_OVERRIDES;
+}
+
+function isRoadEditorScene() {
+    return currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice';
+}
+
+function isRoadEditorUiAvailable() {
+    return ROAD_EDITOR_UI_ENABLED && isRoadEditorScene();
+}
+
+function reloadRoadEditorScene() {
+    if (isRoadEditorScene()) loadScene(currentSceneType);
+}
+
+function updateRoadEditorButtonVisibility() {
+    const btn = document.getElementById('road-editor-toggle-btn');
+    if (!btn) return;
+    const show = isRoadEditorUiAvailable();
+    btn.hidden = !show;
+    btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (!show && roadEditorMode) toggleRoadEditorMode(false);
+}
+
+function loadRoadOverridesFromStorage() {
+    let fromStorage = {};
+    try {
+        const raw = localStorage.getItem(getRoadEditorStorageKey());
+        fromStorage = raw ? JSON.parse(raw) : {};
+    } catch (e) {
+        fromStorage = {};
+    }
+    roadCellOverrides = Object.assign({}, getDefaultRoadOverrides(), fromStorage);
+}
+
+function saveRoadOverridesToStorage() {
+    try {
+        localStorage.setItem(getRoadEditorStorageKey(), JSON.stringify(roadCellOverrides));
+    } catch (e) {
+        console.warn('[road-editor] 無法寫入 localStorage', e);
+    }
+}
+
+function getEffectiveRoadPick(i, j, grid) {
+    const g = grid || currentMazeGrid;
+    const k = roadCellKey(i, j);
+    if (roadCellOverrides[k]) {
+        return { key: roadCellOverrides[k].key, rot: roadCellOverrides[k].rot };
+    }
+    const mask = computeMazeRoadMask(g, i, j);
+    return selectKenneyRoadPiece(mask);
+}
+
+function clearRoadPieceRegistry() {
+    Object.keys(roadPieceByCell).forEach(k => delete roadPieceByCell[k]);
+}
+
+function getMazeCellWorldCenter(i, j) {
+    const x = mazeOffsetX + j * currentCellSize + currentCellSize / 2;
+    const z = mazeOffsetZ + i * currentCellSize + currentCellSize / 2;
+    return { x, z };
+}
+
+function pickMazeCellFromPointerEvent(e) {
+    if (!renderer || !renderer.domElement || !camera || !currentMazeGrid || !currentCellSize) return null;
+    const canvas = renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return null;
+    if (
+        e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top || e.clientY > rect.bottom
+    ) {
+        return null;
+    }
+    const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -tunnelMazeRoadSurfaceY);
+    const hit = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+    const j = Math.floor((hit.x - mazeOffsetX) / currentCellSize);
+    const i = Math.floor((hit.z - mazeOffsetZ) / currentCellSize);
+    if (i < 0 || j < 0 || i >= currentMazeGrid.length || j >= currentMazeGrid[0].length) return null;
+    if (currentMazeGrid[i][j] === 1) return null;
+    return { i, j, gridVal: currentMazeGrid[i][j], hit };
+}
+
+function placeKenneyRoadForCell(i, j, x, z, cellSize, mazeRoadY, mazeGrid) {
+    const r = assets.kenneyRoads;
+    if (!r || !r.straight) return null;
+    const pick = getEffectiveRoadPick(i, j, mazeGrid);
+    const tpl = r[pick.key];
+    if (!tpl) return null;
+    const roadPiece = createKenneyRoadInstance(tpl, cellSize, pick.rot);
+    roadPiece.position.set(x, mazeRoadY, z);
+    roadPiece.userData.isKenneyRoad = true;
+    roadPiece.userData.roadCell = { i, j };
+    environmentGroup.add(roadPiece);
+    roadPieceByCell[roadCellKey(i, j)] = roadPiece;
+    return roadPiece;
+}
+
+function refreshRoadCell(i, j) {
+    const k = roadCellKey(i, j);
+    const old = roadPieceByCell[k];
+    if (old && old.parent) old.parent.remove(old);
+    delete roadPieceByCell[k];
+    if (!currentMazeGrid || !currentCellSize) return;
+    const val = currentMazeGrid[i][j];
+    if (val === 1) return;
+    const { x, z } = getMazeCellWorldCenter(i, j);
+    const r = assets.kenneyRoads;
+    if (r && r.straight) {
+        placeKenneyRoadForCell(i, j, x, z, currentCellSize, tunnelMazeRoadSurfaceY, currentMazeGrid);
+    }
+}
+
+function updateRoadEditorHighlight() {
+    if (!roadEditorHighlight) return;
+    if (!roadEditorSelection || !currentCellSize) {
+        roadEditorHighlight.visible = false;
+        return;
+    }
+    const { x, z } = getMazeCellWorldCenter(roadEditorSelection.i, roadEditorSelection.j);
+    roadEditorHighlight.position.set(x, tunnelMazeRoadSurfaceY + 0.08, z);
+    roadEditorHighlight.scale.setScalar(currentCellSize * 0.92);
+    roadEditorHighlight.visible = true;
+}
+
+function updateRoadEditorPanel() {
+    const panel = document.getElementById('road-editor-panel');
+    const info = document.getElementById('road-editor-cell-info');
+    const sel = document.getElementById('road-editor-piece');
+    if (!panel || !info) return;
+    if (!roadEditorSelection) {
+        info.textContent = '點選 3D 畫布上的路面格';
+        if (sel) sel.disabled = true;
+        return;
+    }
+    const { i, j } = roadEditorSelection;
+    const mask = computeMazeRoadMask(currentMazeGrid, i, j);
+    const pick = getEffectiveRoadPick(i, j);
+    const auto = selectKenneyRoadPiece(mask);
+    const k = roadCellKey(i, j);
+    const isOverride = !!roadCellOverrides[k];
+    info.innerHTML =
+        `格 <b>${i}, ${j}</b> · mask ${mask} (${mask.toString(2).padStart(4, '0')})<br>` +
+        `目前 <b>${pick.key}</b> rot <b>${pick.rot}</b>${isOverride ? '（手動）' : '（自動）'}<br>` +
+        `自動建議 ${auto.key} rot ${auto.rot}`;
+    if (sel) {
+        sel.disabled = false;
+        sel.value = pick.key;
+    }
+}
+
+function selectRoadEditorCell(i, j) {
+    roadEditorSelection = { i, j };
+    updateRoadEditorHighlight();
+    updateRoadEditorPanel();
+}
+
+function ensureRoadOverride(i, j) {
+    const k = roadCellKey(i, j);
+    if (!roadCellOverrides[k]) {
+        roadCellOverrides[k] = Object.assign({}, getEffectiveRoadPick(i, j));
+    }
+    return roadCellOverrides[k];
+}
+
+function roadEditorRotate(delta) {
+    if (!roadEditorSelection) return;
+    const { i, j } = roadEditorSelection;
+    const o = ensureRoadOverride(i, j);
+    o.rot = ((o.rot + (delta || 1)) % 4 + 4) % 4;
+    saveRoadOverridesToStorage();
+    refreshRoadCell(i, j);
+    updateRoadEditorPanel();
+}
+
+function roadEditorSetPiece(key) {
+    if (!roadEditorSelection || ROAD_PIECE_KEYS.indexOf(key) < 0) return;
+    const { i, j } = roadEditorSelection;
+    const o = ensureRoadOverride(i, j);
+    o.key = key;
+    saveRoadOverridesToStorage();
+    refreshRoadCell(i, j);
+    updateRoadEditorPanel();
+}
+
+function roadEditorResetCell() {
+    if (!roadEditorSelection) return;
+    const { i, j } = roadEditorSelection;
+    delete roadCellOverrides[roadCellKey(i, j)];
+    saveRoadOverridesToStorage();
+    refreshRoadCell(i, j);
+    updateRoadEditorPanel();
+}
+
+function roadEditorClearAllOverrides() {
+    const runClear = () => {
+        roadCellOverrides = {};
+        saveRoadOverridesToStorage();
+        reloadRoadEditorScene();
+    };
+    if (typeof window.showAppConfirm === 'function') {
+        window.showAppConfirm('清除所有手動路面設定？', { title: '路面編輯' }).then((ok) => {
+            if (ok) runClear();
+        });
+        return;
+    }
+    if (typeof confirm === 'function' && !confirm('清除所有手動路面設定？')) return;
+    runClear();
+}
+
+function exportRoadOverrides() {
+    const text = JSON.stringify(roadCellOverrides, null, 2);
+    const count = Object.keys(roadCellOverrides).length;
+    console.log('[road-editor] overrides:\n', text);
+
+    const showExportMessage = (body, variant) => {
+        if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: variant || 'info',
+                title: '路面設定已匯出',
+                body,
+                autoHideMs: 10000,
+                focusClose: false
+            });
+        }
+    };
+
+    const downloadJson = () => {
+        try {
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentSceneType === 'tunnel_practice'
+                ? 'practice-road-overrides.json'
+                : 'tunnel-road-overrides.json';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return true;
+        } catch (e) {
+            console.warn('[road-editor] 下載 JSON 失敗', e);
+            return false;
+        }
+    };
+
+    const downloaded = downloadJson();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+            () => {
+                showExportMessage(
+                    `已複製 ${count} 格設定到剪貼簿` + (downloaded ? '，並已下載 JSON 檔。' : '。'),
+                    'info'
+                );
+            },
+            () => {
+                if (downloaded) {
+                    showExportMessage(`已下載 JSON 檔（共 ${count} 格）。剪貼簿不可用，請用檔案內容。`, 'info');
+                } else {
+                    showExportMessage(`共 ${count} 格。剪貼簿與下載皆不可用，請開啟開發者工具主控台複製。`, 'warn');
+                }
+            }
+        );
+    } else if (downloaded) {
+        showExportMessage(`已下載 JSON 檔（共 ${count} 格）。`, 'info');
+    } else {
+        showExportMessage(`共 ${count} 格。請開啟開發者工具主控台複製 JSON。`, 'warn');
+    }
+
+    return text;
+}
+
+function importRoadOverrides(json) {
+    if (typeof json === 'string') {
+        try { json = JSON.parse(json); } catch (e) {
+            console.error('[road-editor] JSON 無效', e);
+            return;
+        }
+    }
+    if (!json || typeof json !== 'object') return;
+    roadCellOverrides = json;
+    saveRoadOverridesToStorage();
+    reloadRoadEditorScene();
+    console.log('[road-editor] 已匯入', Object.keys(roadCellOverrides).length, '格');
+}
+
+function ensureRoadEditorHighlightMesh() {
+    if (!environmentGroup) return;
+    if (roadEditorHighlight) {
+        if (!roadEditorHighlight.parent) environmentGroup.add(roadEditorHighlight);
+        return;
+    }
+    const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.42, 0.5, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.visible = false;
+    roadEditorHighlight = ring;
+    environmentGroup.add(roadEditorHighlight);
+}
+
+function roadEditorOnPieceChange(key) {
+    roadEditorSetPiece(key);
+}
+
+function setupRoadEditorClickListener() {
+    if (_roadEditorClickInstalled || !renderer || !renderer.domElement) return;
+    _roadEditorClickInstalled = true;
+    renderer.domElement.addEventListener('click', (e) => {
+        if (!roadEditorMode) return;
+        const cell = pickMazeCellFromPointerEvent(e);
+        if (!cell) return;
+        selectRoadEditorCell(cell.i, cell.j);
+    });
+}
+
+function onRoadEditorKeyDown(e) {
+    if (!roadEditorMode || !roadEditorSelection) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        roadEditorRotate(1);
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        roadEditorResetCell();
+    }
+}
+
+function toggleRoadEditorMode(forceOn) {
+    const want = typeof forceOn === 'boolean' ? forceOn : !roadEditorMode;
+    if (want && !isRoadEditorUiAvailable()) {
+        console.warn('[road-editor] 僅試用一（tunnel_practice）或開發模式下的任務一可使用');
+        if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'warn',
+                title: '路面編輯',
+                body: '請先進入「試用一：坍塌廢墟搜救（入門）」。',
+                focusClose: false
+            });
+        }
+        return;
+    }
+    roadEditorMode = want;
+    const panel = document.getElementById('road-editor-panel');
+    const btn = document.getElementById('road-editor-toggle-btn');
+    if (panel) {
+        panel.hidden = !roadEditorMode;
+        panel.setAttribute('aria-hidden', roadEditorMode ? 'false' : 'true');
+    }
+    if (btn) btn.classList.toggle('road-editor-toggle-btn--active', roadEditorMode);
+    if (container) container.classList.toggle('road-editor-active', roadEditorMode);
+    if (renderer && renderer.domElement) {
+        renderer.domElement.style.cursor = roadEditorMode ? 'crosshair' : '';
+    }
+    if (roadEditorMode) {
+        loadRoadOverridesFromStorage();
+        setupRoadEditorClickListener();
+        ensureRoadEditorHighlightMesh();
+        updateRoadEditorHighlight();
+        updateRoadEditorPanel();
+        window.addEventListener('keydown', onRoadEditorKeyDown);
+        console.log('[road-editor] 已開啟：左鍵點格選取 · R 轉 90° · 面板切換模型');
+    } else {
+        if (roadEditorHighlight) roadEditorHighlight.visible = false;
+        roadEditorSelection = null;
+        window.removeEventListener('keydown', onRoadEditorKeyDown);
+        updateRoadEditorPanel();
+    }
+}
+
+function selectKenneyRoadPiece(mask) {
+    if (mask === 15) return { key: 'cross', rot: 0 };
+    if (mask === 5) return { key: 'straight', rot: 1 };
+    if (mask === 10) return { key: 'straight', rot: 0 };
+    if (mask === 13) return { key: 'tee', rot: 0 };
+    if (mask === 11) return { key: 'tee', rot: 1 };
+    if (mask === 7) return { key: 'tee', rot: 2 };
+    if (mask === 14) return { key: 'tee', rot: 3 };
+    if (mask === 3) return { key: 'bend', rot: 1 };
+    if (mask === 6) return { key: 'bend', rot: 0 };
+    if (mask === 12) return { key: 'bend', rot: 3 };
+    if (mask === 9) return { key: 'bend', rot: 2 };
+    if (mask === 8) return { key: 'end', rot: 0 };
+    if (mask === 4) return { key: 'end', rot: 3 };
+    if (mask === 2) return { key: 'end', rot: 2 };
+    if (mask === 1) return { key: 'end', rot: 1 };
+    return { key: 'cross', rot: 0 };
+}
+
+function logRoadMaskDebugStatus() {
+    const ready = !!(currentSceneType === 'tunnel' && currentMazeGrid && currentCellSize && camera && renderer);
+    console.log('[road-debug] 狀態', {
+        enabled: !!window.__DEBUG_ROAD_MASK__,
+        scene: currentSceneType,
+        mazeReady: ready,
+        cellSize: currentCellSize,
+        roadY: tunnelMazeRoadSurfaceY,
+        listener: _roadMaskDebugInstalled
+    });
+    if (!ready) {
+        console.warn('[road-debug] 請先進入「任務一」坍塌廢墟搜救（tunnel），並確認 3D 已載入。');
+        return;
+    }
+    for (let i = 0; i < currentMazeGrid.length; i++) {
+        for (let j = 0; j < currentMazeGrid[i].length; j++) {
+            if (currentMazeGrid[i][j] === 2) {
+                const mask = computeMazeRoadMask(currentMazeGrid, i, j);
+                console.log('[road-debug] 起點格', { i, j, mask, pick: getEffectiveRoadPick(i, j) });
+                return;
+            }
+        }
+    }
+}
+
+function onRoadMaskDebugPointerMove(e) {
+    if (!window.__DEBUG_ROAD_MASK__) return;
+    if (!renderer || !renderer.domElement || !camera) return;
+    const canvas = renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return;
+    if (
+        e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top || e.clientY > rect.bottom
+    ) {
+        return;
+    }
+    if (currentSceneType !== 'tunnel' || !currentMazeGrid || !currentCellSize) {
+        if (!_roadMaskDebugMissLogged) {
+            _roadMaskDebugMissLogged = true;
+            console.warn('[road-debug] 非 tunnel 或迷宮未就緒，滑鼠移動不會輸出。');
+        }
+        return;
+    }
+    _roadMaskDebugMissLogged = false;
+    const now = performance.now();
+    if (now - _roadMaskDebugLastT < 120) return;
+    _roadMaskDebugLastT = now;
+    const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -tunnelMazeRoadSurfaceY);
+    const hit = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, hit)) return;
+    const j = Math.floor((hit.x - mazeOffsetX) / currentCellSize);
+    const i = Math.floor((hit.z - mazeOffsetZ) / currentCellSize);
+    if (i < 0 || j < 0 || i >= currentMazeGrid.length || j >= currentMazeGrid[0].length) return;
+    const val = currentMazeGrid[i][j];
+    if (val === 1) return;
+    const key = i + ',' + j;
+    if (key === _roadMaskDebugLastKey) return;
+    _roadMaskDebugLastKey = key;
+    const mask = computeMazeRoadMask(currentMazeGrid, i, j);
+    const pick = getEffectiveRoadPick(i, j);
+    _roadMaskDebugLastCell = { i, j, gridVal: val, mask, pick };
+    console.log('[road-debug]', {
+        i, j, gridVal: val,
+        mask,
+        maskBits: mask.toString(2).padStart(4, '0'),
+        pick,
+        phase: KENNEY_ROAD_PHASE_STEPS,
+        hit: { x: +hit.x.toFixed(1), z: +hit.z.toFixed(1) }
+    });
+    console.log(
+        `[road-fix] 若這格要改：markRoadFixHere(2)  // 180°；或 markRoadFix(${i}, ${j}, 2)`
+    );
+}
+
+function normalizeRoadFixDelta(deltaSteps) {
+    return ((deltaSteps % 4) + 4) % 4;
+}
+
+function formatRoadFixLine(entry) {
+    if (entry.type === 'global') {
+        return `global +${entry.deltaSteps * 90}°  (KENNEY_ROAD_PHASE_STEPS = ${entry.deltaSteps})`;
+    }
+    const wantRot = (entry.oldRot + entry.deltaSteps) % 4;
+    return (
+        `${entry.i},${entry.j}  mask=${entry.mask} ${entry.key} rot ${entry.oldRot}→${wantRot}  (+${entry.deltaSteps * 90}°)`
+    );
+}
+
+/** 標記單格：deltaSteps 0–3（每步 90°，2 = 180°） */
+function markRoadFix(i, j, deltaSteps) {
+    if (!currentMazeGrid) {
+        console.warn('[road-fix] 迷宮未載入');
+        return;
+    }
+    const delta = normalizeRoadFixDelta(deltaSteps);
+    const mask = computeMazeRoadMask(currentMazeGrid, i, j);
+    const pick = getEffectiveRoadPick(i, j);
+    const entry = {
+        type: 'cell',
+        i, j,
+        mask,
+        key: pick.key,
+        oldRot: pick.rot,
+        deltaSteps: delta
+    };
+    roadFixNotes.push(entry);
+    console.log('[road-fix] 已記錄', formatRoadFixLine(entry));
+}
+
+/** 標記「滑鼠最後指到的那格」 */
+function markRoadFixHere(deltaSteps) {
+    if (!_roadMaskDebugLastCell) {
+        console.warn('[road-fix] 請先在 3D 畫布上移動滑鼠出現 [road-debug]，再執行 markRoadFixHere');
+        return;
+    }
+    const { i, j } = _roadMaskDebugLastCell;
+    markRoadFix(i, j, deltaSteps);
+}
+
+/** 整張地圖固定多轉：deltaSteps 0–3 */
+function markRoadFixGlobal(deltaSteps) {
+    const delta = normalizeRoadFixDelta(deltaSteps);
+    const entry = { type: 'global', deltaSteps: delta };
+    roadFixNotes.push(entry);
+    console.log('[road-fix] 已記錄', formatRoadFixLine(entry));
+}
+
+function listRoadFixNotes() {
+    if (roadFixNotes.length === 0) {
+        console.log('[road-fix] （尚無記錄）');
+        return [];
+    }
+    roadFixNotes.forEach((e, idx) => console.log(`[road-fix] ${idx + 1}. ${formatRoadFixLine(e)}`));
+    return roadFixNotes.slice();
+}
+
+function getRoadFixReport() {
+    if (roadFixNotes.length === 0) return '# road-fix\n（尚無記錄）';
+    const lines = ['# road-fix（貼給 Cursor 即可）', ...roadFixNotes.map(formatRoadFixLine)];
+    return lines.join('\n');
+}
+
+function clearRoadFixNotes() {
+    roadFixNotes.length = 0;
+    console.log('[road-fix] 已清空');
+}
+
+function copyRoadFixReport() {
+    const text = getRoadFixReport();
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+            () => console.log('[road-fix] 已複製到剪貼簿：\n' + text),
+            () => console.log('[road-fix] 請手動複製：\n' + text)
+        );
+    } else {
+        console.log('[road-fix] 請複製以下內容：\n' + text);
+    }
+    return text;
+}
+
+function setupRoadMaskDebugListener() {
+    if (_roadMaskDebugInstalled || typeof window === 'undefined') return;
+    const target = renderer && renderer.domElement;
+    if (!target) return;
+    _roadMaskDebugInstalled = true;
+    target.addEventListener('pointermove', onRoadMaskDebugPointerMove, { passive: true });
+}
+
+/** 主控台執行：enableRoadMaskDebug() 或 window.__DEBUG_ROAD_MASK__ = true 後再呼叫一次 */
+function enableRoadMaskDebug() {
+    window.__DEBUG_ROAD_MASK__ = true;
+    _roadMaskDebugLastKey = '';
+    _roadMaskDebugMissLogged = false;
+    setupRoadMaskDebugListener();
+    logRoadMaskDebugStatus();
+    console.log(
+        '[road-debug] 滑鼠在 3D 畫布上移動 → 看 [road-debug]\n' +
+        '  這格要轉 90°：markRoadFixHere(1)\n' +
+        '  這格要轉 180°：markRoadFixHere(2)\n' +
+        '  整張圖都差 180°：markRoadFixGlobal(2)\n' +
+        '  貼給 Cursor：copyRoadFixReport()'
+    );
+}
+
+if (typeof window !== 'undefined') {
+    window.enableRoadMaskDebug = enableRoadMaskDebug;
+    window.markRoadFix = markRoadFix;
+    window.markRoadFixHere = markRoadFixHere;
+    window.markRoadFixGlobal = markRoadFixGlobal;
+    window.listRoadFixNotes = listRoadFixNotes;
+    window.getRoadFixReport = getRoadFixReport;
+    window.copyRoadFixReport = copyRoadFixReport;
+    window.clearRoadFixNotes = clearRoadFixNotes;
+    window.toggleRoadEditorMode = toggleRoadEditorMode;
+    window.roadEditorRotate = roadEditorRotate;
+    window.roadEditorSetPiece = roadEditorSetPiece;
+    window.roadEditorResetCell = roadEditorResetCell;
+    window.roadEditorClearAllOverrides = roadEditorClearAllOverrides;
+    window.exportRoadOverrides = exportRoadOverrides;
+    window.importRoadOverrides = importRoadOverrides;
+    window.roadEditorOnPieceChange = roadEditorOnPieceChange;
+}
+
+function createKenneyRoadInstance(templateScene, cellSize, rotSteps) {
+    const pivot = new THREE.Group();
+    const model = templateScene.clone(true);
+    pivot.add(model);
+    model.updateMatrixWorld(true);
+    let box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const maxXZ = Math.max(size.x, size.z, 1e-3);
+    const s = cellSize / maxXZ;
+    model.scale.setScalar(s);
+    model.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(model);
+    model.position.x -= (box.min.x + box.max.x) / 2;
+    model.position.y -= box.min.y;
+    model.position.z -= (box.min.z + box.max.z) / 2;
+    const outer = new THREE.Group();
+    outer.add(pivot);
+    const r = ((rotSteps + KENNEY_ROAD_PHASE_STEPS) % 4 + 4) % 4;
+    outer.rotation.y = r * Math.PI / 2;
+    outer.traverse(obj => {
+        if (obj.isMesh) {
+            obj.castShadow = false;
+            obj.receiveShadow = true;
+        }
+    });
+    return outer;
+}
+
+function createKenneyBuildingInstance(templateScene, cellSize, rotSteps, heightCapCm) {
+    const group = new THREE.Group();
+    const model = templateScene.clone(true);
+    group.add(model);
+    model.rotation.y = rotSteps * Math.PI / 2;
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const maxXZ = Math.max(size.x, size.z, 1e-3);
+    const cap = heightCapCm || 280;
+    const sFoot = (cellSize * 0.88) / maxXZ;
+    const sH = cap / Math.max(size.y, 1e-3);
+    const s = Math.min(sFoot, sH);
+    model.scale.setScalar(s);
+    model.updateMatrixWorld(true);
+    box.setFromObject(model);
+    model.position.x -= (box.min.x + box.max.x) / 2;
+    model.position.y -= box.min.y;
+    model.position.z -= (box.min.z + box.max.z) / 2;
+    group.traverse(obj => {
+        if (obj.isMesh) {
+            obj.castShadow = true;
+            obj.receiveShadow = true;
+            obj.isWall = true;
+        }
+    });
+    group.isWall = true;
+    return group;
+}
+
 // 飛行狀態
 let flightState = { roll: 0, pitch: 0, yaw: 0, throttle: 0 };
 // 攝影機與操作
@@ -69,6 +1220,10 @@ let isRightMouseDown = false;
 // 1. 模型載入邏輯 (GLTFLoader)
 // ==========================================
 async function preloadModels() {
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
+        console.warn('preloadModels 已略過：file:// 無法載入模型，請用 http://localhost 開啟專案。');
+        return;
+    }
     const loader = new THREE.GLTFLoader();
     
     // 定義所有可能的模型（包括可選的）
@@ -139,12 +1294,18 @@ async function preloadModels() {
         });
     });
 
-    return Promise.all(promises);
+    await Promise.all(promises);
+    await loadKenneyDistrictTemplates();
+    await loadKenneyRoadTemplates();
 }
 // ==========================================
 // 2. 初始化與環境
 // ==========================================
 async function init3D() {
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
+        console.warn('init3D 已略過：file:// 無法載入 3D 資源，請用 http://localhost 開啟專案。');
+        return;
+    }
     await preloadModels();
     
     // 確保容器有有效尺寸
@@ -218,7 +1379,7 @@ async function init3D() {
     // 初始化後立即更新大小（確保使用實際尺寸）
     onWindowResize();
 
-    // 燈光設置
+    // 燈光設置（供任務二切換低照度氛圍）
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 1.0); 
     hemiLight.position.set(0, 200, 0);
     scene.add(hemiLight);
@@ -228,7 +1389,14 @@ async function init3D() {
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048; 
     dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.bias = -0.0008;
+    if (dirLight.shadow.normalBias !== undefined) dirLight.shadow.normalBias = 0.03;
     scene.add(dirLight);
+
+    scene.userData.mainHemiLight = hemiLight;
+    scene.userData.mainDirLight = dirLight;
+    scene.userData.defaultHemi = { sky: 0xffffff, ground: 0x222222, intensity: 1.0 };
+    scene.userData.defaultDir = { color: 0xffffff, intensity: 1.2 };
 
     environmentGroup = new THREE.Group(); 
     scene.add(environmentGroup);
@@ -242,6 +1410,7 @@ async function init3D() {
     
     // 滑鼠事件
     container.addEventListener('mousedown', (e) => { 
+        if (roadEditorMode && e.button === 0) return;
         if (e.button === 0) isMouseDown = true; 
         else if (e.button === 2) {
             isRightMouseDown = true;
@@ -338,6 +1507,14 @@ async function init3D() {
     console.log(`Environment group children: ${environmentGroup ? environmentGroup.children.length : 0}`);
     console.log(`Drone group: ${droneGroup ? 'created' : 'not created'}`);
     
+    setupRoadMaskDebugListener();
+    setupRoadEditorClickListener();
+    if (ROAD_EDITOR_UI_ENABLED && typeof URLSearchParams !== 'undefined') {
+        const q = new URLSearchParams(window.location.search);
+        if (q.get('roadEditor') === '1') {
+            setTimeout(() => toggleRoadEditorMode(true), 800);
+        }
+    }
     animateLoop();
     console.log("✨ Simulator Ready (Holodeck Mode)!");
 }
@@ -345,9 +1522,25 @@ async function init3D() {
 // 3. 場景生成邏輯
 // ==========================================
 function changeScene(type) {
+    if ((type === 'tunnel' || type === 'city')
+        && typeof window.isCompetitionUnlocked === 'function'
+        && !window.isCompetitionUnlocked()) {
+        console.warn('競賽任務未解鎖，請輸入密碼。');
+        if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'warn',
+                title: '需要密碼',
+                body: '正式競賽任務需先輸入密碼解鎖。請從「競賽任務」選單進入。',
+                autoHideMs: 8000,
+                focusClose: false
+            });
+        }
+        return;
+    }
+
     currentSceneType = type;
     loadScene(type);
-    resetSimulator(); 
+    resetSimulator();
     
     // 更新場景選擇下拉選單的 UI
     const sceneSelect = document.getElementById('scene-select');
@@ -355,21 +1548,71 @@ function changeScene(type) {
         sceneSelect.value = type;
     }
     
-    // 更新參考答案按鈕可見性 (目前設為永久隱藏)
-    const answerBtn = document.getElementById('maze-answer-btn');
-    if (answerBtn) {
-        answerBtn.style.display = 'none';
+    // 更新參考答案按鈕：任務一／任務二顯示，其餘隱藏
+    if (typeof updateMazeAnswerButtonVisibility === 'function') {
+        updateMazeAnswerButtonVisibility();
+    }
+
+    if (typeof updateGotoXyzToolboxVisibility === 'function') {
+        updateGotoXyzToolboxVisibility();
+    }
+
+    updateRoadEditorButtonVisibility();
+
+    if (type === 'challenge_maze' && typeof toggleRoadEditorMode === 'function') {
+        toggleRoadEditorMode(false);
     }
 }
+
+function disposeObject3D(obj) {
+    if (!obj) return;
+    obj.traverse(child => {
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+        if (child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(m => {
+                if (!m) return;
+                if (m.map) m.map.dispose();
+                m.dispose();
+            });
+        }
+    });
+}
+
 function loadScene(type) {
     // 檢查 environmentGroup 是否已初始化
     if (typeof environmentGroup === 'undefined' || !environmentGroup) {
         console.error("environmentGroup is not initialized. Please wait for init3D() to complete.");
         return;
     }
-    
-    while(environmentGroup.children.length > 0){ 
-        environmentGroup.remove(environmentGroup.children[0]); 
+
+    if ((type === 'tunnel' || type === 'city')
+        && typeof window.isCompetitionUnlocked === 'function'
+        && !window.isCompetitionUnlocked()) {
+        console.warn('競賽任務未解鎖，請輸入密碼。');
+        if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'warn',
+                title: '需要密碼',
+                body: '正式競賽任務需先輸入密碼解鎖。請從「競賽任務」選單進入。',
+                autoHideMs: 8000,
+                focusClose: false
+            });
+        }
+        return;
+    }
+
+    applyMissionConfigForScene(type);
+
+    clearRoadPieceRegistry();
+    roadEditorHighlight = null;
+
+    while (environmentGroup.children.length > 0) {
+        const child = environmentGroup.children[0];
+        environmentGroup.remove(child);
+        disposeObject3D(child);
     }
     ruinsUpdateFunction = null; 
     window.mazeAnimations = []; 
@@ -378,9 +1621,15 @@ function loadScene(type) {
     takeoffTime = 0;           
     spawnPosition = { x: 0, y: 0, z: 0, heading: 180 }; // 預設起點
     currentMazeGrid = null;    // 重置碰撞地圖
+    forestHeightGrid = null;
+    forestChargeData = [];
     lastSafePos = { x: 0, y: 0, z: 0 }; // 重置安全位置
+    resetTunnelRouteTracking();
     state.missionCompleted = false; // 重置任務完成狀態
+    state.hasWater = false;
     currentScore = 0; hasTakenOff = false;
+    waterLoaded = false;
+    if (type === 'city' || type === 'city_practice') resetCityBattery();
     
     // 清除舊的輪換計時器（如果切換到其他場景）
     if (type !== 'challenge_maze') {
@@ -388,13 +1637,20 @@ function loadScene(type) {
     }
 
     if (type === 'tunnel') {
+        restoreDefaultSceneLighting();
         createMazeMap(); 
+    } else if (type === 'tunnel_practice') {
+        restoreDefaultSceneLighting();
+        createMazeMapPractice();
     } else if (type === 'challenge_maze') {
+        restoreDefaultSceneLighting();
         createEmptyFloor(); 
     } else if (type === 'city') {
         createCityMap();
-        targetPosition = { x: 0, z: -650 }; 
+    } else if (type === 'city_practice') {
+        createCityMapPractice();
     } else {
+        restoreDefaultSceneLighting();
         createFreeFlightMap();
         targetPosition = { x: 0, z: 0 }; 
     }
@@ -448,6 +1704,10 @@ function syncDroneToStart() {
     
     if (typeof updateCameraPosition === 'function') updateCameraPosition();
     console.log(`📍 無人機已同步回起點: (${state.x.toFixed(1)}, ${state.y.toFixed(1)}, ${state.z.toFixed(1)}) Heading: ${state.heading}`);
+
+    if (isTunnelMissionScene()) {
+        resetTunnelPatrolVisits();
+    }
 }
 
 // --- [挑戰模式] 隨機迷宮生成器 ---
@@ -496,8 +1756,8 @@ function generateRandomMaze(width, height) {
 }
 
 function startMazeCycling() {
-    stopMazeCycling(); // 確保不重複啟動
-    logToConsole("⏳ 挑戰模式：迷宮每 5 秒自動更換一次...");
+    stopMazeCycling();
+    logToConsole('⏳ 挑戰模式：閒置時每 5 秒預覽新迷宮（按「執行」鎖定布局）…');
     
     // 立即生成第一個
     createChallengeMaze();
@@ -517,31 +1777,190 @@ function stopMazeCycling() {
     }
 }
 
+function markChallengeMazePiece(obj) {
+    if (obj) obj.userData.isChallengeMazePiece = true;
+    return obj;
+}
+
+function clearChallengeMazeGeometry() {
+    window.mazeAnimations = [];
+    clearRoadPieceRegistry();
+    const toRemove = [];
+    environmentGroup.children.forEach(child => {
+        if (child.userData && child.userData.isChallengeMazePiece) toRemove.push(child);
+        else if (child.isWall || child.isExit || child.isStart) toRemove.push(child);
+    });
+    toRemove.forEach(obj => {
+        environmentGroup.remove(obj);
+        disposeObject3D(obj);
+    });
+}
+
+/**
+ * 任務一／挑戰關共用：Kenney 建築、路面、起終點箭嘴
+ * @param {number[][]} mazeGrid
+ * @param {{ cellSize?: number, mazeRoadY?: number, gridStartX: number, gridStartZ: number, tagChallengePieces?: boolean, includeCheckpoints?: boolean, onStartCell?: Function, onGoalCell?: Function }} opts
+ */
+function buildUrbanMazeVisuals(mazeGrid, opts) {
+    const cellSize = opts.cellSize || 150;
+    const mazeRoadY = opts.mazeRoadY != null ? opts.mazeRoadY : 0.38;
+    const gridStartX = opts.gridStartX;
+    const gridStartZ = opts.gridStartZ;
+    const tagChallenge = !!opts.tagChallengePieces;
+    const wallHeight = 120;
+
+    const addPiece = (obj) => {
+        environmentGroup.add(obj);
+        if (tagChallenge) markChallengeMazePiece(obj);
+        return obj;
+    };
+
+    const useKenney = assets.kenneyDistrictTemplates && assets.kenneyDistrictTemplates.length > 0;
+    const r = assets.kenneyRoads;
+    const useKenneyRoads = !!(r && r.straight && r.bend && r.cross && r.tee && r.end);
+    const roadMatOpts = { shininess: 10, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 };
+    const roadMat = new THREE.MeshPhongMaterial(Object.assign({ color: 0x323540 }, roadMatOpts));
+    const roadMatStart = new THREE.MeshPhongMaterial(Object.assign({ color: 0x353845 }, roadMatOpts));
+    const roadMatGoal = new THREE.MeshPhongMaterial(Object.assign({}, roadMatOpts, { color: 0x2a3d32, shininess: 12 }));
+    const wallGeo = new THREE.BoxGeometry(cellSize, wallHeight, cellSize);
+    const wallMat = new THREE.MeshPhongMaterial({
+        color: 0x1a1a1a,
+        specular: 0x00adb5,
+        shininess: 30,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    for (let i = 0; i < mazeGrid.length; i++) {
+        for (let j = 0; j < mazeGrid[i].length; j++) {
+            const val = mazeGrid[i][j];
+            const x = gridStartX + j * cellSize + cellSize / 2;
+            const z = gridStartZ + i * cellSize + cellSize / 2;
+
+            if (val !== 1) {
+                if (useKenneyRoads) {
+                    const placed = placeKenneyRoadForCell(i, j, x, z, cellSize, mazeRoadY, mazeGrid);
+                    if (tagChallenge && placed) markChallengeMazePiece(placed);
+                    if (!placed) {
+                        const rm = val === 3 ? roadMatGoal : (val === 2 ? roadMatStart : roadMat);
+                        const road = new THREE.Mesh(new THREE.PlaneGeometry(cellSize * 0.99, cellSize * 0.99), rm);
+                        road.rotation.x = -Math.PI / 2;
+                        road.position.set(x, mazeRoadY, z);
+                        road.receiveShadow = true;
+                        addPiece(road);
+                    }
+                } else {
+                    const rm = val === 3 ? roadMatGoal : (val === 2 ? roadMatStart : roadMat);
+                    const road = new THREE.Mesh(new THREE.PlaneGeometry(cellSize * 0.99, cellSize * 0.99), rm);
+                    road.rotation.x = -Math.PI / 2;
+                    road.position.set(x, mazeRoadY, z);
+                    road.receiveShadow = true;
+                    addPiece(road);
+                }
+            }
+
+            if (val === 1) {
+                if (useKenney) {
+                    const plotY = mazeRoadY - 0.04;
+                    const plot = createKenneyPlotInstance(cellSize, 0);
+                    if (plot) {
+                        plot.position.set(x, plotY, z);
+                        addPiece(plot);
+                    }
+                    const tIdx = (i * 7 + j * 11) % assets.kenneyDistrictTemplates.length;
+                    const tpl = assets.kenneyDistrictTemplates[tIdx];
+                    const rot = (i + j * 2) % 4;
+                    const heightCap = 230 + ((i + j) % 5) * 28;
+                    const building = createKenneyBuildingInstance(tpl, cellSize, rot, heightCap);
+                    building.position.set(x, 0, z);
+                    addPiece(building);
+                } else {
+                    const wall = new THREE.Mesh(wallGeo, wallMat);
+                    wall.position.set(x, wallHeight / 2, z);
+                    wall.isWall = true;
+                    const edges = new THREE.EdgesGeometry(wallGeo);
+                    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00adb5, transparent: true, opacity: 0.5 }));
+                    line.position.copy(wall.position);
+                    line.isWall = true;
+                    addPiece(line);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    addPiece(wall);
+                }
+            } else if (val === 2) {
+                const padY = mazeRoadY + 0.12;
+                addPiece(createLandingPad(x, z, padY));
+                const arrow = createWaypointArrowMarker(x, z, padY, {
+                    color: 0x4dabf7,
+                    emissive: 0x228be6,
+                    kind: 'alpha'
+                });
+                if (tagChallenge && arrow) markChallengeMazePiece(arrow);
+
+                spawnPosition = { x, y: 0, z, heading: 180 };
+                startPosition = { x, y: 0, z, heading: 180 };
+                lastSafePos = { x, y: 0, z };
+                state.x = x;
+                state.z = z;
+                state.y = 0;
+                state.heading = 180;
+                if (typeof opts.onStartCell === 'function') opts.onStartCell(i, j, x, z);
+            } else if (val === 3) {
+                const goalLight = new THREE.PointLight(0x00ff00, 2, 500);
+                goalLight.position.set(x, 50, z);
+                goalLight.isExit = true;
+                addPiece(goalLight);
+
+                const exitMarker = new THREE.Mesh(
+                    new THREE.PlaneGeometry(cellSize, cellSize),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x00ff00,
+                        transparent: true,
+                        opacity: 0.35,
+                        side: THREE.DoubleSide
+                    })
+                );
+                exitMarker.rotation.x = -Math.PI / 2;
+                exitMarker.position.set(x, mazeRoadY + 0.15, z);
+                exitMarker.isExit = true;
+                addPiece(exitMarker);
+
+                const arrow = createWaypointArrowMarker(x, z, mazeRoadY + 0.15, {
+                    color: 0x51cf66,
+                    emissive: 0x2f9e44,
+                    kind: 'bravo'
+                });
+                if (tagChallenge && arrow) markChallengeMazePiece(arrow);
+
+                targetPosition = { x, z };
+                if (typeof opts.onGoalCell === 'function') opts.onGoalCell(i, j, x, z);
+            } else if (val === 4 && opts.includeCheckpoints) {
+                createBeacon(i, j, x, z);
+            }
+        }
+    }
+}
+
 function createEmptyFloor() {
     createHolodeckRoom();
-    // 專業灰網格：主線深青，細線深灰
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
-    gridHelper.position.y = 0.1;
+    scene.background = new THREE.Color(0x1e2228);
+    scene.fog = new THREE.Fog(0x1e2228, 1600, 5800);
+    tunnelMazeRoadSurfaceY = 0.38;
+
+    const mazeGridY = 0.06;
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x3d5566, 0x252a32);
+    gridHelper.position.y = mazeGridY;
     environmentGroup.add(gridHelper);
-    
-    // 啟動 5 秒更換迷宮計時器
+
     startMazeCycling();
 }
 
 function createChallengeMaze() {
-    // 清除舊的牆壁與物件
-    const wallsToRemove = [];
-    environmentGroup.children.forEach(child => {
-        if (child.isWall || child.isExit || child.isStart) wallsToRemove.push(child);
-    });
-    wallsToRemove.forEach(w => environmentGroup.remove(w));
+    clearChallengeMazeGeometry();
 
-    // 使用 13x13 確保完美連通
     const mazeGrid = generateRandomMaze(13, 13);
-    const cellSize = 150; 
-    const wallHeight = 120;
-    
-    // 標準化座標：gridStartX 是最左側邊界的絕對座標
+    const cellSize = 150;
+    const mazeRoadY = 0.38;
     const gridStartX = -(13 * cellSize) / 2;
     const gridStartZ = -(13 * cellSize) / 2;
 
@@ -550,94 +1969,153 @@ function createChallengeMaze() {
     mazeOffsetX = gridStartX;
     mazeOffsetZ = gridStartZ;
 
-    const wallMaterial = new THREE.MeshPhongMaterial({
-        color: 0x1a1a1a,
-        transparent: true,
-        opacity: 0.8
+    buildUrbanMazeVisuals(mazeGrid, {
+        cellSize,
+        mazeRoadY,
+        gridStartX,
+        gridStartZ,
+        tagChallengePieces: true,
+        includeCheckpoints: false
     });
 
-    for (let row = 0; row < mazeGrid.length; row++) {
-        for (let col = 0; col < mazeGrid[row].length; col++) {
-            // 放置在格子中心
-            const x = gridStartX + col * cellSize + cellSize / 2;
-            const z = gridStartZ + row * cellSize + cellSize / 2;
-
-            if (mazeGrid[row][col] === 1) {
-                const wallGeo = new THREE.BoxGeometry(cellSize, wallHeight, cellSize);
-                const wall = new THREE.Mesh(wallGeo, wallMaterial);
-                wall.position.set(x, wallHeight / 2, z);
-                wall.isWall = true;
-                
-                // 牆壁邊緣發光 (深紅色)
-                const edges = new THREE.EdgesGeometry(wallGeo);
-                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff0000 }));
-                wall.add(line);
-                
-                environmentGroup.add(wall);
-            } else if (mazeGrid[row][col] === 2) {
-                spawnPosition = { x, y: 0, z, heading: 180 };
-                startPosition = { x, y: 0, z, heading: 180 }; // 同步重置起點
-                lastSafePos = { x, y: 0, z };
-                
-                // 立即更新狀態
-                state.x = x;
-                state.z = z;
-                state.y = 0;
-                state.heading = 180;
-                
-                const startPadGeo = new THREE.PlaneGeometry(cellSize, cellSize);
-                const startPad = new THREE.Mesh(startPadGeo, new THREE.MeshPhongMaterial({ color: 0x0044ff, side: THREE.DoubleSide }));
-                startPad.rotation.x = -Math.PI / 2;
-                startPad.position.set(x, 0.5, z);
-                startPad.isStart = true;
-                environmentGroup.add(startPad);
-            } else if (mazeGrid[row][col] === 3) {
-                targetPosition = { x, z };
-                const exitLight = new THREE.PointLight(0x00ff00, 2, 300);
-                exitLight.position.set(x, 60, z);
-                exitLight.isExit = true;
-                environmentGroup.add(exitLight);
-
-                const exitPad = new THREE.Mesh(
-                    new THREE.PlaneGeometry(cellSize, cellSize),
-                    new THREE.MeshPhongMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3, side: THREE.DoubleSide })
-                );
-                exitPad.rotation.x = -Math.PI / 2;
-                exitPad.position.set(x, 0.5, z);
-                exitPad.isExit = true;
-                environmentGroup.add(exitPad);
-            }
-        }
-    }
-    
-    // 如果沒在運行，則將無人機移至起點
     if (!state.isRunning) {
         state.x = spawnPosition.x;
         state.z = spawnPosition.z;
         state.y = 0;
         state.heading = spawnPosition.heading || 180;
-        
+
         if (droneGroup) {
             droneGroup.position.set(state.x, state.y, state.z);
             droneGroup.rotation.y = THREE.MathUtils.degToRad(state.heading);
         }
-        
-        // 同步相機目標到起點，避免相機看向遠方
+
         camTarget.x = state.x;
         camTarget.y = state.y;
         camTarget.z = state.z;
         updateCameraPosition();
     }
 }
-function createMazeMap() {
+
+function resetDefaultSimulatorAtmosphere() {
+    if (typeof scene === 'undefined' || !scene) return;
+    scene.background = new THREE.Color(0x1a1c23);
+    scene.fog = new THREE.Fog(0x1a1c23, 1500, 6000);
+    restoreDefaultSceneLighting();
+}
+
+/** 還原全域主光源（離開任務二時） */
+function restoreDefaultSceneLighting() {
+    if (typeof scene === 'undefined' || !scene || !scene.userData) return;
+    const hemi = scene.userData.mainHemiLight;
+    const dir = scene.userData.mainDirLight;
+    const dh = scene.userData.defaultHemi;
+    const dd = scene.userData.defaultDir;
+    if (hemi && dh) {
+        hemi.color.setHex(dh.sky);
+        hemi.groundColor.setHex(dh.ground);
+        hemi.intensity = dh.intensity;
+    }
+    if (dir && dd) {
+        dir.color.setHex(dd.color);
+        dir.intensity = dd.intensity;
+    }
+}
+
+/** 任務二：山火場氛圍（中等照度，介於全暗與過亮之間） */
+function applyForestSceneAtmosphere() {
+    if (typeof scene === 'undefined' || !scene) return;
+    scene.background = new THREE.Color(0x2e2820);
+    scene.fog = new THREE.FogExp2(0x3a342c, 0.00042);
+
+    const hemi = scene.userData.mainHemiLight;
+    const dir = scene.userData.mainDirLight;
+    if (hemi) {
+        hemi.color.setHex(0x6a6458);
+        hemi.groundColor.setHex(0x1a1814);
+        hemi.intensity = 0.62;
+    }
+    if (dir) {
+        dir.color.setHex(0xd8d0c4);
+        dir.intensity = 0.68;
+    }
+}
+
+function createMazeMapPractice() {
     createHolodeckRoom();
-    
-    // 1. 地面網格 (平衡版)
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
-    gridHelper.position.y = 0.1;
+    loadRoadOverridesFromStorage();
+    clearRoadPieceRegistry();
+
+    scene.background = new THREE.Color(0x1e2228);
+    scene.fog = new THREE.Fog(0x1e2228, 1200, 4200);
+
+    const mazeGridY = 0.06;
+    const mazeRoadY = 0.38;
+    tunnelMazeRoadSurfaceY = mazeRoadY;
+    ensureRoadEditorHighlightMesh();
+
+    const gridHelper = new THREE.GridHelper(3500, 70, 0x3d5566, 0x252a32);
+    gridHelper.position.y = mazeGridY;
     environmentGroup.add(gridHelper);
 
-    // 2. 迷宮設計 (1: 牆壁, 0: 通路, 2: 起點, 3: 終點, 4: 信號標記點 Beacon)
+    const mazeGrid = [
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 2, 0, 0, 1, 0, 4, 1],
+        [1, 1, 1, 0, 1, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 1, 1],
+        [1, 0, 1, 1, 1, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 0, 0, 0, 0, 3],
+        [1, 1, 1, 1, 1, 1, 1, 1],
+    ];
+
+    const cellSize = 150;
+    const gridStartX = -(mazeGrid[0].length * cellSize) / 2;
+    const gridStartZ = -(mazeGrid.length * cellSize) / 2;
+
+    currentMazeGrid = mazeGrid;
+    currentCellSize = cellSize;
+    mazeOffsetX = gridStartX;
+    mazeOffsetZ = gridStartZ;
+
+    buildUrbanMazeVisuals(mazeGrid, {
+        cellSize,
+        mazeRoadY,
+        gridStartX,
+        gridStartZ,
+        tagChallengePieces: false,
+        includeCheckpoints: true,
+        onStartCell(i, j, x, z) {
+            tunnelStartCell = { i, j };
+            console.log(`📍 試用一 Alpha 起降點: (${x.toFixed(1)}, ${z.toFixed(1)})`);
+        },
+        onGoalCell(i, j) {
+            tunnelGoalCell = { i, j };
+        }
+    });
+    updateRoadEditorHighlight();
+    updateRoadEditorPanel();
+}
+
+function createMazeMap() {
+    createHolodeckRoom();
+    loadRoadOverridesFromStorage();
+    clearRoadPieceRegistry();
+
+    scene.background = new THREE.Color(0x1e2228);
+    scene.fog = new THREE.Fog(0x1e2228, 1600, 5800);
+    
+    // 地面分層：網格與路面勿太近，否則與 Holodeck 底面（y≈0）易 Z-fighting / 陰影粉刺閃爍
+    const mazeGridY = 0.06;
+    const mazeRoadY = 0.38;
+    tunnelMazeRoadSurfaceY = mazeRoadY;
+    ensureRoadEditorHighlightMesh();
+
+    // 1. 地面網格（街區：較低調）
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x3d5566, 0x252a32);
+    gridHelper.position.y = mazeGridY;
+    environmentGroup.add(gridHelper);
+
+    // 2. 迷宮設計 (1: 牆壁, 0: 通路, 2: 指揮所 Alpha, 3: 集結區 Bravo, 4: 巡檢回報點)
     const mazeGrid = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 4, 1],
@@ -654,7 +2132,6 @@ function createMazeMap() {
     ];
 
     const cellSize = 150; // cm (改為 150 以對應地板 3x3 格)
-    const wallHeight = 120; // 稍微降低牆高，符合縮小後的比例
     
     // 標準化座標：gridStartX 是最左側邊界 (Edge) 的絕對座標
     const gridStartX = -(mazeGrid[0].length * cellSize) / 2;
@@ -666,88 +2143,42 @@ function createMazeMap() {
     mazeOffsetX = gridStartX;
     mazeOffsetZ = gridStartZ;
 
-    // 牆壁材質 (科技風)
-    const wallGeo = new THREE.BoxGeometry(cellSize, wallHeight, cellSize);
-    const wallMat = new THREE.MeshPhongMaterial({ 
-        color: 0x1a1a1a, 
-        specular: 0x00adb5,
-        shininess: 30,
-        transparent: true,
-        opacity: 0.9
-    });
-
-    for (let i = 0; i < mazeGrid.length; i++) {
-        for (let j = 0; j < mazeGrid[i].length; j++) {
-            const val = mazeGrid[i][j];
-            // 放置在格子中心 (Center)
-            const x = gridStartX + j * cellSize + cellSize / 2;
-            const z = gridStartZ + i * cellSize + cellSize / 2;
-
-            if (val === 1) {
-                const wall = new THREE.Mesh(wallGeo, wallMat);
-                wall.position.set(x, wallHeight / 2, z);
-                wall.isWall = true; // 標記為牆壁供感應器檢測
-                
-                // 為牆壁增加發光邊緣線框
-                const edges = new THREE.EdgesGeometry(wallGeo);
-                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00adb5, transparent: true, opacity: 0.5 }));
-                line.position.copy(wall.position);
-                line.isWall = true;
-                environmentGroup.add(line);
-                
-                wall.castShadow = true;
-                wall.receiveShadow = true;
-                environmentGroup.add(wall);
-            } else if (val === 2) {
-                // 起點
-                const landingPad = createLandingPad(x, z);
-                environmentGroup.add(landingPad);
-                // 設置飛機起始位置並立即同步狀態
-                startPosition = { x: x, y: 0, z: z, heading: 180 };
-                state.x = x; 
-                state.z = z;
-                state.y = 0;
-                lastSafePos.x = x;
-                lastSafePos.y = 0;
-                lastSafePos.z = z;
-                
-                console.log(`📍 隧道迷宮起點已設置: (${x.toFixed(1)}, ${z.toFixed(1)})`);
-            } else if (val === 3) {
-                // 終點：不放置停機坪，改為移除牆壁的出口效果
-                const goalLight = new THREE.PointLight(0x00ff00, 2, 500);
-                goalLight.position.set(x, 50, z);
-                environmentGroup.add(goalLight);
-                
-                // 增加一個地面標記 (可選，讓玩家知道這是出口)
-                const exitMarkerGeo = new THREE.PlaneGeometry(cellSize, cellSize);
-                const exitMarkerMat = new THREE.MeshBasicMaterial({ 
-                    color: 0x00ff00, 
-                    transparent: true, 
-                    opacity: 0.2,
-                    side: THREE.DoubleSide 
-                });
-                const exitMarker = new THREE.Mesh(exitMarkerGeo, exitMarkerMat);
-                exitMarker.rotation.x = -Math.PI/2;
-                exitMarker.position.set(x, 0.5, z);
-                environmentGroup.add(exitMarker);
-
-                targetPosition = { x, z };
-            } else if (val === 4) {
-                // 信號標記點 Beacon
-                createBeacon(x, z);
+    buildUrbanMazeVisuals(mazeGrid, {
+        cellSize,
+        mazeRoadY,
+        gridStartX,
+        gridStartZ,
+        tagChallengePieces: false,
+        includeCheckpoints: true,
+        onStartCell(i, j, x, z) {
+            tunnelStartCell = { i, j };
+            console.log(`📍 指揮所 Alpha 起降點: (${x.toFixed(1)}, ${z.toFixed(1)})`);
+            if (typeof window !== 'undefined' && window.__DEBUG_ROAD_MASK__) {
+                logRoadMaskDebugStatus();
             }
+        },
+        onGoalCell(i, j) {
+            tunnelGoalCell = { i, j };
         }
-    }
+    });
+    updateRoadEditorHighlight();
+    updateRoadEditorPanel();
 }
 
-function createBeacon(x, z) {
+function createBeacon(i, j, x, z) {
     const group = new THREE.Group();
     group.position.set(x, 50, z);
 
-    // 標記點數據
+    const cellKey = i + ',' + j;
+    const meta = getActiveInspectionNames()[cellKey] || { label: '巡檢回報點', labelEn: 'Inspection Point' };
+
     const beacon = {
+        i,
+        j,
         x: x,
         z: z,
+        label: meta.label,
+        labelEn: meta.labelEn,
         triggered: false,
         hoverTimer: 0,
         mesh: group
@@ -883,6 +2314,7 @@ function createFixedTunnelMap() {
 
 function createFreeFlightMap() {
     createHolodeckRoom(); // 自由飛行也加入 Holodeck
+    resetDefaultSimulatorAtmosphere();
     const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
     environmentGroup.add(gridHelper);
     
@@ -904,6 +2336,16 @@ function createFreeFlightMap() {
 function getForestHeight(x, z) {
     const distToCenter = Math.sqrt(x * x + z * z);
     
+    // 任務二：14×14 場地內依高度圖整格整平
+    if (typeof currentSceneType !== 'undefined' && isCityMissionScene()
+        && currentMazeGrid && currentCellSize && forestHeightGrid) {
+        const gx = Math.floor((x - mazeOffsetX) / currentCellSize);
+        const gz = Math.floor((z - mazeOffsetZ) / currentCellSize);
+        if (gz >= 0 && gz < currentMazeGrid.length && gx >= 0 && gx < currentMazeGrid[0].length) {
+            return forestHeightGrid[gz][gx];
+        }
+    }
+
     // 檢查座標落在哪個格子內 (使用緩衝範圍判斷，確保整塊格位平整)
     if (currentMazeGrid && currentCellSize) {
         // 檢查中心及四個角落，只要靠近特殊格位就整平
@@ -914,7 +2356,7 @@ function getForestHeight(x, z) {
             
             if (gz >= 0 && gz < currentMazeGrid.length && gx >= 0 && gx < currentMazeGrid[0].length) {
                 const val = currentMazeGrid[gz][gx];
-                if (val === 5) return -45; // 水源盆地
+                if (val === 5) return 0; // 水源（全平地）
                 if (val === 2 || val === 3) return 0; // 平台地基
             }
         }
@@ -938,8 +2380,8 @@ function createForestTexture() {
     canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    // 底色：深森林綠 (降低飽和度)
-    ctx.fillStyle = '#1e351a';
+    // 底色：深森林綠（中等照度）
+    ctx.fillStyle = '#1a2816';
     ctx.fillRect(0, 0, size, size);
 
     // 加入隨機泥土與草叢斑點 (Organic Noise)
@@ -948,26 +2390,245 @@ function createForestTexture() {
         const ry = Math.random() * size;
         const rs = 1 + Math.random() * 3;
         const rand = Math.random();
-        if (rand > 0.7) ctx.fillStyle = '#2a441e'; // 草地綠
-        else if (rand > 0.3) ctx.fillStyle = '#162b12'; // 深綠影
-        else ctx.fillStyle = '#3d2b1f'; // 泥土棕
+        if (rand > 0.7) ctx.fillStyle = '#263820'; // 草地綠
+        else if (rand > 0.3) ctx.fillStyle = '#121c10'; // 深綠影
+        else ctx.fillStyle = '#2e2218'; // 泥土棕
         ctx.fillRect(rx, ry, rs, rs);
     }
 
     // 極淡的網格線 (輔助用，不應干擾視覺)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     ctx.strokeRect(0, 0, size, size);
 
     return canvas;
 }
 
-function createCityMap() {
-    // 森林場景不使用平坦的 Holodeck 房間
-    // 1. 山火煙霧大氣效果
-    scene.fog = new THREE.FogExp2(0x332211, 0.0005); 
+/** 任務二：可見地面高度（對應 ground mesh 的 position.y = -0.5） */
+function getForestSurfaceY(x, z) {
+    return getForestHeight(x, z) - 0.5;
+}
 
-    // 1.2 建立寫實森林材質
+/** 任務二：14×14 高度圖（全平地） */
+function buildForestHeightGrid(grid) {
+    const rows = grid.length;
+    const cols = grid[0].length;
+    return Array.from({ length: rows }, () => Array(cols).fill(0));
+}
+
+/** 任務二：建立充電站（黃色平台，懸停 3 秒補充電力） */
+function createForestChargeStation(i, j, x, z, groundH) {
+    const group = new THREE.Group();
+    group.position.set(x, groundH, z);
+
+    const pad = new THREE.Mesh(
+        new THREE.CylinderGeometry(42, 48, 6, 6),
+        new THREE.MeshPhongMaterial({ color: 0x8a7028, flatShading: true })
+    );
+    pad.position.y = 5;
+    group.add(pad);
+
+    const bolt = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 28, 4),
+        new THREE.MeshPhongMaterial({ color: 0xb8a050, emissive: 0x806820, emissiveIntensity: 0.28 })
+    );
+    bolt.position.y = 24;
+    group.add(bolt);
+
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(38, 2.5, 8, 24),
+        new THREE.MeshBasicMaterial({ color: 0xc9a832, transparent: true, opacity: 0.58 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 8;
+    group.add(ring);
+
+    const light = new THREE.PointLight(0xc9a040, 0.38, 200);
+    light.position.y = 35;
+    group.add(light);
+
+    environmentGroup.add(group);
+
+    forestChargeData.push({
+        i, j, x, z,
+        groundH,
+        label: '充電站',
+        triggered: false,
+        hoverTimer: 0,
+        mesh: group
+    });
+}
+
+/** 任務二：高程區塊視覺（土丘台地，非建築） */
+function addForestTerrainTerraces(grid, heights, cellSize, offsetX, offsetZ) {
+    const tierMat = (h) => new THREE.MeshPhongMaterial({
+        color: h >= 200 ? 0x524838 : h >= 120 ? 0x465040 : 0x3a4832,
+        flatShading: true
+    });
+
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            const h = heights[i][j];
+            if (h <= 8) continue;
+            const val = grid[i][j];
+            if (val === 5) continue;
+            const x = j * cellSize + offsetX + cellSize / 2;
+            const z = i * cellSize + offsetZ + cellSize / 2;
+            const blockH = h + 0.5;
+            const terrace = new THREE.Mesh(
+                new THREE.BoxGeometry(cellSize * 0.97, blockH, cellSize * 0.97),
+                tierMat(h)
+            );
+            terrace.position.set(x, blockH / 2 - 0.5, z);
+            terrace.receiveShadow = true;
+            environmentGroup.add(terrace);
+
+            if (val === 0 && h >= 120) {
+                const beacon = new THREE.Mesh(
+                    new THREE.CylinderGeometry(6, 8, 35, 6),
+                    new THREE.MeshPhongMaterial({ color: 0x7a6848, flatShading: true })
+                );
+                beacon.position.set(x + cellSize * 0.32, h + 20, z + cellSize * 0.32);
+                environmentGroup.add(beacon);
+            }
+        }
+    }
+}
+
+/** 任務二：場地氛圍光（中等照度，柔和外圈補光） */
+function addForestPerimeterLighting(offsetX, offsetZ, mapW, mapD) {
+    applyForestSceneAtmosphere();
+
+    const rimSky = new THREE.HemisphereLight(0x5a5448, 0x222018, 0.22);
+    environmentGroup.add(rimSky);
+
+    const y = 240;
+    const cx = offsetX + mapW / 2;
+    const cz = offsetZ + mapD / 2;
+    const points = [
+        [offsetX, offsetZ],
+        [offsetX + mapW, offsetZ],
+        [offsetX + mapW, offsetZ + mapD],
+        [offsetX, offsetZ + mapD],
+        [cx, offsetZ],
+        [cx, offsetZ + mapD],
+        [offsetX, cz],
+        [offsetX + mapW, cz]
+    ];
+    points.forEach(([px, pz]) => {
+        const lamp = new THREE.PointLight(0xd8c8a8, 0.32, mapW * 0.85);
+        lamp.position.set(px, y, pz);
+        environmentGroup.add(lamp);
+    });
+}
+
+/** 任務二：在 14×14 山火場上疊加 150cm 格線與通路標記（保留森林情境，非街區風格） */
+function addForestPlayfieldGridOverlay(grid, cellSize, offsetX, offsetZ) {
+    const rows = grid.length;
+    const cols = grid[0].length;
+    const mapW = cols * cellSize;
+    const mapD = rows * cellSize;
+    const gridLift = 0.08;
+    const yAt = (x, z) => getForestSurfaceY(x, z) + gridLift;
+
+    const linePoints = [];
+    const pushSeg = (x1, z1, x2, z2) => {
+        linePoints.push(x1, yAt(x1, z1), z1, x2, yAt(x2, z2), z2);
+    };
+
+    // 垂直格線（沿 Z）
+    for (let j = 0; j <= cols; j++) {
+        const x = offsetX + j * cellSize;
+        for (let i = 0; i < rows; i++) {
+            const z1 = offsetZ + i * cellSize;
+            const z2 = offsetZ + (i + 1) * cellSize;
+            pushSeg(x, z1, x, z2);
+        }
+    }
+
+    // 水平格線（沿 X）
+    for (let i = 0; i <= rows; i++) {
+        const z = offsetZ + i * cellSize;
+        for (let j = 0; j < cols; j++) {
+            const x1 = offsetX + j * cellSize;
+            const x2 = offsetX + (j + 1) * cellSize;
+            pushSeg(x1, z, x2, z);
+        }
+    }
+
+    const gridGeo = new THREE.BufferGeometry();
+    gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePoints, 3));
+    environmentGroup.add(new THREE.LineSegments(
+        gridGeo,
+        new THREE.LineBasicMaterial({ color: 0x4a5538, transparent: true, opacity: 0.55, depthWrite: false })
+    ));
+
+    // 場地外框（貼地）
+    const x0 = offsetX;
+    const x1 = offsetX + mapW;
+    const z0 = offsetZ;
+    const z1 = offsetZ + mapD;
+    const borderPoints = [];
+    const pushBorder = (x1p, z1p, x2p, z2p) => {
+        borderPoints.push(x1p, yAt(x1p, z1p) + 0.03, z1p, x2p, yAt(x2p, z2p) + 0.03, z2p);
+    };
+    for (let j = 0; j < cols; j++) {
+        const xa = offsetX + j * cellSize;
+        const xb = offsetX + (j + 1) * cellSize;
+        pushBorder(xa, z0, xb, z0);
+        pushBorder(xa, z1, xb, z1);
+    }
+    for (let i = 0; i < rows; i++) {
+        const za = offsetZ + i * cellSize;
+        const zb = offsetZ + (i + 1) * cellSize;
+        pushBorder(x0, za, x0, zb);
+        pushBorder(x1, za, x1, zb);
+    }
+    const borderGeo = new THREE.BufferGeometry();
+    borderGeo.setAttribute('position', new THREE.Float32BufferAttribute(borderPoints, 3));
+    environmentGroup.add(new THREE.LineSegments(
+        borderGeo,
+        new THREE.LineBasicMaterial({ color: 0x5c5040, transparent: true, opacity: 0.62, depthWrite: false })
+    ));
+
+    const trailMat = new THREE.MeshBasicMaterial({
+        color: 0x5a6648,
+        transparent: true,
+        opacity: 0.1,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+    const trailGeo = new THREE.PlaneGeometry(cellSize * 0.94, cellSize * 0.94);
+
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            if (grid[i][j] !== 0) continue;
+            const x = j * cellSize + offsetX + cellSize / 2;
+            const z = i * cellSize + offsetZ + cellSize / 2;
+            const patch = new THREE.Mesh(trailGeo, trailMat);
+            patch.rotation.x = -Math.PI / 2;
+            patch.position.set(x, getForestSurfaceY(x, z) + gridLift, z);
+            patch.renderOrder = 1;
+            environmentGroup.add(patch);
+        }
+    }
+}
+
+function buildForestGridScene(forestGrid, logLabel) {
+    applyForestSceneAtmosphere();
+
+    const cellSize = 150;
+    const offsetX = -(forestGrid[0].length * cellSize) / 2;
+    const offsetZ = -(forestGrid.length * cellSize) / 2;
+
+    currentMazeGrid = forestGrid;
+    currentCellSize = cellSize;
+    mazeOffsetX = offsetX;
+    mazeOffsetZ = offsetZ;
+    forestHeightGrid = buildForestHeightGrid(forestGrid);
+    forestChargeData = [];
+
+    // 2. 建立寫實森林材質與地面
     const gridTex = new THREE.CanvasTexture(createForestTexture());
     gridTex.wrapS = gridTex.wrapT = THREE.RepeatWrapping;
     gridTex.repeat.set(8000/150, 8000/150); 
@@ -987,7 +2648,8 @@ function createCityMap() {
         map: gridTex,
         side: THREE.DoubleSide,
         flatShading: true,
-        shininess: 2
+        shininess: 0,
+        color: 0xa0a098
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -995,35 +2657,9 @@ function createCityMap() {
     ground.receiveShadow = true; 
     environmentGroup.add(ground);
 
-    // 2. 大型森林地圖設計 (16x16)
-    const forestGrid = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 2, 0, 0, 0, 0, 0, 1, 1, 4, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
-        [1, 0, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-        [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
-        [1, 0, 1, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
-        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-        [1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ];
+    addForestPerimeterLighting(offsetX, offsetZ, forestGrid[0].length * cellSize, forestGrid.length * cellSize);
 
-    const cellSize = 150; 
-    const offsetX = -(forestGrid[0].length * cellSize) / 2;
-    const offsetZ = -(forestGrid.length * cellSize) / 2;
-
-    currentMazeGrid = forestGrid;
-    currentCellSize = cellSize;
-    mazeOffsetX = offsetX;
-    mazeOffsetZ = offsetZ;
-
+    // 3. 放置場景物件（基地 2@1,1 · 受災區 3@1,12 · 水/火/充電見格網配置）
     for (let i = 0; i < forestGrid.length; i++) {
         for (let j = 0; j < forestGrid[i].length; j++) {
             const val = forestGrid[i][j];
@@ -1037,7 +2673,7 @@ function createCityMap() {
                 const wallBoxGeo = new THREE.BoxGeometry(cellSize, 400, cellSize);
                 const wallBoxMat = new THREE.MeshBasicMaterial({ visible: false }); // 隱形
                 const wallBox = new THREE.Mesh(wallBoxGeo, wallBoxMat);
-                wallBox.position.set(x, 200, z);
+                wallBox.position.set(x, h + 200, z);
                 wallBox.isWall = true; 
                 environmentGroup.add(wallBox);
 
@@ -1139,7 +2775,7 @@ function createCityMap() {
                 // 主平台 (木板質感)
                 const plateGeo = new THREE.BoxGeometry(cellSize * 0.8, 8, cellSize * 0.8);
                 const plateMat = new THREE.MeshPhongMaterial({ 
-                    color: val === 2 ? 0x5d4037 : 0x2e7d32, // 起點深木色，終點深綠色
+                    color: val === 2 ? 0x4a3828 : 0x244a28,
                     flatShading: true 
                 });
                 const plate = new THREE.Mesh(plateGeo, plateMat);
@@ -1149,9 +2785,9 @@ function createCityMap() {
                 // 平台上的標記 (淡色半透明方塊)
                 const markerGeo = new THREE.PlaneGeometry(cellSize * 0.5, cellSize * 0.5);
                 const markerMat = new THREE.MeshBasicMaterial({ 
-                    color: 0xffffff, 
+                    color: 0xa0a098, 
                     transparent: true, 
-                    opacity: 0.2,
+                    opacity: 0.18,
                     side: THREE.DoubleSide 
                 });
                 const marker = new THREE.Mesh(markerGeo, markerMat);
@@ -1161,7 +2797,7 @@ function createCityMap() {
 
                 // 四角的支撐圓木
                 const legGeo = new THREE.CylinderGeometry(8, 8, 30, 8);
-                const legMat = new THREE.MeshPhongMaterial({ color: 0x3e2723 });
+                const legMat = new THREE.MeshPhongMaterial({ color: 0x281a14 });
                 [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(dir => {
                     const leg = new THREE.Mesh(legGeo, legMat);
                     leg.position.set(dir[0] * cellSize * 0.35, -5, dir[1] * cellSize * 0.35);
@@ -1173,8 +2809,18 @@ function createCityMap() {
                     spawnPosition = { ...startPosition };
                     state.x = x; state.z = z; state.y = h + 15;
                     lastSafePos = { x, y: h + 15, z };
+                    createWaypointArrowMarker(x, z, h + 8, {
+                        color: 0x4dabf7,
+                        emissive: 0x228be6,
+                        kind: 'alpha'
+                    });
                 } else {
                     targetPosition = { x, z };
+                    createWaypointArrowMarker(x, z, h + 8, {
+                        color: 0x51cf66,
+                        emissive: 0x2f9e44,
+                        kind: 'bravo'
+                    });
                 }
             } else if (val === 4) {
                 // --- 寫實火場設計 (恢復代碼) ---
@@ -1197,8 +2843,8 @@ function createCityMap() {
                     const mat = new THREE.MeshBasicMaterial({ 
                         color: color, 
                         transparent: true, 
-                        opacity: 0.6,
-                        blending: THREE.AdditiveBlending,
+                        opacity: 0.35,
+                        blending: THREE.NormalBlending,
                         side: THREE.DoubleSide
                     });
                     const layer = new THREE.Mesh(geo, mat);
@@ -1211,22 +2857,20 @@ function createCityMap() {
                     return layer;
                 };
 
-                createFlameLayer(35, 90, 0xff4400, 0.05); 
-                createFlameLayer(25, 70, 0xffaa00, -0.07);
-                createFlameLayer(15, 45, 0xffffff, 0.1); 
+                createFlameLayer(28, 70, 0x883818, 0.04);
+                createFlameLayer(18, 50, 0x994422, -0.05);
 
-                // 3. 點亮動態火光
-                const fireLight = new THREE.PointLight(0xff6600, 4, 400);
-                fireLight.position.y = 60;
+                const fireLight = new THREE.PointLight(0x883020, 0.55, 160);
+                fireLight.position.y = 40;
                 fireGroup.add(fireLight);
                 window.mazeAnimations.push(() => {
-                    fireLight.intensity = 3 + Math.random() * 2;
+                    fireLight.intensity = 0.35 + Math.random() * 0.2;
                 });
 
                 // 4. 煙霧粒子
-                for (let m = 0; m < 4; m++) {
-                    const smokeGeo = new THREE.SphereGeometry(15, 8, 8);
-                    const smokeMat = new THREE.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.4 });
+                for (let m = 0; m < 3; m++) {
+                    const smokeGeo = new THREE.SphereGeometry(12, 8, 8);
+                    const smokeMat = new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.2 });
                     const smoke = new THREE.Mesh(smokeGeo, smokeMat);
                     fireGroup.add(smoke);
                     const offset = m * 50;
@@ -1235,23 +2879,23 @@ function createCityMap() {
                         smoke.position.y = 60 + t * 0.8;
                         smoke.position.x = Math.sin(t * 0.05) * 20;
                         smoke.scale.setScalar(1 + t * 0.01);
-                        smoke.material.opacity = 0.4 * (1 - t / 400);
+                        smoke.material.opacity = 0.2 * (1 - t / 400);
                     });
                 }
             } else if (val === 5) {
-                // --- 寫實水源設計 (整平後精確對齊) ---
-                const waterH = -44; // 盆地深度為 -45，水面放在 -44 完美嵌入
+                // --- 寫實水源設計（全平地：水面略低於地面） ---
+                const waterH = h + 1;
                 const lakeGroup = new THREE.Group();
                 lakeGroup.position.set(x, waterH, z);
                 environmentGroup.add(lakeGroup);
 
                 const lakeGeo = new THREE.CircleGeometry(cellSize * 0.45, 32); // 縮小一點點，確保在整平區域內
                 const lakeMat = new THREE.MeshStandardMaterial({ 
-                    color: 0x004488, 
-                    metalness: 0.9,
-                    roughness: 0.1,
+                    color: 0x003366, 
+                    metalness: 0.55,
+                    roughness: 0.32,
                     transparent: true,
-                    opacity: 0.8
+                    opacity: 0.82
                 });
                 const lake = new THREE.Mesh(lakeGeo, lakeMat);
                 lake.rotation.x = -Math.PI/2;
@@ -1282,10 +2926,45 @@ function createCityMap() {
                         lakeGroup.add(lily);
                     }
                 }
+            } else if (val === 6) {
+                createForestChargeStation(i, j, x, z, h);
             }
         }
     }
-    console.log("🌲 起伏山脈森林火場已載入");
+    addForestPlayfieldGridOverlay(forestGrid, cellSize, offsetX, offsetZ);
+    console.log(logLabel || '🌲 山火場已載入');
+}
+
+function createCityMap() {
+    buildForestGridScene([
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 2, 0, 0, 5, 0, 1, 1, 0, 0, 0, 0, 3, 1],
+        [1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 4, 1],
+        [1, 0, 1, 0, 0, 6, 0, 0, 0, 0, 1, 1, 0, 1],
+        [1, 0, 1, 1, 0, 0, 1, 1, 5, 0, 4, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1],
+        [1, 1, 1, 0, 0, 1, 1, 0, 6, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1],
+        [1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 5, 0, 0, 1, 1, 0, 1],
+        [1, 1, 0, 1, 1, 1, 0, 6, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 4, 0, 0, 0, 1, 1, 0, 1, 1],
+        [1, 0, 5, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ], '🌲 任務二 14×14 山火場已載入（全平地 · 格線 150cm）');
+}
+
+function createCityMapPractice() {
+    buildForestGridScene([
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 2, 0, 0, 5, 0, 0, 1],
+        [1, 0, 1, 1, 0, 0, 3, 1],
+        [1, 0, 1, 0, 6, 0, 4, 1],
+        [1, 0, 0, 0, 1, 0, 0, 1],
+        [1, 1, 0, 0, 0, 4, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1],
+    ], '🌲 試用二 8×8 山火場已載入（全平地 · 格線 150cm）');
 }
 
 // ==========================================
@@ -1342,14 +3021,81 @@ function createHolodeckTexture() {
     return canvas;
 }
 
-function createLandingPad(x, z) {
+function createLandingPad(x, z, yCm) {
+    const y = typeof yCm === 'number' ? yCm : 0.2;
     const canvas = createLandingPadTexture();
     const texture = new THREE.CanvasTexture(canvas);
     const geometry = new THREE.PlaneGeometry(40, 40);
     const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
     const pad = new THREE.Mesh(geometry, material);
-    pad.rotation.x = -Math.PI / 2; pad.position.set(x, 0.2, z);   
+    pad.rotation.x = -Math.PI / 2; pad.position.set(x, y, z);
     return pad;
+}
+
+/**
+ * 任務一：立體箭嘴標示（懸浮、指向地面起點／終點）
+ * @param {number} x
+ * @param {number} z
+ * @param {number} groundY 箭嘴指向的地面高度
+ * @param {{ color?: number, emissive?: number, kind?: 'alpha'|'bravo' }} options
+ */
+function createWaypointArrowMarker(x, z, groundY, options) {
+    options = options || {};
+    const color = options.color != null ? options.color : 0x00adb5;
+    const emissive = options.emissive != null ? options.emissive : color;
+    const kind = options.kind || 'waypoint';
+
+    const root = new THREE.Group();
+    root.position.set(x, groundY, z);
+    root.userData.waypointKind = kind;
+
+    const floater = new THREE.Group();
+    root.add(floater);
+
+    const shaftH = 58;
+    const headH = 40;
+    const tipClearance = 10;
+    const mat = new THREE.MeshPhongMaterial({
+        color,
+        emissive,
+        emissiveIntensity: 0.5,
+        shininess: 36,
+        transparent: true,
+        opacity: 0.94
+    });
+
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 7.5, shaftH, 12), mat);
+    shaft.position.y = tipClearance + headH + shaftH / 2;
+    floater.add(shaft);
+
+    const head = new THREE.Mesh(new THREE.ConeGeometry(24, headH, 16), mat.clone());
+    head.rotation.x = Math.PI;
+    head.position.y = tipClearance + headH / 2;
+    floater.add(head);
+
+    const halo = new THREE.Mesh(
+        new THREE.RingGeometry(22, 30, 32),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = tipClearance + 1;
+    floater.add(halo);
+
+    const light = new THREE.PointLight(color, 1.4, 380);
+    light.position.y = tipClearance + headH + shaftH + 18;
+    floater.add(light);
+
+    const floatCenter = tipClearance + headH + shaftH + 95;
+    const update = () => {
+        const t = Date.now() * 0.0022;
+        floater.position.y = floatCenter + Math.sin(t) * 14;
+        floater.rotation.y += 0.004;
+    };
+    if (!window.mazeAnimations) window.mazeAnimations = [];
+    window.mazeAnimations.push(update);
+
+    environmentGroup.add(root);
+    return root;
 }
 
 function createLandingPadTexture() {
@@ -1685,12 +3431,116 @@ function createDroneModel() {
 
 // --- 物理邏輯與感測器 ---
 
+function isWalkableGridVal(val) {
+    return val !== 1;
+}
+
+function resetTunnelRouteTracking() {
+    visitedWalkableCells = new Set();
+    tunnelStartCell = null;
+    tunnelGoalCell = null;
+    _tunnelFinishHintLastLog = 0;
+}
+
+function resetTunnelPatrolVisits() {
+    visitedWalkableCells = new Set();
+    _tunnelFinishHintLastLog = 0;
+    if (tunnelStartCell) {
+        visitedWalkableCells.add(tunnelStartCell.i + ',' + tunnelStartCell.j);
+    }
+}
+
+function getDroneGridCell() {
+    if (!currentMazeGrid || !currentCellSize) return null;
+    const j = Math.floor((state.x - mazeOffsetX) / currentCellSize);
+    const i = Math.floor((state.z - mazeOffsetZ) / currentCellSize);
+    if (i < 0 || j < 0 || i >= currentMazeGrid.length || j >= currentMazeGrid[0].length) return null;
+    return { i, j, val: currentMazeGrid[i][j] };
+}
+
+function recordTunnelPatrolVisit() {
+    if (!isTunnelMissionScene() || !currentMazeGrid || state.missionCompleted) return;
+    if (state.y > TUNNEL_LEGIT_PATROL_HEIGHT_CM) return;
+    const cell = getDroneGridCell();
+    if (!cell || !isWalkableGridVal(cell.val)) return;
+    visitedWalkableCells.add(cell.i + ',' + cell.j);
+}
+
+function isVisitedPathConnectedStartToGoal() {
+    if (!tunnelStartCell || !tunnelGoalCell || visitedWalkableCells.size === 0) return false;
+    const startKey = tunnelStartCell.i + ',' + tunnelStartCell.j;
+    const goalKey = tunnelGoalCell.i + ',' + tunnelGoalCell.j;
+    if (!visitedWalkableCells.has(startKey) || !visitedWalkableCells.has(goalKey)) return false;
+
+    const queue = [startKey];
+    const seen = new Set([startKey]);
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    while (queue.length > 0) {
+        const key = queue.shift();
+        if (key === goalKey) return true;
+        const parts = key.split(',');
+        const si = parseInt(parts[0], 10);
+        const sj = parseInt(parts[1], 10);
+        for (let d = 0; d < dirs.length; d++) {
+            const ni = si + dirs[d][0];
+            const nj = sj + dirs[d][1];
+            const nk = ni + ',' + nj;
+            if (!visitedWalkableCells.has(nk) || seen.has(nk)) continue;
+            seen.add(nk);
+            queue.push(nk);
+        }
+    }
+    return false;
+}
+
+function evaluateTunnelMissionCompletion() {
+    const cell = getDroneGridCell();
+    if (!cell || cell.val !== 3) {
+        return { ok: false, reason: 'not_on_bravo' };
+    }
+    if (state.isFlying) {
+        return { ok: false, reason: 'still_flying' };
+    }
+    if (state.y > TUNNEL_MISSION_EXIT_MAX_ALT_CM) {
+        return { ok: false, reason: 'too_high' };
+    }
+    if (!isVisitedPathConnectedStartToGoal()) {
+        return { ok: false, reason: 'invalid_path' };
+    }
+    return { ok: true, reason: null };
+}
+
+function maybeLogTunnelFinishHint(reason) {
+    const now = Date.now();
+    if (now - _tunnelFinishHintLastLog < 3500) return;
+    _tunnelFinishHintLastLog = now;
+    const messages = {
+        not_on_bravo: '⚠️ 請飛入疏散集結區 Bravo 格子並降落，才能完成交班。',
+        still_flying: '⚠️ 請在 Bravo 使用「降落」積木完成交班（不可懸停結算）。',
+        too_high: '⚠️ 請降低高度後在 Bravo 降落。',
+        invalid_path: '⚠️ 未沿可通行路網抵達（不可翻越建築捷徑）。請沿路飛行再試。'
+    };
+    logToConsole(messages[reason] || '⚠️ 尚不符合任務完成條件。');
+}
+
 function handleWallCollision() {
     if (!currentMazeGrid) return;
 
-    // 森林場景樹木較高 (400cm)，隧道場景牆壁較矮 (120cm)
-    const wallHeightLimit = currentSceneType === 'city' ? 420 : 125;
-    if (state.y > wallHeightLimit) {
+    const kenneyUrbanMaze = (isTunnelMissionScene() || currentSceneType === 'challenge_maze')
+        && assets.kenneyDistrictTemplates
+        && assets.kenneyDistrictTemplates.length > 0;
+
+    if (kenneyUrbanMaze && state.y > TUNNEL_KENNEY_MAX_FLIGHT_CM) {
+        state.y = TUNNEL_KENNEY_MAX_FLIGHT_CM;
+    }
+
+    // 森林場景樹木較高 (400cm)；tunnel／challenge Kenney 街區任何高度皆檢查建築格
+    let wallHeightLimit = isCityMissionScene() ? 420 : 125;
+    if (kenneyUrbanMaze) {
+        wallHeightLimit = 280;
+    }
+    if (!isTunnelMissionScene() && currentSceneType !== 'challenge_maze' && state.y > wallHeightLimit) {
         lastSafePos.x = state.x;
         lastSafePos.z = state.z;
         return;
@@ -1747,46 +3597,77 @@ function handleWallCollision() {
     }
 }
 
+const TUNNEL_INSPECTION_HOVER_RADIUS_CM = 70;
+const TUNNEL_INSPECTION_HOVER_ALT_CM = 50;
+const TUNNEL_INSPECTION_HOVER_ALT_TOLERANCE_CM = 45;
+const TUNNEL_INSPECTION_HOVER_SECONDS = 3.0;
+
+function isDroneOnInspectionBeacon(beacon) {
+    const dist = Math.sqrt(Math.pow(state.x - beacon.x, 2) + Math.pow(state.z - beacon.z, 2));
+    const heightDiff = Math.abs(state.y - TUNNEL_INSPECTION_HOVER_ALT_CM);
+    return dist < TUNNEL_INSPECTION_HOVER_RADIUS_CM && heightDiff < TUNNEL_INSPECTION_HOVER_ALT_TOLERANCE_CM;
+}
+
+function completeInspectionBeacon(beacon) {
+    if (beacon.triggered) return;
+    beacon.triggered = true;
+    beaconsTriggered++;
+    currentScore += 100;
+    beacon.hoverTimer = 0;
+    const name = beacon.label || '巡檢回報點';
+    logToConsole(`✅ 巡檢回報完成：${name} (+100) 已完成 ${beaconsTriggered}/${getRequiredBeacons()}`);
+    if (beacon.mesh) {
+        beacon.mesh.traverse(child => {
+            if (child.isMesh && child.material) {
+                child.material.color.setHex(0xffff00);
+                if (child.material.emissive) {
+                    child.material.emissive.setHex(0xffff00);
+                    child.material.emissiveIntensity = 1.0;
+                }
+            }
+        });
+    }
+}
+
+/** hover 積木結束時計入模擬秒數（不受 3× 執行速度影響） */
+function creditTunnelInspectionHover(simulatedSeconds) {
+    if (!isTunnelMissionScene() || state.missionCompleted) return;
+    let onAnyBeacon = false;
+    beaconData.forEach(beacon => {
+        if (beacon.triggered) return;
+        if (!isDroneOnInspectionBeacon(beacon)) return;
+        onAnyBeacon = true;
+        beacon.hoverTimer += simulatedSeconds;
+        if (beacon.hoverTimer >= TUNNEL_INSPECTION_HOVER_SECONDS) {
+            completeInspectionBeacon(beacon);
+        } else {
+            logToConsole(`⏳ 巡檢回報中… ${beacon.hoverTimer.toFixed(1)}/${TUNNEL_INSPECTION_HOVER_SECONDS} 秒（${beacon.label}）`);
+        }
+    });
+    if (!onAnyBeacon) {
+        logToConsole('⚠️ 未在巡檢回報點範圍內：請飛到藍色巡檢點正上方再 hover ≥3 秒。');
+    }
+}
+
 function checkMissionLogic() {
-    // 即使降落了也應該檢查最後一次出口，或者只要是任務模式就持續檢查
-    if (currentSceneType !== 'tunnel' && currentSceneType !== 'challenge_maze') return;
+    if (!isTunnelMissionScene() && currentSceneType !== 'challenge_maze') return;
 
     // 1. 起飛計時 (僅在未完成時計時)
     if (!state.missionCompleted) {
         if (takeoffTime === 0 && state.y > 10) {
             takeoffTime = Date.now();
-            logToConsole("⏱️ 任務計時開始！");
+            logToConsole("⏱️ 已離開指揮所 Alpha，任務計時開始！");
         }
     }
 
-    // 2. 標記點觸發檢查 (只有飛行中且未完成才檢查) - 僅隧道迷宮有標記點
-    if (currentSceneType === 'tunnel' && state.isFlying && !state.missionCompleted) {
+    // 2. 巡檢回報點（懸停上傳資料，僅任務一）
+    if (isTunnelMissionScene() && state.isFlying && !state.missionCompleted) {
         beaconData.forEach(beacon => {
             if (beacon.triggered) return;
-
-            const dist = Math.sqrt(Math.pow(state.x - beacon.x, 2) + Math.pow(state.z - beacon.z, 2));
-            const heightDiff = Math.abs(state.y - 50);
-
-            // 放寬觸發範圍：半徑 70cm，高度差 45cm
-            if (dist < 70 && heightDiff < 45) {
-                beacon.hoverTimer += 0.02; // 稍微加快計時補償幀率波動
-                if (beacon.hoverTimer >= 3.0) { 
-                    beacon.triggered = true;
-                    beaconsTriggered++;
-                    currentScore += 100;
-                    logToConsole(`✅ 標記點啟動！(+100分) 目前已啟動: ${beaconsTriggered}/3`);
-                    
-                    if (beacon.mesh) {
-                    beacon.mesh.traverse(child => {
-                            if (child.isMesh && child.material) {
-                                child.material.color.setHex(0xffff00); // 變為金色
-                                if (child.material.emissive) {
-                                    child.material.emissive.setHex(0xffff00);
-                                    child.material.emissiveIntensity = 1.0;
-                                }
-                            }
-                    });
-                    }
+            if (isDroneOnInspectionBeacon(beacon)) {
+                beacon.hoverTimer += 0.02;
+                if (beacon.hoverTimer >= TUNNEL_INSPECTION_HOVER_SECONDS) {
+                    completeInspectionBeacon(beacon);
                 }
             } else {
                 beacon.hoverTimer = 0;
@@ -1794,89 +3675,407 @@ function checkMissionLogic() {
         });
     }
 
-    // 3. 終點出口檢查 (放寬條件：只要進入區域，不論是否飛行)
-    const distToExit = Math.sqrt(Math.pow(state.x - targetPosition.x, 2) + Math.pow(state.z - targetPosition.z, 2));
-    
-    if (distToExit < 120 && !state.missionCompleted && takeoffTime !== 0) {
-        state.missionCompleted = true;
-        state.endTime = Date.now(); 
-        
-        const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
-        const timeBonus = Math.max(0, (300 - timeElapsed) * 2);
-        const finalScore = (currentSceneType === 'challenge_maze' ? 500 : 200) + (beaconsTriggered * 100) + timeBonus;
-        
-        console.log("🏁 成功抵達出口！正在結算成績...");
-        logToConsole("🏁 成功抵達出口！正在結算成績...");
-        
-        state.stopSignal = true;
-        state.isRunning = false;
-
-        setTimeout(() => {
-            console.log("⏳ 準備調用 showResultModal...");
-            if (typeof window.showResultModal === 'function') {
-                window.showResultModal({
-                    beacons: beaconsTriggered,
-                    beaconsScore: beaconsTriggered * 100,
-                    exitScore: (currentSceneType === 'challenge_maze' ? 500 : 200),
-                    time: timeElapsed,
-                    timeBonus: Math.floor(timeBonus),
-                    total: Math.floor(finalScore)
-                });
-            } else {
-                alert(`任務完成！總得分：${Math.floor(finalScore)}`);
+    // 3. 任務完成：tunnel 須在 Bravo 格、已降落、沿路網連通；challenge_maze 維持距離判定
+    if (isTunnelMissionScene() && !state.missionCompleted && takeoffTime !== 0) {
+        const completion = evaluateTunnelMissionCompletion();
+        if (!completion.ok) {
+            const cell = getDroneGridCell();
+            const distToBravo = Math.sqrt(
+                Math.pow(state.x - targetPosition.x, 2) + Math.pow(state.z - targetPosition.z, 2)
+            );
+            if (cell && (cell.val === 3 || distToBravo < 150)) {
+                maybeLogTunnelFinishHint(completion.reason);
             }
-        }, 800);
+        } else {
+            finishTunnelMission();
+        }
+        return;
     }
+
+    const distToExit = Math.sqrt(Math.pow(state.x - targetPosition.x, 2) + Math.pow(state.z - targetPosition.z, 2));
+
+    if (currentSceneType === 'challenge_maze' && distToExit < 120 && !state.missionCompleted && takeoffTime !== 0) {
+        finishChallengeMazeMission();
+    }
+}
+
+function finishTunnelMission() {
+    if (state.missionCompleted) return;
+    state.missionCompleted = true;
+    state.endTime = Date.now();
+
+    const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
+    const timeResult = getTunnelMissionTimeBonus(timeElapsed);
+    const timeBonus = timeResult.bonus;
+    const finalScore = 200 + (beaconsTriggered * 100) + timeBonus;
+
+    const finishMsg = '🏁 已抵達疏散集結區 Bravo，情報已交付！正在結算成績…';
+    console.log(finishMsg);
+    logToConsole(finishMsg);
+
+    state.stopSignal = true;
+    state.isRunning = false;
+
+    setTimeout(() => {
+        if (typeof window.showResultModal === 'function') {
+            window.showResultModal({
+                mission: activeMissionConfig.resultMissionId,
+                isPractice: activeMissionConfig.isPractice,
+                beacons: beaconsTriggered,
+                beaconsScore: beaconsTriggered * 100,
+                exitScore: 200,
+                time: timeElapsed,
+                timeTierLabel: timeResult.label,
+                timeBonus: Math.floor(timeBonus),
+                total: Math.floor(finalScore)
+            });
+        } else if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'info',
+                title: '任務完成',
+                body: `總得分：${Math.floor(finalScore)}`,
+                nextStep: '成績單元件未載入時顯示此訊息；請重新整理或檢查 main.js 是否載入。',
+                autoHideMs: 12000,
+                focusClose: false
+            });
+        } else {
+            alert(`任務完成！總得分：${Math.floor(finalScore)}`);
+        }
+    }, 800);
+}
+
+function finishChallengeMazeMission() {
+    if (state.missionCompleted) return;
+    state.missionCompleted = true;
+    state.endTime = Date.now();
+
+    const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
+    const timeBonus = Math.max(0, (300 - timeElapsed) * 2);
+    const finalScore = 500 + (beaconsTriggered * 100) + timeBonus;
+
+    const finishMsg = '🏁 成功抵達出口！正在結算成績…';
+    console.log(finishMsg);
+    logToConsole(finishMsg);
+
+    state.stopSignal = true;
+    state.isRunning = false;
+
+    setTimeout(() => {
+        console.log("⏳ 準備調用 showResultModal...");
+        if (typeof window.showResultModal === 'function') {
+            window.showResultModal({
+                beacons: beaconsTriggered,
+                beaconsScore: beaconsTriggered * 100,
+                exitScore: 500,
+                time: timeElapsed,
+                timeBonus: Math.floor(timeBonus),
+                total: Math.floor(finalScore)
+            });
+        } else if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'info',
+                title: '任務完成',
+                body: `總得分：${Math.floor(finalScore)}`,
+                nextStep: '成績單元件未載入時顯示此訊息；請重新整理或檢查 main.js 是否載入。',
+                autoHideMs: 12000,
+                focusClose: false
+            });
+        } else {
+            alert(`任務完成！總得分：${Math.floor(finalScore)}`);
+        }
+    }, 800);
 }
 
 function getGroundHeight(x, z) {
-    return 0; 
+    if (typeof currentSceneType !== 'undefined' && isCityMissionScene()
+        && typeof getForestHeight === 'function') {
+        const h = getForestHeight(x, z);
+        return h + 15;
+    }
+    return 0;
 }
+
+/** 依迷宮網格估算感測器方向上的牆距（cm），與 raycast 取較小值以對齊 grid 碰撞 */
+function estimateGridWallDistance(type) {
+    if (!currentMazeGrid || !currentCellSize) return 500;
+    const gridStartX = mazeOffsetX;
+    const gridStartZ = mazeOffsetZ;
+    const rad = THREE.MathUtils.degToRad(state.heading);
+    let dx = 0;
+    let dz = 0;
+    if (type === 'front') {
+        dx = -Math.sin(rad);
+        dz = -Math.cos(rad);
+    } else if (type === 'left') {
+        dx = -Math.cos(rad);
+        dz = Math.sin(rad);
+    } else if (type === 'right') {
+        dx = Math.cos(rad);
+        dz = -Math.sin(rad);
+    } else {
+        return 500;
+    }
+    const step = currentCellSize * 0.45;
+    const maxDist = 1000;
+    let dist = 0;
+    let px = state.x;
+    let pz = state.z;
+    while (dist < maxDist) {
+        px += dx * step;
+        pz += dz * step;
+        dist += step;
+        const j = Math.floor((px - gridStartX) / currentCellSize);
+        const i = Math.floor((pz - gridStartZ) / currentCellSize);
+        if (i < 0 || j < 0 || i >= currentMazeGrid.length || j >= currentMazeGrid[0].length) {
+            break;
+        }
+        if (currentMazeGrid[i][j] === 1) {
+            return Math.max(0, dist - step * 0.5);
+        }
+    }
+    return 500;
+}
+
 // 任務二邏輯變數
 let waterLoaded = false;
+const CITY_BATTERY_START_LINES = 20;
+const CITY_BATTERY_CHARGE_LINES = 15;
+let cityBatteryLines = CITY_BATTERY_START_LINES;
 let firesExtinguished = 0;
-let batteryLife = 120; // 120秒
+let mission2FirePoints = 0;
+let mission2FiresScored = new Set();
+
+/** 任務二：撲滅全部火點獎金 */
+const MISSION2_COMPLETION_BONUS = 200;
+const MISSION2_REQUIRED_FIRES = 4;
+/** 任務二：時間獎段位（山火任務較長，上限 10 分鐘） */
+const MISSION2_TIME_TIERS = [
+    { maxSec: 240, bonus: 450, label: '≤ 4 分鐘', labelShort: '極快' },
+    { maxSec: 360, bonus: 300, label: '≤ 6 分鐘', labelShort: '快' },
+    { maxSec: 480, bonus: 150, label: '≤ 8 分鐘', labelShort: '中等' },
+    { maxSec: 600, bonus: 50, label: '≤ 10 分鐘', labelShort: '慢' }
+];
+
+function getMission2FirePointValue(i, j) {
+    const site = getActiveFireSites()[i + ',' + j];
+    if (!site) return 100;
+    if (site.priority >= 280) return 200;
+    if (site.priority >= 230) return 150;
+    if (site.priority >= 190) return 125;
+    return 100;
+}
+
+function getMission2TimeBonus(timeElapsedSec) {
+    const elapsed = Math.max(0, Math.floor(timeElapsedSec));
+    for (let i = 0; i < MISSION2_TIME_TIERS.length; i++) {
+        const tier = MISSION2_TIME_TIERS[i];
+        if (elapsed <= tier.maxSec) {
+            return { bonus: tier.bonus, label: tier.labelShort, tierIndex: i };
+        }
+    }
+    return { bonus: 0, label: '超時', tierIndex: -1 };
+}
+
+function awardMission2FireScore(i, j) {
+    if (!isCityMissionScene() || state.missionCompleted) return 0;
+    const key = i + ',' + j;
+    if (mission2FiresScored.has(key)) return 0;
+    mission2FiresScored.add(key);
+    const pts = getMission2FirePointValue(i, j);
+    mission2FirePoints += pts;
+    currentScore += pts;
+    return pts;
+}
+
+function maybeFinishCityMission() {
+    if (!isCityMissionScene() || state.missionCompleted) return;
+    if (firesExtinguished < getRequiredFires() || takeoffTime === 0) return;
+    finishCityMission();
+}
+
+function finishCityMission() {
+    if (state.missionCompleted) return;
+    state.missionCompleted = true;
+    state.endTime = Date.now();
+
+    const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
+    const timeResult = getMission2TimeBonus(timeElapsed);
+    const completionBonus = MISSION2_COMPLETION_BONUS;
+    const finalScore = mission2FirePoints + completionBonus + timeResult.bonus;
+    currentScore = finalScore;
+
+    const finishMsg = `🏁 ${getRequiredFires()} 處火點已撲滅！正在結算成績…`;
+    console.log(finishMsg);
+    logToConsole(finishMsg);
+
+    state.stopSignal = true;
+    state.isRunning = false;
+
+    setTimeout(() => {
+        if (typeof window.showResultModal === 'function') {
+            window.showResultModal({
+                mission: activeMissionConfig.resultMissionId,
+                isPractice: activeMissionConfig.isPractice,
+                row1Label: '撲滅火點',
+                row1Count: `${firesExtinguished} / ${getRequiredFires()}`,
+                row1Score: mission2FirePoints,
+                row2Label: '任務完成',
+                row2Status: 'YES',
+                row2Score: completionBonus,
+                beacons: firesExtinguished,
+                beaconsScore: mission2FirePoints,
+                exitScore: completionBonus,
+                time: timeElapsed,
+                timeTierLabel: timeResult.label,
+                timeBonus: Math.floor(timeResult.bonus),
+                total: Math.floor(finalScore)
+            });
+        } else if (typeof window.showAppMessage === 'function') {
+            window.showAppMessage({
+                variant: 'info',
+                title: '任務完成',
+                body: `總得分：${Math.floor(finalScore)}`,
+                nextStep: '成績單元件未載入時顯示此訊息；請重新整理或檢查 main.js 是否載入。',
+                autoHideMs: 12000,
+                focusClose: false
+            });
+        } else {
+            alert(`任務完成！總得分：${Math.floor(finalScore)}`);
+        }
+    }, 800);
+}
+
+if (typeof window !== 'undefined') {
+    window.MISSION2_TIME_TIERS = MISSION2_TIME_TIERS;
+    window.awardMission2FireScore = awardMission2FireScore;
+    window.maybeFinishCityMission = maybeFinishCityMission;
+}
+
+function resetCityBattery() {
+    cityBatteryLines = CITY_BATTERY_START_LINES;
+    firesExtinguished = 0;
+    mission2FirePoints = 0;
+    mission2FiresScored = new Set();
+}
+
+/** 任務二：找無人機附近最近的可互動格（水源/火點） */
+function findCityInteractionCell(matchVal) {
+    if (!isCityMissionScene() || !currentMazeGrid || !currentCellSize) return null;
+    let best = null;
+    for (let i = 0; i < currentMazeGrid.length; i++) {
+        for (let j = 0; j < currentMazeGrid[i].length; j++) {
+            const val = currentMazeGrid[i][j];
+            if (typeof matchVal === 'function' ? !matchVal(val) : val !== matchVal) continue;
+            const cx = j * currentCellSize + mazeOffsetX + currentCellSize / 2;
+            const cz = i * currentCellSize + mazeOffsetZ + currentCellSize / 2;
+            const dist = Math.hypot(state.x - cx, state.z - cz);
+            if (dist < 95 && (!best || dist < best.dist)) {
+                best = { i, j, val, dist };
+            }
+        }
+    }
+    return best;
+}
+
+function hideForestFireAt(i, j) {
+    const targetX = j * currentCellSize + mazeOffsetX + currentCellSize / 2;
+    const targetZ = i * currentCellSize + mazeOffsetZ + currentCellSize / 2;
+    if (typeof environmentGroup === 'undefined') return;
+    environmentGroup.children.forEach(obj => {
+        const dx = Math.abs(obj.position.x - targetX);
+        const dz = Math.abs(obj.position.z - targetZ);
+        if (obj instanceof THREE.Group && dx < 30 && dz < 30) {
+            obj.visible = false;
+        }
+    });
+}
+
+function getCityBatteryRemainingLines() {
+    return cityBatteryLines;
+}
+
+function consumeCityBatteryLine(cmd) {
+    if (!isCityMissionScene()) return true;
+    if (!cmd || !cmd.type || !cmd.type.startsWith('move_')) return true;
+    if (cityBatteryLines <= 0) return false;
+    cityBatteryLines--;
+    return true;
+}
+
+function addCityBatteryLines(amount) {
+    if (!isCityMissionScene()) return 0;
+    const before = cityBatteryLines;
+    cityBatteryLines += amount;
+    return cityBatteryLines - before;
+}
+
+function isDroneOnForestChargePad(station) {
+    if (!currentMazeGrid || !currentCellSize) return false;
+    const gj = Math.floor((state.x - mazeOffsetX) / currentCellSize);
+    const gi = Math.floor((state.z - mazeOffsetZ) / currentCellSize);
+    if (gi !== station.i || gj !== station.j) return false;
+    const minY = station.groundH + 25;
+    const maxY = station.groundH + 220;
+    return state.y >= minY && state.y <= maxY;
+}
+
+function completeForestCharge(station) {
+    station.triggered = true;
+    station.hoverTimer = 0;
+    const added = addCityBatteryLines(CITY_BATTERY_CHARGE_LINES);
+    logToConsole(`⚡ 充電完成！電池 +${added} 行（剩餘 ${getCityBatteryRemainingLines()} 行）`);
+    if (station.mesh) {
+        station.mesh.traverse(child => {
+            if (child.isMesh && child.material) {
+                child.material.color.setHex(0x81c784);
+                if (child.material.emissive) {
+                    child.material.emissive.setHex(0x4caf50);
+                    child.material.emissiveIntensity = 0.5;
+                }
+            }
+        });
+    }
+}
+
+/** hover 積木結束時計入模擬秒數（不受 3× 執行速度影響） */
+function creditForestChargeHover(simulatedSeconds) {
+    if (!isCityMissionScene()) return;
+    let onAnyPad = false;
+    forestChargeData.forEach(station => {
+        if (station.triggered) return;
+        if (!isDroneOnForestChargePad(station)) return;
+        onAnyPad = true;
+        station.hoverTimer += simulatedSeconds;
+        if (station.hoverTimer >= 3.0) {
+            completeForestCharge(station);
+        } else {
+            logToConsole(`⏳ 充電中… ${station.hoverTimer.toFixed(1)}/3.0 秒（${station.label}）`);
+        }
+    });
+    if (!onAnyPad) {
+        logToConsole('⚠️ 未在充電站格位上方：請飛到黃色充電站正上方再 hover ≥3 秒。');
+    }
+}
 
 function checkCityLogic() {
-    if (currentSceneType !== 'city') return;
-    if (!state.isFlying || state.missionCompleted) return;
+    if (!isCityMissionScene()) return;
+    if (state.missionCompleted) return;
 
-    // 1. 電力消耗邏輯
-    if (takeoffTime > 0) {
-        const elapsed = (Date.now() - takeoffTime) / 1000;
-        batteryLife = Math.max(0, 120 - elapsed);
-        if (batteryLife <= 0) {
-            logToConsole("⚠️ 電力耗盡！無人機墜毀。");
-            if (typeof emergencyStop === 'function') emergencyStop();
-            return;
+    if (takeoffTime === 0 && state.isFlying) {
+        const groundH = typeof getForestHeight === 'function' ? getForestHeight(state.x, state.z) : 0;
+        if (state.y > groundH + 35) {
+            takeoffTime = Date.now();
+            logToConsole('⏱️ 已離開基地，任務計時開始！');
         }
     }
 
-    // 2. 補給站檢查 (400, 400)
-    const distToWater = Math.sqrt(Math.pow(state.x - 400, 2) + Math.pow(state.z - 400, 2));
-    if (distToWater < 100 && state.y < 30 && !waterLoaded) {
-        waterLoaded = true;
-        logToConsole("💧 滅火劑裝載完成！(重量增加，速度減半)");
-        executionSpeed = 0.5; // 限制執行速度
-        if(droneLedMesh) {
-            droneLedMesh.material.color.setHex(0x0044ff);
-            droneLedMesh.material.opacity = 1.0;
-        }
-    }
+    if (!state.isFlying) return;
 
-    // 3. 火源投彈檢查
-    const fires = [
-        { x: -600, z: -600 },
-        { x: 0, z: -800 },
-        { x: 600, z: -600 }
-    ];
-
-    fires.forEach((f, i) => {
-        const dist = Math.sqrt(Math.pow(state.x - f.x, 2) + Math.pow(state.z - f.z, 2));
-        // 必須在 80-120cm 高度投彈才有效
-        if (dist < 100 && state.y > 80 && state.y < 150 && waterLoaded) {
-            // 模擬滅火過程
-            // logToConsole(`🔥 火源 ${i+1} 正在被撲滅...`);
+    // 離開充電格時重置未完成的充電進度
+    forestChargeData.forEach(station => {
+        if (station.triggered) return;
+        if (!isDroneOnForestChargePad(station)) {
+            station.hoverTimer = 0;
         }
     });
 }
@@ -1928,6 +4127,9 @@ function getSensorReading(type, unit) {
                 value = Math.max(0, wallIntersects[0].distance - 15);
             } else {
                 value = 500;
+            }
+            if (currentSceneType === 'tunnel' || currentSceneType === 'challenge_maze') {
+                value = Math.min(value, estimateGridWallDistance(type));
             }
         } else {
             value = 500;
@@ -1999,10 +4201,12 @@ function animateLoop() {
     // 執行碰撞偵測
     handleWallCollision();
 
+    recordTunnelPatrolVisit();
+
     // 執行任務邏輯 (計分、觸發)
     checkMissionLogic();
 
-    // 執行迷宮動畫 (如 Beacon 旋轉)
+    // 執行迷宮動畫（巡檢回報點旋轉等）
     if (window.mazeAnimations) {
         window.mazeAnimations.forEach(fn => fn());
     }
@@ -2017,32 +4221,70 @@ function animateLoop() {
     if (droneGroup) { droneGroup.position.set(state.x, state.y, state.z); droneGroup.rotation.y = THREE.MathUtils.degToRad(state.heading); }
     if (followDrone) { camTarget.x += (state.x - camTarget.x)*0.1; camTarget.y += (state.y - camTarget.y)*0.1; camTarget.z += (state.z - camTarget.z)*0.1; }
     if (ruinsUpdateFunction) ruinsUpdateFunction();
-    if (state.isFlying) checkCityLogic();
+    if (isCityMissionScene()) checkCityLogic();
+    else if (state.isFlying) checkCityLogic();
     
     // 更新 HUD 內容 (加入實時分數與時間)
     let hudHTML = `<div style="margin-bottom:5px; font-weight:bold; color:#00adb5; border-bottom:1px solid rgba(0,173,181,0.3); padding-bottom:5px;">MODE: ${followDrone?"FOLLOW":"FREE LOOK"}</div>`;
     
-    if (currentSceneType === 'tunnel') {
+    if (isTunnelMissionScene()) {
         const currentTime = state.missionCompleted ? (state.endTime || Date.now()) : Date.now();
         const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((currentTime - takeoffTime) / 1000);
         hudHTML += `<div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">SCORE: ${Math.floor(currentScore)}</div>`;
         hudHTML += `<div style="color:#ffffff;">TIME: ${timeElapsed}s ${state.missionCompleted ? '🏁' : ''}</div>`;
-        hudHTML += `<div style="color:#00ff00;">BEACONS: ${beaconsTriggered}/3</div>`;
+        hudHTML += `<div style="color:#00ff00;">巡檢回報: ${beaconsTriggered}/${getRequiredBeacons()}</div>`;
+        if (activeMissionConfig.isPractice) {
+            hudHTML += `<div style="color:#7dd3fc;">試用關卡 · 非正式地圖</div>`;
+        }
         hudHTML += `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;"></div>`;
     }
 
-    if (currentSceneType === 'city') {
-        const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((Date.now() - takeoffTime) / 1000);
-        const batteryLeft = Math.max(0, 120 - timeElapsed);
-        hudHTML += `<div style="color:#ff4400; font-size:1.1rem; font-weight:bold;">BATTERY: ${batteryLeft}s</div>`;
-        hudHTML += `<div style="color:${waterLoaded?'#00ff00':'#aaaaaa'};">WATER: ${waterLoaded?'LOADED':'EMPTY'}</div>`;
+    if (isCityMissionScene()) {
+        const currentTime = state.missionCompleted ? (state.endTime || Date.now()) : Date.now();
+        const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((currentTime - takeoffTime) / 1000);
+        const batteryLeft = getCityBatteryRemainingLines();
+        const waterStatus = state.hasWater ? 'FULL' : 'EMPTY';
+        const charged = forestChargeData.filter(s => s.triggered).length;
+        const chargeTotal = forestChargeData.length;
+        hudHTML += `<div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">SCORE: ${Math.floor(currentScore)}</div>`;
+        hudHTML += `<div style="color:#ffffff;">TIME: ${timeElapsed}s ${state.missionCompleted ? '🏁' : ''}</div>`;
+        hudHTML += `<div style="color:#ff4400; font-size:1.05rem; font-weight:bold;">BATTERY: ${batteryLeft} 行 (移動)</div>`;
+        hudHTML += `<div style="color:#ff6b35;">火點: ${firesExtinguished}/${getRequiredFires()}</div>`;
+        hudHTML += `<div style="color:${state.hasWater ? '#00adb5' : '#aaa'};">WATER: ${waterStatus}</div>`;
+        hudHTML += `<div style="color:#ffd54f;">充電站: ${charged}/${chargeTotal}</div>`;
+        hudHTML += `<div style="color:#4dabf7;">起點藍箭嘴 → 終點綠箭嘴</div>`;
+        if (activeMissionConfig.isPractice) {
+            hudHTML += `<div style="color:#7dd3fc;">試用關卡 · 非正式地圖</div>`;
+        }
         hudHTML += `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;"></div>`;
     }
 
-    const displayAlt = currentSceneType === 'city' ? state.y - getForestHeight(state.x, state.z) : state.y;
+    if (currentSceneType === 'challenge_maze') {
+        const currentTime = state.missionCompleted ? (state.endTime || Date.now()) : Date.now();
+        const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((currentTime - takeoffTime) / 1000);
+        hudHTML += `<div style="color:#ff416c; font-size:1.05rem; font-weight:bold;">CHALLENGE · 隨機迷宮</div>`;
+        hudHTML += `<div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">SCORE: ${Math.floor(currentScore)}</div>`;
+        hudHTML += `<div style="color:#ffffff;">TIME: ${timeElapsed}s ${state.missionCompleted ? '🏁' : ''}</div>`;
+        hudHTML += `<div style="color:#4dabf7;">起點藍箭嘴 → 終點綠箭嘴</div>`;
+        hudHTML += `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;"></div>`;
+    }
+
+    const displayAlt = isCityMissionScene() ? state.y - getForestHeight(state.x, state.z) : state.y;
     hudHTML += `Status: ${state.isFlying?'FLYING':'LANDED'}<br>Alt: ${Math.round(displayAlt)} cm`;
     document.getElementById('hud-display').innerHTML = hudHTML;
 
     updateCameraPosition();
     renderer.render(scene, camera);
+}
+
+if (typeof window !== 'undefined') {
+    window.__challengeMazeTestHooks = {
+        markChallengeMazePiece,
+        clearChallengeMazeGeometry
+    };
+    window.getRequiredBeacons = getRequiredBeacons;
+    window.getRequiredFires = getRequiredFires;
+    window.isTunnelMissionScene = isTunnelMissionScene;
+    window.isCityMissionScene = isCityMissionScene;
+    window.updateRoadEditorButtonVisibility = updateRoadEditorButtonVisibility;
 }
