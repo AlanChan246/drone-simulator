@@ -1561,16 +1561,15 @@ async function dispatchReleaseWater() {
         const pts = (typeof awardMission2FireScore === 'function')
             ? awardMission2FireScore(cell.i, cell.j)
             : 0;
-        const site = typeof FOREST_FIRE_SITES !== 'undefined'
-            ? FOREST_FIRE_SITES[`${cell.i},${cell.j}`]
-            : null;
+        const requiredFires = typeof getRequiredFires === 'function' ? getRequiredFires() : 4;
+        const fireSites = typeof getActiveFireSites === 'function'
+            ? getActiveFireSites()
+            : (typeof FOREST_FIRE_SITES !== 'undefined' ? FOREST_FIRE_SITES : {});
+        const site = fireSites[`${cell.i},${cell.j}`];
         const label = site ? site.label : `(${cell.i},${cell.j})`;
         const scoreMsg = pts > 0 ? ` (+${pts} 分)` : '';
-        logToConsole(`🌊 滅火成功！${label} 已撲滅。${scoreMsg}（${firesExtinguished}/4）`);
+        logToConsole(`🌊 滅火成功！${label} 已撲滅。${scoreMsg}（${firesExtinguished}/${requiredFires}）`);
         updateHUD();
-        if (typeof maybeFinishCityMission === 'function') {
-            maybeFinishCityMission();
-        }
     } else {
         logToConsole("❌ 滅火失敗：下方沒有火源。請對準火焰中心執行。");
     }
@@ -2600,7 +2599,7 @@ function getPractice2Grade(total) {
         label: '待加強',
         labelEn: 'Keep Trying',
         css: 'grade-0',
-        desc: '尚未達三等門檻（400 分）— 請確認已撲滅 2 處火點'
+        desc: '尚未達三等門檻（400 分）— 請確認已在受災區降落'
     };
 }
 
@@ -2615,7 +2614,7 @@ function getMission2Grade(total) {
         label: '待加強',
         labelEn: 'Keep Trying',
         css: 'grade-0',
-        desc: '尚未達三等門檻（550 分）— 請確認已撲滅 4 處火點'
+        desc: '尚未達三等門檻（550 分）— 請確認已在受災區降落'
     };
 }
 
@@ -2658,7 +2657,7 @@ function renderBriefMission2FireTable() {
                 <tr><td>火點 B</td><td>+150</td></tr>
                 <tr><td>火點 C</td><td>+125</td></tr>
                 <tr><td>火點 D</td><td>+100</td></tr>
-                <tr><td>撲滅 4/4 完成獎</td><td>+200</td></tr>
+                <tr><td>全數撲滅 4/4</td><td>+200</td></tr>
             </tbody>
         </table>`;
 }
@@ -2702,7 +2701,7 @@ function renderBriefMission1Legend() {
 function renderBriefMission2Legend() {
     return renderBriefMapLegend([
         { swatchClass: 'brief-legend-swatch--start', glyph: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木製起降平台' },
-        { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；可選降落點' },
+        { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；須降落結算成績' },
         { swatchClass: 'brief-legend-swatch--fire', glyph: 'A', title: '火點 A/B/C/D', desc: '火焰上方浮動標籤；金色 A 最優先（+200）' },
         { swatchClass: 'brief-legend-swatch--water', glyph: '', title: '水源', desc: '深藍色圓形水池；Collect Water 裝水' },
         { swatchClass: 'brief-legend-swatch--charge', glyph: '⚡', title: '充電站', desc: '黃色六角平台＋光環；hover ≥3 秒 +15 行（每站一次）' },
@@ -2818,6 +2817,11 @@ function showMissionBriefing(missionId) {
                     <span class="brief-step-title">充電站（可選）</span>
                     <span class="brief-step-sub">hover 3s +15 行</span>
                 </li>
+                <li class="brief-step">
+                    <span class="brief-step-icon">🛬</span>
+                    <span class="brief-step-title">受災區降落</span>
+                    <span class="brief-step-sub">結算成績</span>
+                </li>
             </ol>
             <h4 class="brief-section-title">地圖圖示 Map Legend</h4>
             ${renderBriefMission2Legend()}
@@ -2833,7 +2837,7 @@ function showMissionBriefing(missionId) {
             ${renderBriefTimeTierTable(window.MISSION2_TIME_TIERS, '超過 10 分鐘')}
             <h4 class="brief-section-title">等級門檻 Grades</h4>
             ${renderBriefGradeGrid(MISSION2_GRADE_TIERS)}
-            <p class="brief-note">撲滅 4 處火點即完成任務；滅火愈快、優先序愈佳，分數愈高。${SHOW_MISSION_REFERENCE_ANSWERS ? '參考路線約 1050 分。' : ''}</p>
+            <p class="brief-note">須飛至受災區（綠色箭嘴）降落結算；撲滅火點愈多分數愈高，全數撲滅額外 +200。${SHOW_MISSION_REFERENCE_ANSWERS ? '參考路線約 1050 分。' : ''}</p>
             <p class="brief-note">轉向／取水／滅火／起降不計行。連續同方向可合併距離以省電。</p>
             <h4 class="brief-section-title">地圖座標 Map</h4>
             <ul class="brief-tips">
@@ -2877,12 +2881,14 @@ function showMissionBriefing(missionId) {
                 <li class="brief-step"><span class="brief-step-icon">💧</span><span class="brief-step-title">取水</span></li>
                 <li class="brief-step"><span class="brief-step-icon">🔥</span><span class="brief-step-title">撲滅 2 處火點</span></li>
                 <li class="brief-step"><span class="brief-step-icon">⚡</span><span class="brief-step-title">充電站（可選）</span></li>
+                <li class="brief-step"><span class="brief-step-icon">🛬</span><span class="brief-step-title">受災區降落</span><span class="brief-step-sub">結算成績</span></li>
             </ol>
             <h4 class="brief-section-title">等級門檻 Grades</h4>
             ${renderBriefGradeGrid(PRACTICE2_GRADE_TIERS)}
             <h4 class="brief-section-title">提示 Tips</h4>
             <ul class="brief-tips">
                 <li>火點 A (3,6) 優先於 B (5,5)；水源在 (1,4)。</li>
+                <li>須飛至受災區降落結算；全數撲滅 2/2 可額外 +200 分。</li>
                 <li>正式競賽為 14×14、4 火點，需密碼解鎖。</li>
             </ul>
         `;
@@ -3096,7 +3102,7 @@ async function startMission(missionId) {
     } else if (missionId === 'practice2') {
         changeScene('city_practice');
         logToConsole('🧪 試用二：8×8 山火智能應對（2 火點 · 免密碼練習）');
-        logToConsole('💡 機制與正式任務二相同，地圖較小。');
+        logToConsole('💡 機制與正式任務二相同；須飛至受災區降落結算。');
     } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
         changeScene('tunnel');
         logToConsole('📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。');
@@ -3104,7 +3110,7 @@ async function startMission(missionId) {
     } else if (missionId === 2 || missionId === '2') {
         changeScene('city');
         logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
-        logToConsole('💡 藍／綠箭嘴標示起點與受災區；火 A(2,12) 最優先。');
+        logToConsole('💡 須飛至受災區（綠箭嘴）降落結算；全數撲滅可額外 +200。');
     } else {
         changeScene('free');
     }
@@ -3942,7 +3948,7 @@ window.showResultModal = function(data) {
         elRow1Label.textContent = data.row1Label || (isMission2 ? '撲滅火點' : '巡檢回報 (Inspections)');
     }
     if (elRow2Label) {
-        elRow2Label.textContent = data.row2Label || (isMission2 ? '任務完成' : '抵達終點');
+        elRow2Label.textContent = data.row2Label || (isMission2 ? '全數撲滅' : '抵達終點');
     }
     const requiredBeacons = typeof getRequiredBeacons === 'function' ? getRequiredBeacons() : 3;
     const requiredFires = typeof getRequiredFires === 'function' ? getRequiredFires() : 4;

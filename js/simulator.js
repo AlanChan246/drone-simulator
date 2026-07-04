@@ -171,6 +171,7 @@ let visitedWalkableCells = new Set();
 let tunnelStartCell = null;
 let tunnelGoalCell = null;
 let _tunnelFinishHintLastLog = 0;
+let _cityFinishHintLastLog = 0;
 
 /** 路面編輯 UI；false = 隱藏按鈕（試用一路面已寫入 DEFAULT_PRACTICE_ROAD_OVERRIDES） */
 const ROAD_EDITOR_UI_ENABLED = false;
@@ -3939,8 +3940,10 @@ let firesExtinguished = 0;
 let mission2FirePoints = 0;
 let mission2FiresScored = new Set();
 
-/** 任務二：撲滅全部火點獎金 */
-const MISSION2_COMPLETION_BONUS = 200;
+/** 任務二：受災區降落結算時，相對平台高度上限 (cm) */
+const CITY_MISSION_EXIT_MAX_REL_ALT_CM = 120;
+/** 任務二：全數撲滅火點額外獎金（須在受災區降落結算時一併判定） */
+const MISSION2_ALL_FIRES_BONUS = 200;
 const MISSION2_REQUIRED_FIRES = 4;
 /** 任務二：時間獎段位（山火任務較長，上限 10 分鐘） */
 const MISSION2_TIME_TIERS = [
@@ -3981,9 +3984,51 @@ function awardMission2FireScore(i, j) {
     return pts;
 }
 
+function evaluateCityMissionCompletion() {
+    const cell = getDroneGridCell();
+    if (!cell || cell.val !== 3) {
+        return { ok: false, reason: 'not_on_goal' };
+    }
+    if (state.isFlying) {
+        return { ok: false, reason: 'still_flying' };
+    }
+    const groundH = typeof getForestHeight === 'function' ? getForestHeight(state.x, state.z) : 0;
+    const relAlt = state.y - groundH;
+    if (relAlt > CITY_MISSION_EXIT_MAX_REL_ALT_CM) {
+        return { ok: false, reason: 'too_high' };
+    }
+    return { ok: true, reason: null };
+}
+
+function maybeLogCityFinishHint(reason) {
+    const now = Date.now();
+    if (now - _cityFinishHintLastLog < 3500) return;
+    _cityFinishHintLastLog = now;
+    const required = getRequiredFires();
+    const messages = {
+        not_on_goal: '⚠️ 請飛入受災區（綠色箭嘴）格子並降落，才能結算成績。',
+        still_flying: '⚠️ 請在受災區使用「降落」積木完成交班（不可懸停結算）。',
+        too_high: '⚠️ 請降低高度後在受災區降落。'
+    };
+    logToConsole(messages[reason] || '⚠️ 尚不符合任務完成條件。');
+    if (reason === 'not_on_goal' || reason === 'still_flying') {
+        logToConsole(`💡 撲滅火點愈多分數愈高；全數 ${required} 處撲滅可額外 +${MISSION2_ALL_FIRES_BONUS} 分。`);
+    }
+}
+
 function maybeFinishCityMission() {
-    if (!isCityMissionScene() || state.missionCompleted) return;
-    if (firesExtinguished < getRequiredFires() || takeoffTime === 0) return;
+    if (!isCityMissionScene() || state.missionCompleted || takeoffTime === 0) return;
+    const completion = evaluateCityMissionCompletion();
+    if (!completion.ok) {
+        const cell = getDroneGridCell();
+        const distToGoal = Math.sqrt(
+            Math.pow(state.x - targetPosition.x, 2) + Math.pow(state.z - targetPosition.z, 2)
+        );
+        if (cell && (cell.val === 3 || distToGoal < 150)) {
+            maybeLogCityFinishHint(completion.reason);
+        }
+        return;
+    }
     finishCityMission();
 }
 
@@ -3994,11 +4039,15 @@ function finishCityMission() {
 
     const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
     const timeResult = getMission2TimeBonus(timeElapsed);
-    const completionBonus = MISSION2_COMPLETION_BONUS;
-    const finalScore = mission2FirePoints + completionBonus + timeResult.bonus;
+    const requiredFires = getRequiredFires();
+    const allFiresCleared = firesExtinguished >= requiredFires;
+    const allFiresBonus = allFiresCleared ? MISSION2_ALL_FIRES_BONUS : 0;
+    const finalScore = mission2FirePoints + allFiresBonus + timeResult.bonus;
     currentScore = finalScore;
 
-    const finishMsg = `🏁 ${getRequiredFires()} 處火點已撲滅！正在結算成績…`;
+    const finishMsg = allFiresCleared
+        ? '🏁 已抵達受災區並降落，全數火點已撲滅！正在結算成績…'
+        : '🏁 已抵達受災區並降落，正在結算成績…';
     console.log(finishMsg);
     logToConsole(finishMsg);
 
@@ -4011,14 +4060,14 @@ function finishCityMission() {
                 mission: activeMissionConfig.resultMissionId,
                 isPractice: activeMissionConfig.isPractice,
                 row1Label: '撲滅火點',
-                row1Count: `${firesExtinguished} / ${getRequiredFires()}`,
+                row1Count: `${firesExtinguished} / ${requiredFires}`,
                 row1Score: mission2FirePoints,
-                row2Label: '任務完成',
-                row2Status: 'YES',
-                row2Score: completionBonus,
+                row2Label: '全數撲滅',
+                row2Status: allFiresCleared ? 'YES' : `${firesExtinguished}/${requiredFires}`,
+                row2Score: allFiresBonus,
                 beacons: firesExtinguished,
                 beaconsScore: mission2FirePoints,
-                exitScore: completionBonus,
+                exitScore: allFiresBonus,
                 time: timeElapsed,
                 timeTierLabel: timeResult.label,
                 timeBonus: Math.floor(timeResult.bonus),
@@ -4106,6 +4155,7 @@ function resetCityBattery() {
     firesExtinguished = 0;
     mission2FirePoints = 0;
     mission2FiresScored = new Set();
+    _cityFinishHintLastLog = 0;
 }
 
 /** 任務二：找無人機附近最近的可互動格（水源/火點） */
@@ -4216,15 +4266,18 @@ function checkCityLogic() {
         }
     }
 
-    if (!state.isFlying) return;
+    if (state.isFlying) {
+        // 離開充電格時重置未完成的充電進度
+        forestChargeData.forEach(station => {
+            if (station.triggered) return;
+            if (!isDroneOnForestChargePad(station)) {
+                station.hoverTimer = 0;
+            }
+        });
+        return;
+    }
 
-    // 離開充電格時重置未完成的充電進度
-    forestChargeData.forEach(station => {
-        if (station.triggered) return;
-        if (!isDroneOnForestChargePad(station)) {
-            station.hoverTimer = 0;
-        }
-    });
+    maybeFinishCityMission();
 }
 function getSensorReading(type, unit) {
     let value = 0;
