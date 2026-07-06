@@ -67,8 +67,8 @@
                 <article class="mode-card">
                     <h2 class="mode-card__title">試用關卡</h2>
                     <ul class="mode-card__list">
-                        <li>縮小版任務一／二</li>
-                        <li>免密碼、比賽前練習</li>
+                        <li>8×8 縮小地圖</li>
+                        <li>入門練習用</li>
                     </ul>
                     <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🧪</span></div>
                     <button type="button" class="menu-btn mode-card__cta" onclick="showPracticeSelect()">進入試用</button>
@@ -107,7 +107,7 @@
             <div class="mission-select-content">
                 <div class="mission-select-header">
                     <h1 class="mission-select-title" id="mission-select-heading">競賽任務</h1>
-                    <p class="mission-select-subtitle">選擇救災關卡（需密碼解鎖 · 計分與任務目標）</p>
+                    <p class="mission-select-subtitle">選擇救災關卡（計分與任務目標）</p>
                 </div>
                 <div class="mission-select-body">
                     <div class="mission-list">
@@ -143,7 +143,7 @@
             <div class="mission-select-content">
                 <div class="mission-select-header">
                     <h1 class="mission-select-title" id="practice-select-heading">試用關卡</h1>
-                    <p class="mission-select-subtitle">縮小版任務 · 免密碼 · 非正式比賽地圖</p>
+                    <p class="mission-select-subtitle">縮小版任務 · 非正式比賽地圖</p>
                 </div>
                 <div class="mission-select-body">
                     <div class="mission-list">
@@ -429,11 +429,6 @@
             <div class="result-body briefing-body" id="briefing-content">
                 <!-- 內容由 JS 動態注入 -->
             </div>
-            <div class="briefing-submit-bar" id="briefing-submit-bar" hidden>
-                <a class="brief-submit-link" id="briefing-submit-link" href="https://rfowp4av.paperform.co" target="_blank" rel="noopener noreferrer">
-                    開啟成績提交表格 ↗
-                </a>
-            </div>
             <div class="result-footer">
                 <button type="button" class="result-btn btn-continue" id="briefing-ok-btn" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
             </div>
@@ -452,21 +447,6 @@
         </div>
     </div>
 
-    <!-- 競賽任務密碼解鎖 -->
-    <div id="competition-password-modal" class="app-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="competition-password-title" hidden>
-        <div class="app-confirm-card">
-            <h2 id="competition-password-title" class="app-confirm-heading">競賽任務解鎖</h2>
-            <p class="app-confirm-text">請輸入競賽密碼以進入正式任務一／任務二。<br>正式密碼會於比賽當日提供。</p>
-            <label class="competition-password-label" for="competition-password-input">密碼</label>
-            <input type="password" id="competition-password-input" class="competition-password-input" autocomplete="off" spellcheck="false">
-            <p id="competition-password-error" class="competition-password-error" hidden role="alert">密碼錯誤，請再試一次。</p>
-            <div class="app-confirm-actions">
-                <button type="button" id="competition-password-cancel" class="app-confirm-btn app-confirm-btn--secondary">取消</button>
-                <button type="button" id="competition-password-ok" class="app-confirm-btn app-confirm-btn--primary">解鎖</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 輕量確認對話框（取代原生 confirm；鍵盤／Esc／焦點還原） -->
     <div id="app-confirm-modal" class="app-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" hidden>
         <div class="app-confirm-card">
@@ -482,6 +462,6 @@
     <script src="js/simulator.js?v=road-editor-hidden"></script>
     <script src="js/blockly_def.js"></script>
     <script src="js/mission2_answer.js"></script>
-    <script src="js/main.js?v=briefing-submit-bar"></script>
+    <script src="js/main.js?v=post-competition"></script>
 </body>
 </html>

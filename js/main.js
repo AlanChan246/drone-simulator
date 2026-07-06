@@ -186,8 +186,6 @@ const executionSpeed = 3.0; // 固定執行速度（3×，不可由 UI 調整）
 let currentGameMode = 'mission'; // 當前遊戲模式 ('mission' 或 'freeplay')
 let activeMissionId = null; // 當前活動的任務 ID
 let lastMissionMenu = 'competition'; // 'competition' | 'practice'
-const COMPETITION_PASSWORD = '4G2ab8';
-const COMPETITION_UNLOCK_KEY = 'drone-simulator:competition-unlocked';
 let currentExecutingBlockId = null; // 當前執行的積木 ID
 let blockToCommandMap = new Map(); // 積木 ID 到命令索引的映射
 let commandToBlockMap = new Map(); // 命令索引到積木 ID 的映射
@@ -443,7 +441,6 @@ function showAppConfirm(message, options) {
 }
 
 function initAppFeedbackUI() {
-    initCompetitionPasswordUI();
     const closeMsg = document.getElementById('app-message-close');
     if (closeMsg && !closeMsg.dataset.appFeedbackBound) {
         closeMsg.dataset.appFeedbackBound = '1';
@@ -466,101 +463,10 @@ window.hideAppMessage = hideAppMessage;
 window.showAppConfirm = showAppConfirm;
 
 function isCompetitionUnlocked() {
-    try {
-        return sessionStorage.getItem(COMPETITION_UNLOCK_KEY) === '1';
-    } catch (_) {
-        return false;
-    }
-}
-
-function setCompetitionUnlocked() {
-    try {
-        sessionStorage.setItem(COMPETITION_UNLOCK_KEY, '1');
-    } catch (_) { /* ignore */ }
-}
-
-let _competitionPasswordResolve = null;
-let _competitionPasswordPrevFocus = null;
-
-function finishCompetitionPasswordPrompt(unlocked) {
-    const modal = document.getElementById('competition-password-modal');
-    const input = document.getElementById('competition-password-input');
-    const err = document.getElementById('competition-password-error');
-    if (modal) {
-        modal.setAttribute('hidden', '');
-        modal.setAttribute('aria-hidden', 'true');
-    }
-    if (input) input.value = '';
-    if (err) err.hidden = true;
-    const resolve = _competitionPasswordResolve;
-    _competitionPasswordResolve = null;
-    const prev = _competitionPasswordPrevFocus;
-    _competitionPasswordPrevFocus = null;
-    if (resolve) resolve(!!unlocked);
-    if (prev && typeof prev.focus === 'function') {
-        requestAnimationFrame(() => { try { prev.focus(); } catch (_) { /* ignore */ } });
-    }
-}
-
-function showCompetitionPasswordPrompt() {
-    if (isCompetitionUnlocked()) return Promise.resolve(true);
-    return new Promise((resolve) => {
-        const modal = document.getElementById('competition-password-modal');
-        const input = document.getElementById('competition-password-input');
-        const err = document.getElementById('competition-password-error');
-        if (!modal || !input) {
-            resolve(false);
-            return;
-        }
-        if (_competitionPasswordResolve) finishCompetitionPasswordPrompt(false);
-        _competitionPasswordPrevFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        _competitionPasswordResolve = resolve;
-        if (err) err.hidden = true;
-        input.value = '';
-        modal.removeAttribute('hidden');
-        modal.removeAttribute('aria-hidden');
-        requestAnimationFrame(() => { try { input.focus(); } catch (_) { /* ignore */ } });
-    });
-}
-
-function initCompetitionPasswordUI() {
-    const ok = document.getElementById('competition-password-ok');
-    const cancel = document.getElementById('competition-password-cancel');
-    const input = document.getElementById('competition-password-input');
-    if (ok && !ok.dataset.competitionBound) {
-        ok.dataset.competitionBound = '1';
-        ok.addEventListener('click', () => {
-            const val = input ? input.value : '';
-            if (val === COMPETITION_PASSWORD) {
-                setCompetitionUnlocked();
-                finishCompetitionPasswordPrompt(true);
-                return;
-            }
-            const err = document.getElementById('competition-password-error');
-            if (err) err.hidden = false;
-            if (input) input.select();
-        });
-    }
-    if (cancel && !cancel.dataset.competitionBound) {
-        cancel.dataset.competitionBound = '1';
-        cancel.addEventListener('click', () => finishCompetitionPasswordPrompt(false));
-    }
-    if (input && !input.dataset.competitionBound) {
-        input.dataset.competitionBound = '1';
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                ok && ok.click();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                finishCompetitionPasswordPrompt(false);
-            }
-        });
-    }
+    return true;
 }
 
 window.isCompetitionUnlocked = isCompetitionUnlocked;
-window.showCompetitionPasswordPrompt = showCompetitionPasswordPrompt;
 window.showPracticeSelect = showPracticeSelect;
 
 // --- Console 介面功能 ---
@@ -2783,18 +2689,6 @@ function renderBriefMission2FireTable() {
         </table>`;
 }
 
-const MISSION_SUBMISSION_FORM_URL = 'https://rfowp4av.paperform.co';
-
-function updateBriefingSubmissionBar(missionId) {
-    const bar = document.getElementById('briefing-submit-bar');
-    const link = document.getElementById('briefing-submit-link');
-    if (!bar || !link) return;
-    const show = missionId == 1 || missionId == 2;
-    bar.hidden = !show;
-    if (show) {
-        link.href = MISSION_SUBMISSION_FORM_URL;
-    }
-}
 
 function renderBriefMapLegend(items) {
     return `
@@ -2985,7 +2879,7 @@ function showMissionBriefing(missionId) {
             ${renderBriefGradeGrid(PRACTICE1_GRADE_TIERS)}
             <h4 class="brief-section-title">提示 Tips</h4>
             <ul class="brief-tips">
-                <li>正式競賽任務需密碼解鎖；此關卡供比賽前練習。</li>
+                <li>正式競賽任務為 14×14 完整地圖；此關卡供入門練習。</li>
                 <li>須沿路網飛行並在 Bravo 格降落結算。</li>
             </ul>
         `;
@@ -3010,13 +2904,11 @@ function showMissionBriefing(missionId) {
             <ul class="brief-tips">
                 <li>火點 A (3,6) 優先於 B (5,5)；水源在 (1,4)。</li>
                 <li>須飛至受災區降落結算；全數撲滅 2/2 可額外 +200 分。</li>
-                <li>正式競賽為 14×14、4 火點，需密碼解鎖。</li>
+                <li>正式競賽為 14×14、4 火點。</li>
             </ul>
         `;
     }
     
-    updateBriefingSubmissionBar(targetMissionId);
-
     briefingModal.style.display = 'flex';
     // 添加 active class 以觸發動畫，並將焦點移至主要按鈕（模態無障礙）
     setTimeout(() => {
@@ -3099,10 +2991,6 @@ async function startMission(missionId) {
     }
 
     const isCompetitionMission = missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
-    if (isCompetitionMission) {
-        const unlocked = await showCompetitionPasswordPrompt();
-        if (!unlocked) return;
-    }
 
     if (missionId === 'practice1' || missionId === 'practice2') {
         lastMissionMenu = 'practice';
@@ -3218,11 +3106,11 @@ async function startMission(missionId) {
     // 根據任務 ID 設置場景
     if (missionId === 'practice1') {
         changeScene('tunnel_practice');
-        logToConsole('🧪 試用一：8×8 坍塌廢墟搜救（1 巡檢點 · 免密碼練習）');
+        logToConsole('🧪 試用一：8×8 坍塌廢墟搜救（1 巡檢點 · 入門練習）');
         logToConsole('💡 機制與正式任務一相同，地圖較小。');
     } else if (missionId === 'practice2') {
         changeScene('city_practice');
-        logToConsole('🧪 試用二：8×8 山火智能應對（2 火點 · 免密碼練習）');
+        logToConsole('🧪 試用二：8×8 山火智能應對（2 火點 · 入門練習）');
         logToConsole('💡 機制與正式任務二相同；須飛至受災區降落結算。');
     } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
         changeScene('tunnel');
@@ -4016,13 +3904,6 @@ function _restoreModalFocus(saved, fallbackId) {
 
 document.addEventListener('keydown', function onModalEscapeKeydown(e) {
     if (e.key !== 'Escape') return;
-    const pwModal = document.getElementById('competition-password-modal');
-    if (pwModal && !pwModal.hasAttribute('hidden')) {
-        e.preventDefault();
-        e.stopPropagation();
-        finishCompetitionPasswordPrompt(false);
-        return;
-    }
     const appConfirm = document.getElementById('app-confirm-modal');
     if (appConfirm && !appConfirm.hasAttribute('hidden')) {
         e.preventDefault();

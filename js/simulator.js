@@ -1524,22 +1524,6 @@ async function init3D() {
 // 3. 場景生成邏輯
 // ==========================================
 function changeScene(type) {
-    if ((type === 'tunnel' || type === 'city')
-        && typeof window.isCompetitionUnlocked === 'function'
-        && !window.isCompetitionUnlocked()) {
-        console.warn('競賽任務未解鎖，請輸入密碼。');
-        if (typeof window.showAppMessage === 'function') {
-            window.showAppMessage({
-                variant: 'warn',
-                title: '需要密碼',
-                body: '正式競賽任務需先輸入密碼解鎖。請從「競賽任務」選單進入。',
-                autoHideMs: 8000,
-                focusClose: false
-            });
-        }
-        return;
-    }
-
     currentSceneType = type;
     loadScene(type);
     resetSimulator();
@@ -1587,22 +1571,6 @@ function loadScene(type) {
     // 檢查 environmentGroup 是否已初始化
     if (typeof environmentGroup === 'undefined' || !environmentGroup) {
         console.error("environmentGroup is not initialized. Please wait for init3D() to complete.");
-        return;
-    }
-
-    if ((type === 'tunnel' || type === 'city')
-        && typeof window.isCompetitionUnlocked === 'function'
-        && !window.isCompetitionUnlocked()) {
-        console.warn('競賽任務未解鎖，請輸入密碼。');
-        if (typeof window.showAppMessage === 'function') {
-            window.showAppMessage({
-                variant: 'warn',
-                title: '需要密碼',
-                body: '正式競賽任務需先輸入密碼解鎖。請從「競賽任務」選單進入。',
-                autoHideMs: 8000,
-                focusClose: false
-            });
-        }
         return;
     }
 
