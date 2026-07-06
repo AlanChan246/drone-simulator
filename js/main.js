@@ -16,6 +16,40 @@ let blocklyAutosaveTimer = null;
 let blocklyAutosaveRestoring = false;
 let blocklyAutosaveBeforeUnloadHooked = false;
 
+/** 任務一／二預掃描：while 迴圈最大迭代次數（防止條件錯誤卡死瀏覽器） */
+const PRESCAN_LOOP_LIMIT = 600;
+/** 任務一／二預掃描：指令佇列最大長度 */
+const PRESCAN_CMD_QUEUE_LIMIT = 600;
+/** 挑戰迷宮即時模式：while 迴圈最大迭代次數 */
+const CHALLENGE_LOOP_LIMIT = 12000;
+
+function reportBlocklyGuardError(e) {
+    const code = e && e.message;
+    if (code === 'LOOP_GUARD') {
+        showAppMessage({
+            variant: 'error',
+            title: '迴圈次數過多',
+            body: '「重複 while／重複直到」的條件可能幾乎永遠成立（例如「前方距離 ≠ 0」在空曠處幾乎永遠為真）。按「執行」時程式會同步跑很多圈，導致卡住。',
+            nextStep: '請改用「距離 < 120 cm」判斷前方是否有牆，或參考任務說明中的感應器範例。任務一／二不支援即時讀感應器的長迴圈；隨機迷宮挑戰模式才適合 while + 感應器。',
+            focusClose: true
+        });
+        logToConsole(`❌ 程式錯誤：迴圈超過安全上限（${PRESCAN_LOOP_LIMIT} 次）。請檢查 while 條件是否寫錯。`);
+        return true;
+    }
+    if (code === 'CMD_QUEUE_GUARD') {
+        showAppMessage({
+            variant: 'error',
+            title: '指令數量過多',
+            body: '程式在按「執行」時一次產生了過多飛行指令，通常是 while 迴圈條件錯誤或缺少停止條件。',
+            nextStep: '請縮短迴圈或修正感應器條件（建議用「距離 < 120」判斷障礙，勿用「≠ 0」）。',
+            focusClose: true
+        });
+        logToConsole(`❌ 程式錯誤：指令佇列超過安全上限（${PRESCAN_CMD_QUEUE_LIMIT} 條）。`);
+        return true;
+    }
+    return false;
+}
+
 function getBlocklyAutosaveKey() {
     if (activeMissionId === 'challenge'
         || (typeof currentSceneType !== 'undefined' && currentSceneType === 'challenge_maze')) {
@@ -610,9 +644,12 @@ function runBlocklyCode() {
             if (typeof createChallengeMaze === 'function') createChallengeMaze();
             
             state.isRunning = true;
-            
-            Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if (state.stopSignal) throw new Error("STOP");\nawait wait(30);\n';
-            const rawCode = Blockly.JavaScript.workspaceToCode(currentWorkspace);
+
+            Blockly.JavaScript.INFINITE_LOOP_TRAP =
+                'if (state.stopSignal) throw new Error("STOP");\n' +
+                `if (++__challengeLoopCount > ${CHALLENGE_LOOP_LIMIT}) throw new Error("LOOP_GUARD");\n` +
+                'await wait(30);\n';
+            const rawCode = 'var __challengeLoopCount = 0;\n' + Blockly.JavaScript.workspaceToCode(currentWorkspace);
             Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
             
             // 轉換為即時執行格式
@@ -625,9 +662,11 @@ function runBlocklyCode() {
         }
 
         // --- 普通模式的預掃描邏輯 ---
-        // 使用 Trap 防止 eval() 內的死循環
-        Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if (state.stopSignal) throw "STOP";\n';
-        const code = Blockly.JavaScript.workspaceToCode(currentWorkspace);
+        // 使用 Trap 防止 eval() 內的死循環（超過上限時拋錯並提示，而非卡死瀏覽器）
+        Blockly.JavaScript.INFINITE_LOOP_TRAP =
+            'if (state.stopSignal) throw "STOP";\n' +
+            `if (++__prescanLoopCount > ${PRESCAN_LOOP_LIMIT}) throw new Error("LOOP_GUARD");\n`;
+        const code = 'var __prescanLoopCount = 0;\n' + Blockly.JavaScript.workspaceToCode(currentWorkspace);
         Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
 
         const originalPush = Array.prototype.push;
@@ -644,7 +683,11 @@ function runBlocklyCode() {
                     }
                 }
             });
-            return originalPush.apply(this, items);
+            const result = originalPush.apply(this, items);
+            if (this.length > PRESCAN_CMD_QUEUE_LIMIT) {
+                throw new Error('CMD_QUEUE_GUARD');
+            }
+            return result;
         };
         
         // 遍歷積木塊並在生成代碼時設置當前積木塊 ID
@@ -702,7 +745,17 @@ function runBlocklyCode() {
             }
         });
         
-    } catch (e) { 
+    } catch (e) {
+        cmdQueue.length = 0;
+        blockIdQueue.length = 0;
+        commandToBlockMap.clear();
+        if (e === 'STOP') {
+            return;
+        }
+        if (reportBlocklyGuardError(e)) {
+            console.warn('Prescan guard triggered:', e);
+            return;
+        }
         showAppMessage({
             variant: 'error',
             title: '程式產生錯誤',
@@ -711,7 +764,7 @@ function runBlocklyCode() {
             focusClose: true
         });
         console.error("Code generation error:", e);
-        return; 
+        return;
     }
     
     if (cmdQueue.length === 0) { 
@@ -770,6 +823,8 @@ async function runBlocklyCodeChallenge(finalCode) {
     } catch (e) {
         if (e && (e.message === 'STOP' || e.message === '程式已停止')) {
             logToConsole("⏹️ 程式已停止。");
+        } else if (reportBlocklyGuardError(e)) {
+            /* 已顯示迴圈安全提示 */
         } else {
             console.error("挑戰模式執行出錯:", e);
             logToConsole("❌ 執行出錯: " + (e ? e.message : "Unknown error"));
@@ -2435,45 +2490,36 @@ function handleBlocklyImportFile(inputEl) {
 }
 
 // 初始化積木區寬度調整功能
+let blocklyResizerInitialized = false;
+
 function initBlocklyResizer() {
     const resizer = document.getElementById('blockly-resizer');
     const blocklyPanel = document.getElementById('blocklyDiv');
     const mainContainer = document.querySelector('.main-container');
-    
+
     if (!resizer || !blocklyPanel || !mainContainer) return;
-    
+    if (blocklyResizerInitialized) return;
+    blocklyResizerInitialized = true;
+
     let isResizing = false;
     let startX = 0;
     let startWidth = 0;
-    
-    resizer.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startX = e.clientX;
-        startWidth = blocklyPanel.offsetWidth;
-        document.addEventListener('mousemove', handleResize);
-        document.addEventListener('mouseup', stopResize);
-        e.preventDefault();
-    });
-    
-    function handleResize(e) {
-        if (!isResizing) return;
-        
-        const diff = e.clientX - startX; // 向右拖拽增加寬度
+    let activePointerId = null;
+
+    function applyPanelWidth(clientX) {
+        const diff = clientX - startX;
         const newWidth = startWidth + diff;
         const containerWidth = mainContainer.offsetWidth;
-        const minWidth = 250; // 最小寬度
-        const maxWidth = containerWidth * 0.6; // 最大寬度（60%）
-        
+        const minWidth = 250;
+        const maxWidth = containerWidth * 0.6;
+
         if (newWidth >= minWidth && newWidth <= maxWidth) {
             const percentage = (newWidth / containerWidth) * 100;
-            // 保存當前寬度
             savedBlocklyWidth = percentage;
-            // 禁用過渡動畫以便拖拽時實時響應
             blocklyPanel.style.transition = 'none';
             blocklyPanel.style.flex = `0 0 ${percentage}%`;
             blocklyPanel.style.width = `${percentage}%`;
-            
-            // 實時調整 Blockly 和 3D 渲染器大小
+
             if (workspace && typeof Blockly !== 'undefined') {
                 Blockly.svgResize(workspace);
             }
@@ -2482,17 +2528,92 @@ function initBlocklyResizer() {
             }
         }
     }
-    
-    function stopResize() {
+
+    function beginResize(clientX, pointerId) {
+        isResizing = true;
+        startX = clientX;
+        startWidth = blocklyPanel.offsetWidth;
+        activePointerId = pointerId ?? null;
+        document.body.classList.add('blockly-resizing');
+    }
+
+    function endResize() {
+        if (!isResizing) return;
         isResizing = false;
-        // 恢復過渡動畫
+        activePointerId = null;
+        document.body.classList.remove('blockly-resizing');
         if (blocklyPanel) {
             blocklyPanel.style.transition = 'opacity 0.3s ease';
         }
-        document.removeEventListener('mousemove', handleResize);
-        document.removeEventListener('mouseup', stopResize);
     }
-    
+
+    if (window.PointerEvent) {
+        resizer.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            beginResize(e.clientX, e.pointerId);
+            try {
+                resizer.setPointerCapture(e.pointerId);
+            } catch (_) { /* ignore */ }
+            e.preventDefault();
+        }, { passive: false });
+
+        resizer.addEventListener('pointermove', (e) => {
+            if (!isResizing || e.pointerId !== activePointerId) return;
+            applyPanelWidth(e.clientX);
+            e.preventDefault();
+        }, { passive: false });
+
+        const onPointerEnd = (e) => {
+            if (!isResizing || e.pointerId !== activePointerId) return;
+            try {
+                resizer.releasePointerCapture(e.pointerId);
+            } catch (_) { /* ignore */ }
+            endResize();
+        };
+        resizer.addEventListener('pointerup', onPointerEnd);
+        resizer.addEventListener('pointercancel', onPointerEnd);
+    } else {
+        // 舊版瀏覽器：滑鼠 + 觸控分開處理
+        resizer.addEventListener('mousedown', (e) => {
+            beginResize(e.clientX, null);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            e.preventDefault();
+        });
+
+        function onMouseMove(e) {
+            if (!isResizing) return;
+            applyPanelWidth(e.clientX);
+        }
+
+        function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            endResize();
+        }
+
+        resizer.addEventListener('touchstart', (e) => {
+            if (!e.changedTouches.length) return;
+            beginResize(e.changedTouches[0].clientX, null);
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isResizing) return;
+            if (e.touches.length) applyPanelWidth(e.touches[0].clientX);
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (!isResizing) return;
+            endResize();
+        });
+
+        document.addEventListener('touchcancel', () => {
+            if (!isResizing) return;
+            endResize();
+        });
+    }
 }
 
 // 返回任務選擇畫面

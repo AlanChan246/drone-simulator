@@ -801,13 +801,35 @@ body {
 .blockly-resizer {
     position: absolute;
     top: 0;
-    right: 0;
-    width: 4px;
+    right: -4px;
+    width: 8px;
     height: 100%;
     background-color: rgba(var(--rgb-brand), 0.3);
     cursor: col-resize;
     z-index: 100;
     transition: background-color 0.2s ease;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* iPad／觸控：加寬可拖曳區域 */
+@media (pointer: coarse) {
+    .blockly-resizer {
+        right: -10px;
+        width: 20px;
+    }
+}
+
+body.blockly-resizing {
+    cursor: col-resize !important;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body.blockly-resizing .blockly-resizer {
+    background-color: rgba(var(--rgb-brand), 1);
 }
 
 .blockly-resizer:hover {
