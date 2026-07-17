@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-restore-urban-maze-20260717';
+const CACHE_VERSION = 'drone-simulator-restore-atmosphere-20260717';
 const APP_SHELL = [
   './', './index.html', './style.css',
   './js/simulator.js', './js/blockly_def.js', './js/mission2_answer.js', './js/main.js',

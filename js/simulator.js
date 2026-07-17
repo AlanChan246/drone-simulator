@@ -1652,6 +1652,50 @@ function syncDroneToStart() {
     }
 }
 
+function resetDefaultSimulatorAtmosphere() {
+    if (typeof scene === 'undefined' || !scene) return;
+    scene.background = new THREE.Color(0x1a1c23);
+    scene.fog = new THREE.Fog(0x1a1c23, 1500, 6000);
+    restoreDefaultSceneLighting();
+}
+
+/** 還原全域主光源（離開任務二時） */
+function restoreDefaultSceneLighting() {
+    if (typeof scene === 'undefined' || !scene || !scene.userData) return;
+    const hemi = scene.userData.mainHemiLight;
+    const dir = scene.userData.mainDirLight;
+    const dh = scene.userData.defaultHemi;
+    const dd = scene.userData.defaultDir;
+    if (hemi && dh) {
+        hemi.color.setHex(dh.sky);
+        hemi.groundColor.setHex(dh.ground);
+        hemi.intensity = dh.intensity;
+    }
+    if (dir && dd) {
+        dir.color.setHex(dd.color);
+        dir.intensity = dd.intensity;
+    }
+}
+
+/** 任務二：山火場氛圍（中等照度，介於全暗與過亮之間） */
+function applyForestSceneAtmosphere() {
+    if (typeof scene === 'undefined' || !scene) return;
+    scene.background = new THREE.Color(0x2e2820);
+    scene.fog = new THREE.FogExp2(0x3a342c, 0.00042);
+
+    const hemi = scene.userData.mainHemiLight;
+    const dir = scene.userData.mainDirLight;
+    if (hemi) {
+        hemi.color.setHex(0x6a6458);
+        hemi.groundColor.setHex(0x1a1814);
+        hemi.intensity = 0.62;
+    }
+    if (dir) {
+        dir.color.setHex(0xd8d0c4);
+        dir.intensity = 0.68;
+    }
+}
+
 /**
  * 任務一：Kenney 建築、路面、起終點箭嘴
  * @param {number[][]} mazeGrid
