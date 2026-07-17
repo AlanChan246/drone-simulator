@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-07-10T04:58:01.315Z",
+  "rows": [
+    {
+      "school": "博愛醫院鄧佩瓊紀念中學",
+      "name": "黃曉寧",
+      "mission1Score": 850,
+      "mission1Grade": "二等",
+      "mission2Score": 1225,
+      "mission2Grade": "一等",
+      "note": ""
+    }
+  ],
+  "details": [
+    {
+      "id": "6a4874adf37117526802bea9",
+      "school": "博愛醫院鄧佩瓊紀念中學",
+      "name": "黃曉寧",
+      "submittedAt": "2026-07-04 10:49:17",
+      "folder": "博愛醫院鄧佩瓊紀念中學_黃曉寧",
+      "mission1": {
+        "url": "https://paperform.co/file/s3.amazonaws.com/pf-user-files-01/u-178304/uploads/2026-07-04/fj334xj/drone-blockly-mission-1.xml?expires=1784258765&signature=2cf834a19a2a384f9486bbc13c0dad64b64651ef3b2f3c5c7391d58b5a17cac5",
+        "path": "submissions/博愛醫院鄧佩瓊紀念中學_黃曉寧/mission-1.xml",
+        "ok": true,
+        "error": null
+      },
+      "mission2": {
+        "url": "https://paperform.co/file/s3.amazonaws.com/pf-user-files-01/u-178304/uploads/2026-07-04/e323426/drone-blockly-mission-2.xml?expires=1784258765&signature=44c3ffdeb4b44e946b588ce6f7290e4e9adacdde2bae78496e20b12ebddd8c3f",
+        "path": "submissions/博愛醫院鄧佩瓊紀念中學_黃曉寧/mission-2.xml",
+        "ok": true,
+        "error": null
+      },
+      "mission": 1,
+      "result": {
+        "mission": 1,
+        "score": 850,
+        "grade": "二等",
+        "gradeEn": "2nd Class",
+        "status": "完成",
+        "details": {
+          "beacons": 3,
+          "row1Score": 300,
+          "row2Score": 200,
+          "time": 82,
+          "timeBonus": 350,
+          "timeTierLabel": "快"
+        }
+      }
+    },
+    {
+      "id": "6a4874adf37117526802bea9",
+      "school": "博愛醫院鄧佩瓊紀念中學",
+      "name": "黃曉寧",
+      "submittedAt": "2026-07-04 10:49:17",
+      "folder": "博愛醫院鄧佩瓊紀念中學_黃曉寧",
+      "mission1": {
+        "url": "https://paperform.co/file/s3.amazonaws.com/pf-user-files-01/u-178304/uploads/2026-07-04/fj334xj/drone-blockly-mission-1.xml?expires=1784258765&signature=2cf834a19a2a384f9486bbc13c0dad64b64651ef3b2f3c5c7391d58b5a17cac5",
+        "path": "submissions/博愛醫院鄧佩瓊紀念中學_黃曉寧/mission-1.xml",
+        "ok": true,
+        "error": null
+      },
+      "mission2": {
+        "url": "https://paperform.co/file/s3.amazonaws.com/pf-user-files-01/u-178304/uploads/2026-07-04/e323426/drone-blockly-mission-2.xml?expires=1784258765&signature=44c3ffdeb4b44e946b588ce6f7290e4e9adacdde2bae78496e20b12ebddd8c3f",
+        "path": "submissions/博愛醫院鄧佩瓊紀念中學_黃曉寧/mission-2.xml",
+        "ok": true,
+        "error": null
+      },
+      "mission": 2,
+      "result": {
+        "mission": 2,
+        "score": 1225,
+        "grade": "一等",
+        "gradeEn": "1st Class",
+        "status": "完成",
+        "details": {
+          "beacons": 4,
+          "row1Count": "4 / 4",
+          "row1Score": 575,
+          "row2Score": 200,
+          "time": 110,
+          "timeBonus": 450,
+          "timeTierLabel": "極快"
+        }
+      }
+    }
+  ]
+}

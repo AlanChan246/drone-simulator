@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drone Simulator</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚁</text></svg>">
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://unpkg.com/blockly@9.3.3/blockly_compressed.js"></script>
-    <script src="https://unpkg.com/blockly@9.3.3/blocks_compressed.js"></script>
-    <script src="https://unpkg.com/blockly@9.3.3/javascript_compressed.js"></script>
-    <script src="https://unpkg.com/blockly@9.3.3/msg/en.js"></script>
-    <link rel="stylesheet" href="style.css?v=briefing-submit-bar">
+    <script src="node_modules/three/build/three.min.js"></script>
+    <script src="node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="node_modules/blockly/blockly_compressed.js"></script>
+    <script src="node_modules/blockly/blocks_compressed.js"></script>
+    <script src="node_modules/blockly/javascript_compressed.js"></script>
+    <script src="node_modules/blockly/msg/en.js"></script>
+    <link rel="stylesheet" href="style.css?v=mission2-photo-legend-20260717">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -21,6 +21,16 @@
     </script>
 </head>
 <body>
+    <div id="app-loading" class="app-loading" role="status" aria-live="polite">
+        <div class="app-loading__drone">🚁</div>
+        <strong>正在準備無人機訓練場…</strong>
+        <span id="app-loading-status">載入本機程式庫與 3D 資源</span>
+        <div class="app-loading__bar"><span></span></div>
+    </div>
+    <div id="orientation-hint" class="orientation-hint" hidden role="status">
+        <span>📱</span><strong>請將手機轉為橫向</strong><small>橫向畫面能同時顯示 3D 場景和積木工具。</small>
+        <button type="button" onclick="dismissOrientationHint()">仍然繼續</button>
+    </div>
     <!-- file:// 開啟時：瀏覽器禁止載入 GLB，必須改用 http://localhost -->
     <div id="file-origin-blocker" class="file-origin-blocker" hidden role="alert" aria-live="assertive">
         <div class="file-origin-card">
@@ -63,15 +73,6 @@
                     </ul>
                     <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🏆</span></div>
                     <button type="button" class="menu-btn mode-card__cta" onclick="showMissionSelect()">進入競賽</button>
-                </article>
-                <article class="mode-card">
-                    <h2 class="mode-card__title">試用關卡</h2>
-                    <ul class="mode-card__list">
-                        <li>8×8 縮小地圖</li>
-                        <li>入門練習用</li>
-                    </ul>
-                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🧪</span></div>
-                    <button type="button" class="menu-btn mode-card__cta" onclick="showPracticeSelect()">進入試用</button>
                 </article>
                 <article class="mode-card">
                     <h2 class="mode-card__title">自由練習</h2>
@@ -129,48 +130,21 @@
         </main>
     </div>
 
-    <!-- 試用關卡選擇畫面 -->
-    <div id="practice-select-menu" class="menu-screen menu-screen--mission menu-screen--practice" style="display: none;">
-        <header class="hub-header hub-header--mission" role="banner">
-            <button type="button" class="back-btn back-btn--header" onclick="showMainMenu()" aria-label="返回主選單">←</button>
-            <div class="hub-header__brand">
-                <span class="hub-header__title">Drone Simulator</span>
-                <span class="hub-header__tagline">Code to rescue</span>
-            </div>
-            <div class="hub-header__spacer" aria-hidden="true"></div>
-        </header>
-        <main class="mission-select-main" role="main" aria-labelledby="practice-select-heading">
-            <div class="mission-select-content">
-                <div class="mission-select-header">
-                    <h1 class="mission-select-title" id="practice-select-heading">試用關卡</h1>
-                    <p class="mission-select-subtitle">縮小版任務 · 非正式比賽地圖</p>
-                </div>
-                <div class="mission-select-body">
-                    <div class="mission-list">
-                        <button type="button" class="mission-btn mission-btn--active mission-btn--practice" data-mission-preview="practice1" onmouseenter="setPracticePreview('practice1')" onfocus="setPracticePreview('practice1')" onclick="startMission('practice1')">試用一：坍塌廢墟搜救（入門）</button>
-                        <button type="button" class="mission-btn mission-btn--practice" data-mission-preview="practice2" onmouseenter="setPracticePreview('practice2')" onfocus="setPracticePreview('practice2')" onclick="startMission('practice2')">試用二：山火智能應對（入門）</button>
-                    </div>
-                    <div class="mission-preview" id="practice-preview" aria-live="polite">
-                        <img class="mission-preview__img mission-preview__img--active" id="practice-preview-img-1" src="assets/images/mission-preview-1.png" alt="試用一：坍塌廢墟搜救場景預覽">
-                        <img class="mission-preview__img" id="practice-preview-img-2" src="assets/images/mission-preview-2.png" alt="試用二：山火智能應對場景預覽">
-                        <p class="mission-preview__caption" id="practice-preview-caption">試用一：坍塌廢墟搜救（8×8 · 1 巡檢點）</p>
-                    </div>
-                </div>
-                <div class="mission-select-footer" aria-hidden="true">
-                    <div class="footer-logo footer-logo--mission">
-                        <p class="footer-logo__muted">Drone Simulator · Practice</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
     <!-- 遊戲界面（預設隱藏） -->
     <div id="game-interface" style="display: none;">
         <div class="top-bar">
-            <button class="back-btn-game" onclick="returnToMissionSelect()" title="返回任務選擇">← 返回</button>
-            <button type="button" class="control-btn toggle-blockly-btn" id="toggle-blockly-btn" onclick="toggleBlocklyPanel()" aria-expanded="false" aria-controls="blocklyDiv" aria-label="顯示積木區" title="顯示積木區">📦 顯示積木區</button>
-            <button class="control-btn" onclick="showMissionBriefing()" title="任務說明" id="mission-briefing-btn">📋 任務說明</button>
+            <div class="top-bar__primary">
+                <button class="back-btn-game icon-text-btn" onclick="returnToMissionSelect()" title="返回任務選擇"><span aria-hidden="true">←</span><span>返回</span></button>
+                <button type="button" class="control-btn toggle-blockly-btn" id="toggle-blockly-btn" onclick="toggleBlocklyPanel()" aria-expanded="false" aria-controls="blocklyDiv" aria-label="顯示積木區" title="顯示積木區"><span class="ui-icon" aria-hidden="true">◫</span><span>程式積木</span></button>
+            </div>
+            <div class="top-bar__mission" aria-live="polite">
+                <span class="top-bar__eyebrow">目前任務</span>
+                <strong id="active-mission-title">自由練習</strong>
+                <span id="top-mission-progress">準備飛行</span>
+            </div>
+            <div class="top-bar__tools">
+                <button class="control-btn control-btn--quiet mission-briefing-entry" onclick="showMissionBriefing()" title="任務說明" id="mission-briefing-btn"><span class="ui-icon" aria-hidden="true">ⓘ</span><span>任務</span></button>
+                <button type="button" class="control-btn control-btn--quiet tutorial-start-btn" onclick="startInteractiveTutorial()" title="逐步新手教學"><span class="ui-icon" aria-hidden="true">?</span><span>教學</span></button>
             <!-- 任務一／任務二顯示；預設隱藏，由 updateMazeAnswerButtonVisibility 控制 -->
             <button class="control-btn" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none; background-color: #ff9800; color: white;">💡 參考答案</button>
             <!-- 隱藏場景選擇下拉選單 -->
@@ -179,13 +153,20 @@
                 <option value="tunnel">任務一: 坍塌廢墟搜救</option>
                 <option value="city">任務二: 山火智能應對</option>
             </select>
-            <button type="button" class="control-btn camera-mode-btn" onclick="toggleCameraMode()" id="camera-mode-btn" title="切換視角">🎥 視角: 跟隨中</button>
+                <button type="button" class="control-btn control-btn--quiet camera-mode-btn" onclick="toggleCameraMode()" id="camera-mode-btn" title="切換視角"><span class="ui-icon" aria-hidden="true">◉</span><span id="camera-mode-label">跟隨視角</span></button>
+                <button type="button" class="control-btn control-btn--quiet" onclick="toggleUtilityMenu()" id="utility-menu-btn" aria-expanded="false" aria-controls="utility-menu" title="更多工具"><span aria-hidden="true">•••</span><span class="sr-only">更多工具</span></button>
+            </div>
+            <div id="utility-menu" class="utility-menu" hidden>
+                <button type="button" onclick="startInteractiveTutorial(); toggleUtilityMenu(false)">互動新手教學</button>
+                <button type="button" class="mission-briefing-entry" onclick="showMissionBriefing(); toggleUtilityMenu(false)">查看任務說明</button>
+                <button type="button" onclick="toggleConsole(true); toggleUtilityMenu(false)">開啟飛行紀錄</button>
+            </div>
             <button type="button" class="control-btn road-editor-top-btn road-editor-ui" onclick="toggleRoadEditorMode()" id="road-editor-toggle-btn" hidden aria-hidden="true" title="編輯試用關卡路面（僅試用一）">🛣️ 路面編輯</button>
         </div>
 
         <!-- 首次進入遊戲介面：Blockly 尋址提示（localStorage 見 main.js） -->
         <div id="blockly-discover-toast" class="discover-toast" role="status" aria-live="polite" hidden aria-hidden="true">
-            <p class="discover-toast-text">第一次玩嗎？請按上方「顯示積木區」開啟 Blockly 面板，編好程式後再按右下角的「執行」讓無人機動作。</p>
+            <p class="discover-toast-text">第一次玩嗎？請按上方「程式積木」開啟編程面板，完成程式後再按下方控制列的「執行」。</p>
             <button type="button" class="discover-toast-dismiss" onclick="dismissBlocklyDiscoverToast()" aria-label="關閉提示">知道了</button>
         </div>
         
@@ -214,16 +195,21 @@
             <button type="button" class="road-editor-btn road-editor-btn--close" onclick="toggleRoadEditorMode(false)">關閉編輯</button>
         </div>
         
-        <!-- 右下角浮动控制面板 -->
+        <!-- 統一程式控制列 -->
         <div class="floating-control-panel">
             <!-- aria-atomic：每次進度變更時整段「執行中: n/m」一併報讀；更新頻率為「每個指令一步」而非逐幀，polite 通常可接受 -->
             <div class="execution-progress" id="execution-progress" style="display: none;" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
                 <span>執行中: <span id="progress-text">0/0</span></span>
             </div>
             <div class="control-buttons-group">
-                <button type="button" class="floating-btn btn-run" id="run-blockly-btn" onclick="runBlocklyCode()" title="執行" aria-label="執行程式">▶</button>
-                <button type="button" class="floating-btn btn-stop" onclick="emergencyStop()" title="停止" aria-label="緊急停止">⬛</button>
-                <button type="button" class="floating-btn btn-reset" onclick="resetSimulator()" title="重置" aria-label="重置模擬">⟳</button>
+                <button type="button" class="program-btn program-btn--run" id="run-blockly-btn" onclick="runBlocklyCode()" title="執行程式"><span aria-hidden="true">▶</span><span>執行</span></button>
+                <button type="button" class="program-btn" id="debug-pause-btn" onclick="toggleExecutionPause()" aria-label="暫停程式"><span aria-hidden="true">Ⅱ</span><span class="debug-pause-label">暫停</span></button>
+                <button type="button" class="program-btn" onclick="stepExecution()" aria-label="單步執行下一個積木"><span aria-hidden="true">↧</span><span>單步</span></button>
+                <button type="button" class="program-btn program-btn--stop" onclick="emergencyStop()" title="緊急停止"><span aria-hidden="true">■</span><span>停止</span></button>
+                <button type="button" class="program-btn" onclick="resetSimulator()" title="重置模擬"><span aria-hidden="true">↻</span><span>重置</span></button>
+                <span class="program-divider" aria-hidden="true"></span>
+                <button type="button" class="program-btn program-btn--compact" id="breakpoint-btn" onclick="toggleSelectedBreakpoint()" aria-label="為所選積木切換斷點"><span class="breakpoint-dot" aria-hidden="true"></span><span>斷點</span></button>
+                <output id="debug-position" aria-live="off">X 0 · Y 0 · Z 0 · 航向 180°</output>
             </div>
         </div>
         <div class="main-container">
@@ -257,12 +243,32 @@
                 <input type="file" id="blockly-import-input" accept=".xml,text/xml,application/xml" hidden onchange="handleBlocklyImportFile(this)">
             </div>
             <div id="canvas-container" class="canvas-panel">
-                <div class="hud" id="hud-display">Status: LANDED<br>Alt: 0 cm</div>
+                <section class="hud" id="hud-display" aria-label="飛行遙測">
+                    <div class="hud__section hud__flight">
+                        <div class="hud__head"><span>FLIGHT</span><strong id="hud-flight-state" class="status-safe"><i></i> LANDED</strong></div>
+                        <div class="hud__grid">
+                            <div><small>電量</small><strong id="hud-battery">—</strong></div><div><small>航向</small><strong id="hud-heading">180°</strong></div>
+                            <div><small>高度</small><strong id="hud-altitude">0 cm</strong></div><div><small>水平速度</small><strong id="hud-hspeed">0 cm/s</strong></div>
+                            <div><small>垂直速度</small><strong id="hud-vspeed">0 cm/s</strong></div><div><small>水箱</small><strong id="hud-water">空</strong></div>
+                        </div>
+                    </div>
+                    <div class="hud__section hud__nav">
+                        <div class="hud__head"><span>NAV</span><small id="hud-camera">跟隨視角</small></div>
+                        <div class="hud__coordinates"><span id="hud-coordinates">X 0 · Z 0</span><strong id="hud-target-distance">目標 —</strong></div>
+                        <div class="hud__mission"><span id="hud-score">得分 0</span><span id="hud-mission-progress">自由飛行</span></div>
+                    </div>
+                </section>
                 
-                <div id="console-panel">
+                <div id="console-panel" class="console-collapsed">
                     <div class="console-header">
-                        <span>>_ Console Output</span>
-                        <button type="button" onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;" aria-label="清除主控台內容">🗑️ Clear</button>
+                        <button type="button" class="console-toggle" onclick="toggleConsole()" id="console-toggle-btn" aria-expanded="false" aria-controls="console-content"><span aria-hidden="true">⌃</span><strong>飛行紀錄</strong><span id="console-summary">系統準備完成</span></button>
+                        <div class="console-filters" role="group" aria-label="紀錄篩選">
+                            <button type="button" class="is-active" data-console-filter="all" onclick="setConsoleFilter('all')">全部</button>
+                            <button type="button" data-console-filter="error" onclick="setConsoleFilter('error')">錯誤</button>
+                            <button type="button" data-console-filter="mission" onclick="setConsoleFilter('mission')">任務</button>
+                            <button type="button" data-console-filter="system" onclick="setConsoleFilter('system')">系統</button>
+                            <button type="button" onclick="clearConsole()" aria-label="清除飛行紀錄">清除</button>
+                        </div>
                     </div>
                     <div id="console-content"></div>
                 </div>
@@ -270,11 +276,11 @@
         </div>
     </div>
     <xml id="toolbox" style="display: none">
-        <category name="Events" colour="#FFBF00">
+        <category name="事件" colour="#FFBF00">
             <block type="event_start"></block>
             <block type="event_wait_key"></block>
         </category>
-        <category name="Flight Commands" colour="#4C97FF">
+        <category name="飛行指令" colour="#4C97FF">
             <label text="Basic"></label>
             <block type="drone_takeoff"></block>
             <block type="drone_land"></block>
@@ -314,7 +320,7 @@
             </block>
             <block type="drone_move_complex_infinite"></block>
         </category>
-        <category name="Lights" colour="260">
+        <category name="燈光" colour="260">
             <block type="drone_set_led_color">
                 <value name="COLOR"><shadow type="colour_picker"><field name="COLOUR">#ff0000</field></shadow></value>
                 <value name="BRIGHTNESS"><shadow type="math_number"><field name="NUM">255</field></shadow></value>
@@ -333,13 +339,13 @@
                 <value name="B_VAL"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
             </block>
         </category>
-        <category name="Sensors" colour="#5b67a5">
+        <category name="感測器" colour="#5b67a5">
             <block type="drone_get_range">
                 <field name="TYPE">front</field><field name="UNIT">cm</field>
             </block>
             <block type="drone_get_height"><field name="UNIT">cm</field></block>
         </category>
-        <category name="Console" colour="#5ba5e0">
+        <category name="輸出" colour="#5ba5e0">
             <block type="drone_print">
                 <value name="TEXT"><shadow type="text"><field name="TEXT">Hello</field></shadow></value>
             </block>
@@ -347,14 +353,14 @@
             <block type="text_join"></block>
         </category>
         <sep></sep>
-        <category name="Logic" colour="#5C81A6">
+        <category name="邏輯" colour="#5C81A6">
             <block type="logic_compare"></block>
             <block type="logic_operation"></block>
             <block type="logic_negate"></block>
             <block type="logic_boolean"></block>
             <block type="logic_ternary"></block>
         </category>
-        <category name="Control" colour="#FFAB19">
+        <category name="流程控制" colour="#FFAB19">
             <block type="controls_if"></block>
             <block type="controls_repeat_ext">
                 <value name="TIMES">
@@ -364,7 +370,7 @@
             <block type="controls_whileUntil"></block>
             <block type="controls_flow_statements"></block>
         </category>
-        <category name="Math" colour="#59C059">
+        <category name="數學" colour="#59C059">
             <block type="math_number"><field name="NUM">0</field></block>
             <block type="math_arithmetic"></block>
             <block type="math_random_int">
@@ -374,9 +380,9 @@
             <block type="math_round"></block>
             <block type="math_modulo"></block>
         </category>
-        <category name="Variables" colour="#a5c73d" custom="VARIABLE"></category>
-        <category name="Lists" colour="#745ba5" custom="LIST"></category>
-        <category name="Functions" colour="#d65cd6" custom="PROCEDURE"></category>
+        <category name="變數" colour="#a5c73d" custom="VARIABLE"></category>
+        <category name="清單" colour="#745ba5" custom="LIST"></category>
+        <category name="函式" colour="#d65cd6" custom="PROCEDURE"></category>
     </xml>
     <!-- 任務結算彈窗 -->
     <div id="result-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
@@ -459,9 +465,34 @@
         </div>
     </div>
 
-    <script src="js/simulator.js?v=road-editor-hidden"></script>
+    <aside id="tutorial-coach" class="tutorial-coach" hidden aria-live="polite" aria-labelledby="tutorial-title">
+        <div class="tutorial-coach__progress"><span id="tutorial-progress-bar"></span></div>
+        <p class="tutorial-coach__eyebrow">互動教學 <span id="tutorial-step-count">1 / 5</span></p>
+        <h2 id="tutorial-title">開啟積木區</h2>
+        <p id="tutorial-instruction">按上方「顯示積木區」，準備編寫第一個飛行程式。</p>
+        <p id="tutorial-check" class="tutorial-coach__check">等待你完成這一步…</p>
+        <div class="tutorial-coach__actions">
+            <button type="button" id="tutorial-helper-btn" onclick="applyTutorialHelper()">幫我放入示範積木</button>
+            <button type="button" onclick="stopInteractiveTutorial()">離開教學</button>
+        </div>
+    </aside>
+
+    <script src="js/simulator.js?v=charge-material-fix-20260717"></script>
     <script src="js/blockly_def.js"></script>
     <script src="js/mission2_answer.js"></script>
-    <script src="js/main.js?v=post-competition"></script>
+    <script src="js/main.js?v=silent-collision-20260717"></script>
+    <script>
+        window.addEventListener('load', function () {
+            var loader = document.getElementById('app-loading');
+            if (loader) {
+                loader.classList.add('app-loading--done');
+                loader.setAttribute('aria-hidden', 'true');
+                window.setTimeout(function () { loader.hidden = true; }, 400);
+            }
+            if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+                navigator.serviceWorker.register('./sw.js').catch(function (err) { console.warn('Offline cache unavailable', err); });
+            }
+        });
+    </script>
 </body>
 </html>

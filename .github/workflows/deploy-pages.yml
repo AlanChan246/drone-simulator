@@ -28,11 +28,21 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Install pinned browser libraries
+        run: npm ci --omit=dev
+
       - name: Prepare static site
         run: |
           mkdir -p _site
           cp index.html style.css _site/
           cp -r js assets _site/
+          mkdir -p _site/node_modules/three/build _site/node_modules/three/examples/js/loaders
+          mkdir -p _site/node_modules/blockly/msg
+          cp node_modules/three/build/three.min.js _site/node_modules/three/build/
+          cp node_modules/three/examples/js/loaders/GLTFLoader.js _site/node_modules/three/examples/js/loaders/
+          cp node_modules/blockly/blockly_compressed.js node_modules/blockly/blocks_compressed.js node_modules/blockly/javascript_compressed.js _site/node_modules/blockly/
+          cp node_modules/blockly/msg/en.js _site/node_modules/blockly/msg/
+          cp sw.js _site/
           cp .nojekyll _site/
 
       - name: Upload artifact

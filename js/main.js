@@ -182,8 +182,102 @@ function initBlocklyAutosave(ws) {
 }
 
 // 執行控制變數
-const executionSpeed = 3.0; // 固定執行速度（3×，不可由 UI 調整）
+const executionSpeed = 3.0;
+const executionDebug = {
+    paused: false,
+    stepBudget: 0,
+    pauseResolvers: [],
+    breakpoints: new Set(),
+    currentIndex: -1
+};
+
+function updatePauseButton() {
+    const btn = document.getElementById('debug-pause-btn');
+    if (!btn) return;
+    const icon = btn.querySelector('span[aria-hidden="true"]');
+    const label = btn.querySelector('.debug-pause-label');
+    if (icon) icon.textContent = executionDebug.paused ? '▶' : 'Ⅱ';
+    if (label) label.textContent = executionDebug.paused ? '繼續' : '暫停';
+    btn.classList.toggle('is-active', executionDebug.paused);
+    btn.setAttribute('aria-label', executionDebug.paused ? '繼續執行程式' : '暫停程式');
+}
+
+function releaseExecutionGate() {
+    const pending = executionDebug.pauseResolvers.splice(0);
+    pending.forEach(resolve => resolve());
+}
+
+function toggleExecutionPause(forcePaused) {
+    executionDebug.paused = typeof forcePaused === 'boolean' ? forcePaused : !executionDebug.paused;
+    if (!executionDebug.paused) {
+        executionDebug.stepBudget = 0;
+        releaseExecutionGate();
+    }
+    updatePauseButton();
+    logToConsole(executionDebug.paused ? '⏸️ 程式會在下一個積木前暫停。' : '▶️ 程式繼續執行。');
+}
+
+function stepExecution() {
+    executionDebug.paused = true;
+    executionDebug.stepBudget += 1;
+    releaseExecutionGate();
+    updatePauseButton();
+}
+
+async function waitForExecutionGate(blockId) {
+    if (blockId && executionDebug.breakpoints.has(blockId)) {
+        executionDebug.paused = true;
+        updatePauseButton();
+        showAppMessage({ variant: 'info', title: '已到達斷點', body: '程式已在紅色標記的積木前暫停。', nextStep: '按「單步」執行這個積木，或按「繼續」。' });
+    }
+    while (executionDebug.paused && executionDebug.stepBudget <= 0 && !state.stopSignal) {
+        await new Promise(resolve => executionDebug.pauseResolvers.push(resolve));
+    }
+    if (executionDebug.stepBudget > 0) executionDebug.stepBudget -= 1;
+}
+
+function toggleSelectedBreakpoint() {
+    const selected = typeof Blockly !== 'undefined' && typeof Blockly.getSelected === 'function' ? Blockly.getSelected() : null;
+    if (!selected) {
+        showAppMessage({ variant: 'warn', title: '尚未選擇積木', body: '先在積木工作區點選一個飛行指令。', nextStep: '再按「斷點」，紅框表示程式會在該處暫停。' });
+        return;
+    }
+    const enabled = !executionDebug.breakpoints.has(selected.id);
+    if (enabled) executionDebug.breakpoints.add(selected.id); else executionDebug.breakpoints.delete(selected.id);
+    if (selected.svgGroup_) selected.svgGroup_.classList.toggle('blockly-breakpoint', enabled);
+    logToConsole(`${enabled ? '🔴 已加入' : '⚪ 已移除'}斷點：${selected.type}`);
+}
+
+function focusProblemBlock(blockId) {
+    if (!workspace || !blockId) return;
+    const block = workspace.getBlockById(blockId);
+    if (!block) return;
+    if (typeof block.select === 'function') block.select();
+    if (typeof workspace.centerOnBlock === 'function') workspace.centerOnBlock(blockId);
+    highlightBlock(blockId, true);
+}
+
+function reportRuntimeIssue(kind, blockId, details) {
+    const catalog = {
+        battery: ['電量不足', '目前移動指令需要電量，但電池已耗盡。', '加入「懸停」並在黃色充電站上方停留，然後再移動。'],
+        grounded: ['尚未起飛', '這個積木需要無人機在空中，但程式前面沒有成功起飛。', '把「起飛」積木放在這個指令之前。'],
+        forbidden: ['此任務不允許這個積木', '任務一要求沿道路導航，不能直接飛往座標。', '改用移動和轉向積木規劃路線。'],
+        mission: ['任務條件尚未完成', details || '無人機已停止，但仍有任務目標未完成。', '打開「任務說明」，檢查巡檢、滅火、終點或降落條件。']
+    };
+    const info = catalog[kind] || ['執行錯誤', String(details || '未知錯誤'), '檢查目前高亮的積木及其參數。'];
+    focusProblemBlock(blockId);
+    showAppMessage({ variant: 'error', title: info[0], body: info[1], nextStep: `修正方法：${info[2]}`, focusClose: true });
+    logToConsole(`❌ ${info[0]}：${info[1]} 修正方法：${info[2]}`);
+}
 let currentGameMode = 'mission'; // 當前遊戲模式 ('mission' 或 'freeplay')
+
+function updateModeSpecificUi() {
+    const isFreePlay = currentGameMode === 'freeplay';
+    document.querySelectorAll('.mission-briefing-entry').forEach(entry => {
+        entry.hidden = isFreePlay;
+        entry.setAttribute('aria-hidden', isFreePlay ? 'true' : 'false');
+    });
+}
 let activeMissionId = null; // 當前活動的任務 ID
 let lastMissionMenu = 'competition'; // 'competition' | 'practice'
 let currentExecutingBlockId = null; // 當前執行的積木 ID
@@ -467,7 +561,6 @@ function isCompetitionUnlocked() {
 }
 
 window.isCompetitionUnlocked = isCompetitionUnlocked;
-window.showPracticeSelect = showPracticeSelect;
 
 // --- Console 介面功能 ---
 function logToConsole(msg) {
@@ -484,10 +577,45 @@ function logToConsole(msg) {
         displayMsg = JSON.stringify(msg);
     }
 
-    entry.innerHTML = `<span class="log-time">[${time}]</span> ${displayMsg}`;
+    const normalized = String(displayMsg);
+    const type = /❌|錯誤|失敗|碰撞|耗盡|禁止/.test(normalized) ? 'error'
+        : /任務|巡檢|火點|得分|終點|起點|滅火|Landing/.test(normalized) ? 'mission' : 'system';
+    entry.dataset.logType = type;
+    const timeEl = document.createElement('span');
+    timeEl.className = 'log-time';
+    timeEl.textContent = time;
+    const messageEl = document.createElement('span');
+    messageEl.className = 'log-message';
+    messageEl.textContent = normalized;
+    entry.append(timeEl, messageEl);
     contentDiv.appendChild(entry);
+    const summary = document.getElementById('console-summary');
+    if (summary) summary.textContent = normalized.replace(/^[^\p{L}\p{N}]+/u, '').slice(0, 80);
+    if (type === 'error') toggleConsole(true);
     
     contentDiv.scrollTop = contentDiv.scrollHeight;
+}
+function toggleConsole(forceOpen) {
+    const panel = document.getElementById('console-panel');
+    const btn = document.getElementById('console-toggle-btn');
+    if (!panel) return;
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('console-collapsed');
+    panel.classList.toggle('console-collapsed', !shouldOpen);
+    if (btn) btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    scheduleGameUILayoutRefresh();
+}
+function setConsoleFilter(filter) {
+    const content = document.getElementById('console-content');
+    if (content) content.dataset.filter = filter;
+    document.querySelectorAll('[data-console-filter]').forEach(btn => btn.classList.toggle('is-active', btn.dataset.consoleFilter === filter));
+}
+function toggleUtilityMenu(forceOpen) {
+    const menu = document.getElementById('utility-menu');
+    const btn = document.getElementById('utility-menu-btn');
+    if (!menu) return;
+    const open = typeof forceOpen === 'boolean' ? forceOpen : menu.hidden;
+    menu.hidden = !open;
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 function clearConsole() {
     const contentDiv = document.getElementById('console-content');
@@ -500,14 +628,15 @@ function toggleCameraMode() {
         camTarget.x = state.x; camTarget.y = state.y; camTarget.z = state.z;
     }
     const btn = document.getElementById('camera-mode-btn');
-    if(btn) {
-        btn.innerText = followDrone ? "🎥 視角: 跟隨中" : "🎥 視角: 自由移動";
-    }
+    const label = document.getElementById('camera-mode-label');
+    if (label) label.textContent = followDrone ? '跟隨視角' : '自由視角';
+    if (btn) btn.setAttribute('aria-label', followDrone ? '目前為跟隨視角；按下切換自由視角' : '目前為自由視角；按下切換跟隨視角');
 }
 
 // --- 程式碼執行邏輯 ---
 
 function runBlocklyCode() {
+    window.__tutorialRunAttempted = true;
     console.log("runBlocklyCode 被調用，state.isRunning:", state.isRunning);
     
     if (state.isRunning) {
@@ -1536,19 +1665,73 @@ async function dispatchReleaseWater() {
     }
 }
 
-function updateHUD() {
-    const hud = document.getElementById('hud-display');
-    if (!hud) return;
-    
-    const alt = isCityMissionScene() ? (state.y - getForestHeight(state.x, state.z)) : state.y;
-    const waterStatus = state.hasWater ? '<span style="color:#00adb5">FULL</span>' : '<span style="color:#aaa">EMPTY</span>';
-    
-    hud.innerHTML = `
-        Status: ${state.isFlying ? 'FLYING' : 'LANDED'}<br>
-        Alt: ${alt.toFixed(0)} cm<br>
-        Water: ${waterStatus}
-    `;
+let telemetryLastSample = { time: 0, x: 0, y: 0, z: 0 };
+let telemetryVelocity = { horizontal: 0, vertical: 0 };
+function setTelemetryText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
 }
+function updateFlightTelemetry() {
+    const hud = document.getElementById('hud-display');
+    if (!hud || typeof state === 'undefined') return;
+    const now = Date.now();
+    const dt = telemetryLastSample.time ? (now - telemetryLastSample.time) / 1000 : 0;
+    if (dt >= .08) {
+        const dx = state.x - telemetryLastSample.x;
+        const dy = state.y - telemetryLastSample.y;
+        const dz = state.z - telemetryLastSample.z;
+        const smoothing = .38;
+        telemetryVelocity.horizontal = telemetryVelocity.horizontal * (1 - smoothing) + (Math.sqrt(dx * dx + dz * dz) / dt) * smoothing;
+        telemetryVelocity.vertical = telemetryVelocity.vertical * (1 - smoothing) + (dy / dt) * smoothing;
+        telemetryLastSample = { time: now, x: state.x, y: state.y, z: state.z };
+    }
+    const alt = isCityMissionScene() ? state.y - getForestHeight(state.x, state.z) : state.y;
+    const heading = Math.round(((state.heading % 360) + 360) % 360);
+    const hasNavigationTarget = isTunnelMissionScene() || isCityMissionScene() || currentSceneType === 'challenge_maze';
+    const targetDist = hasNavigationTarget && typeof targetPosition !== 'undefined' ? Math.hypot(state.x - targetPosition.x, state.z - targetPosition.z) : NaN;
+    const flightState = document.getElementById('hud-flight-state');
+    if (flightState) {
+        flightState.innerHTML = `<i></i> ${state.isFlying ? 'FLYING' : 'LANDED'}`;
+        flightState.className = state.collisionDetected ? 'status-danger' : (state.isFlying ? 'status-warn' : 'status-safe');
+    }
+    let batteryLabel = '訓練模式';
+    let batteryRatio = 1;
+    if (isCityMissionScene() && typeof getCityBatteryRemainingLines === 'function') {
+        const lines = getCityBatteryRemainingLines();
+        batteryRatio = Math.max(0, Math.min(1, lines / 20));
+        batteryLabel = `${lines} 行`;
+    }
+    const batteryEl = document.getElementById('hud-battery');
+    if (batteryEl) {
+        batteryEl.textContent = batteryLabel;
+        batteryEl.className = batteryRatio <= .2 ? 'status-danger' : batteryRatio <= .45 ? 'status-warn' : '';
+    }
+    setTelemetryText('hud-heading', `${heading}°`);
+    setTelemetryText('hud-altitude', `${Math.round(alt)} cm`);
+    setTelemetryText('hud-hspeed', `${Math.round(telemetryVelocity.horizontal)} cm/s`);
+    setTelemetryText('hud-vspeed', `${telemetryVelocity.vertical >= 0 ? '+' : ''}${Math.round(telemetryVelocity.vertical)} cm/s`);
+    setTelemetryText('hud-water', state.hasWater ? '滿' : '空');
+    setTelemetryText('hud-camera', followDrone ? '跟隨視角' : '自由視角');
+    setTelemetryText('hud-coordinates', `X ${Math.round(state.x)} · Z ${Math.round(state.z)}`);
+    setTelemetryText('hud-target-distance', Number.isFinite(targetDist) ? `目標 ${Math.round(targetDist)} cm` : '目標 —');
+    setTelemetryText('hud-score', `得分 ${Math.floor(currentScore || 0)}`);
+    let missionTitle = '自由練習';
+    let missionProgress = '自由飛行';
+    if (isTunnelMissionScene()) {
+        missionTitle = activeMissionConfig && activeMissionConfig.isPractice ? '試用一 · 廢墟搜救' : '任務一 · 廢墟搜救';
+        missionProgress = `巡檢 ${beaconsTriggered}/${getRequiredBeacons()}`;
+    } else if (isCityMissionScene()) {
+        missionTitle = activeMissionConfig && activeMissionConfig.isPractice ? '試用二 · 山火應對' : '任務二 · 山火應對';
+        missionProgress = `火點 ${firesExtinguished}/${getRequiredFires()}`;
+    } else if (currentSceneType === 'challenge_maze') {
+        missionTitle = '隨機迷宮挑戰'; missionProgress = '前往終點';
+    }
+    setTelemetryText('hud-mission-progress', missionProgress);
+    setTelemetryText('active-mission-title', missionTitle);
+    setTelemetryText('top-mission-progress', missionProgress);
+}
+window.updateFlightTelemetry = updateFlightTelemetry;
+function updateHUD() { updateFlightTelemetry(); }
 
 // 監聽狀態變化以更新 HUD
 setInterval(updateHUD, 200);
@@ -1592,6 +1775,10 @@ function resetSimulator() {
 
     cmdQueue = [];
     waitingForKey = false;
+    executionDebug.paused = false;
+    executionDebug.stepBudget = 0;
+    releaseExecutionGate();
+    updatePauseButton();
     
     // 清除高亮
     if (currentExecutingBlockId) {
@@ -1677,6 +1864,10 @@ function emergencyStop() {
     state.isFlying = false; 
     state.y = Math.max(0, getGroundHeight(state.x, state.z)); // getGroundHeight 來自 simulator.js
     waitingForStep = false;
+    executionDebug.paused = false;
+    executionDebug.stepBudget = 0;
+    releaseExecutionGate();
+    updatePauseButton();
     
     // 清除高亮
     if (currentExecutingBlockId) {
@@ -1782,9 +1973,15 @@ async function executeQueue() {
             break;
         }
 
+        const cmd = cmdQueue[i];
+        const blockId = commandToBlockMap.get(i) || (cmd && cmd._blockId) || null;
+        executionDebug.currentIndex = i;
+        await waitForExecutionGate(blockId);
+        if (state.stopSignal) break;
+
         if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
             && cmd.type && cmd.type.startsWith('move_')) {
-            logToConsole('⚠️ 電力耗盡！請找黃色充電站懸停補電（+15 行），或返回基地。');
+            reportRuntimeIssue('battery', blockId);
             if (typeof emergencyStop === 'function') emergencyStop();
             break;
         }
@@ -1794,7 +1991,6 @@ async function executeQueue() {
         
         // 高亮當前執行的積木塊（如果映射關係存在）
         try {
-            const blockId = commandToBlockMap.get(i);
             if (blockId) {
                 highlightBlock(blockId, true);
             }
@@ -1805,10 +2001,10 @@ async function executeQueue() {
         
         console.log(`執行命令 ${i + 1}/${cmdQueue.length}: ${cmdQueue[i]?.type || 'unknown'}`);
         
-        const cmd = cmdQueue[i];
         const param = parseFloat(cmd.param);
         
         if (!state.isFlying && cmd.type !== 'takeoff' && cmd.type !== 'set_color' && cmd.type !== 'wait_key') { 
+            reportRuntimeIssue('grounded', blockId);
             await wait(200); continue; 
         }
 
@@ -1830,7 +2026,7 @@ async function executeQueue() {
                 await animateAction(1.5, p => state.y = sy - ((sy-gy)*p), { canAbort: false }); 
                 state.isFlying = false; 
                 
-                if (hasTakenOff) {
+                if (hasTakenOff && currentGameMode === 'mission') {
                     const dist = Math.sqrt(
                         Math.pow(state.x - targetPosition.x, 2) + 
                         Math.pow(state.z - targetPosition.z, 2)
@@ -1961,7 +2157,7 @@ async function executeQueue() {
                 break;
             case 'goto_xyz':
                 if (isTunnelMissionScene()) {
-                    logToConsole('⚠️ 任務一禁止使用「飛至座標 (Goto XYZ)」；請沿可通行路網飛行。');
+                    reportRuntimeIssue('forbidden', blockId);
                     await wait(100);
                     break;
                 }
@@ -2031,6 +2227,13 @@ async function executeQueue() {
     updateProgress(0, 0);
     
     state.isRunning = false;
+    executionDebug.currentIndex = -1;
+    if (!state.stopSignal && !state.missionCompleted && currentGameMode === 'mission') {
+        const pending = isCityMissionScene()
+            ? `尚需撲滅 ${Math.max(0, getRequiredFires() - firesExtinguished)} 個火點並到達終點。`
+            : `尚需完成 ${Math.max(0, getRequiredBeacons() - beaconsTriggered)} 個巡檢點並在終點降落。`;
+        reportRuntimeIssue('mission', null, pending);
+    }
 }
 // ==========================================
 // 菜單導航邏輯
@@ -2110,6 +2313,7 @@ function setBlocklyToggleA11y(panelExpanded) {
     toggleBtn.setAttribute('aria-controls', 'blocklyDiv');
     toggleBtn.setAttribute('aria-label', panelExpanded ? '隱藏積木區' : '顯示積木區');
     toggleBtn.title = panelExpanded ? '隱藏積木區' : '顯示積木區';
+    toggleBtn.classList.toggle('is-active', panelExpanded);
 }
 
 const BLOCKLY_DISCOVER_LS_KEY = 'drone-simulator:v1:blockly-discover-dismissed';
@@ -2178,7 +2382,6 @@ function toggleBlocklyPanel() {
         // 強制重置寬度和 flex
         blocklyPanel.style.flex = '0 0 0';
         blocklyPanel.style.width = '0';
-        toggleBtn.textContent = '📦 顯示積木區';
         
         // 等待動畫完成後調整 3D 渲染器大小（動畫時間 150ms）
         setTimeout(() => {
@@ -2191,7 +2394,6 @@ function toggleBlocklyPanel() {
         // 恢復之前保存的寬度
         blocklyPanel.style.flex = `0 0 ${savedBlocklyWidth}%`;
         blocklyPanel.style.width = `${savedBlocklyWidth}%`;
-        toggleBtn.textContent = '📦 隱藏積木區';
         
         // 確保 Blockly 已初始化（只在顯示時初始化）
         if (!workspace) {
@@ -2527,15 +2729,9 @@ function returnToMissionSelect() {
     closeResultModal();
     if (currentGameMode === 'freeplay') {
         showMainMenu();
-    } else if (lastMissionMenu === 'practice') {
-        document.getElementById('game-interface').style.display = 'none';
-        document.getElementById('mission-select-menu').style.display = 'none';
-        document.getElementById('practice-select-menu').style.display = 'flex';
-        document.getElementById('main-menu').style.display = 'none';
     } else {
         document.getElementById('game-interface').style.display = 'none';
         document.getElementById('mission-select-menu').style.display = 'flex';
-        document.getElementById('practice-select-menu').style.display = 'none';
         document.getElementById('main-menu').style.display = 'none';
     }
 }
@@ -2544,6 +2740,7 @@ function returnToMissionSelect() {
 function startChallengeMode() {
     activeMissionId = 'challenge';
     currentGameMode = 'mission';
+    updateModeSpecificUi();
     logToConsole('🔥 挑戰模式：隨機市區迷宮已啟動！');
     logToConsole('💡 使用感應器自動導航；藍／綠箭嘴標示起點與終點。');
     changeScene('challenge_maze');
@@ -2695,7 +2892,10 @@ function renderBriefMapLegend(items) {
         <ul class="brief-legend">
             ${items.map(item => `
                 <li class="brief-legend-item">
-                    <span class="brief-legend-swatch ${item.swatchClass}" aria-hidden="true">${item.glyph || ''}</span>
+                    <span class="brief-legend-swatch ${item.swatchClass}" aria-hidden="true">
+                        ${item.image ? `<img src="${item.image}" alt="">` : (item.glyph || '')}
+                        ${item.badge ? `<span class="brief-legend-badge">${item.badge}</span>` : ''}
+                    </span>
                     <span class="brief-legend-copy">
                         <strong>${item.title}</strong>
                         <span>${item.desc}</span>
@@ -2715,12 +2915,12 @@ function renderBriefMission1Legend() {
 
 function renderBriefMission2Legend() {
     return renderBriefMapLegend([
-        { swatchClass: 'brief-legend-swatch--start', glyph: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木製起降平台' },
-        { swatchClass: 'brief-legend-swatch--end', glyph: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；須降落結算成績' },
-        { swatchClass: 'brief-legend-swatch--fire', glyph: 'A', title: '火點 A/B/C/D', desc: '火焰上方浮動標籤；金色 A 最優先（+200）' },
-        { swatchClass: 'brief-legend-swatch--water', glyph: '', title: '水源', desc: '深藍色圓形水池；Collect Water 裝水' },
-        { swatchClass: 'brief-legend-swatch--charge', glyph: '⚡', title: '充電站', desc: '黃色六角平台＋光環；hover ≥3 秒 +15 行（每站一次）' },
-        { swatchClass: 'brief-legend-swatch--forest', glyph: '', title: '樹林／岩石', desc: '不可穿越；須繞路規劃' }
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--start', image: 'assets/images/mission2-legend/start-base.png', badge: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木地板、帳篷、木箱與路牌' },
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--end', image: 'assets/images/mission2-legend/rescue-goal.png', badge: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；金屬救援平台與物資棚' },
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--fire', image: 'assets/images/mission2-legend/fire.png', badge: 'A', title: '火點 A/B/C/D', desc: 'Kenney 營火與浮動標籤；A 最優先（+200）' },
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--water', image: 'assets/images/mission2-legend/water.png', title: '水源', desc: '河流地形格與岸邊岩石；Collect Water 裝水' },
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--charge', image: 'assets/images/mission2-legend/charge.png', badge: '⚡', title: '充電站', desc: '工業機器、操作螢幕與警示燈；hover ≥3 秒 +15 行' },
+        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--forest', image: 'assets/images/mission2-legend/forest.png', title: '樹林／岩石', desc: '不可穿越；須繞路規劃' }
     ]);
 }
 
@@ -2770,7 +2970,7 @@ function showMissionBriefing(missionId) {
                 <li class="brief-step">
                     <span class="brief-step-icon">🛫</span>
                     <span class="brief-step-title">起點</span>
-                    <span class="brief-step-sub">藍色箭嘴</span>
+                    <span class="brief-step-sub">帳篷基地</span>
                 </li>
                 <li class="brief-step">
                     <span class="brief-step-icon">📡</span>
@@ -2852,7 +3052,7 @@ function showMissionBriefing(missionId) {
             ${renderBriefTimeTierTable(window.MISSION2_TIME_TIERS, '超過 10 分鐘')}
             <h4 class="brief-section-title">等級門檻 Grades</h4>
             ${renderBriefGradeGrid(MISSION2_GRADE_TIERS)}
-            <p class="brief-note">須飛至受災區（綠色箭嘴）降落結算；撲滅火點愈多分數愈高，全數撲滅額外 +200。${SHOW_MISSION_REFERENCE_ANSWERS ? '參考路線約 1050 分。' : ''}</p>
+            <p class="brief-note">須飛至金屬救援平台降落結算；撲滅火點愈多分數愈高，全數撲滅額外 +200。${SHOW_MISSION_REFERENCE_ANSWERS ? '參考路線約 1050 分。' : ''}</p>
             <p class="brief-note">轉向／取水／滅火／起降不計行。連續同方向可合併距離以省電。</p>
             <h4 class="brief-section-title">地圖座標 Map</h4>
             <ul class="brief-tips">
@@ -2973,16 +3173,6 @@ function showMissionSelect() {
     updateMissionPreview();
 }
 
-function showPracticeSelect() {
-    lastMissionMenu = 'practice';
-    document.getElementById('main-menu').style.display = 'none';
-    document.getElementById('mission-select-menu').style.display = 'none';
-    document.getElementById('practice-select-menu').style.display = 'flex';
-    document.getElementById('game-interface').style.display = 'none';
-    cleanupMainMenuPreview();
-    updatePracticePreview();
-}
-
 // 啟動任務
 async function startMission(missionId) {
     if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
@@ -2999,6 +3189,7 @@ async function startMission(missionId) {
     }
 
     currentGameMode = 'mission';
+    updateModeSpecificUi();
     
     if (missionId === 'practice1') {
         activeMissionId = 'practice1';
@@ -3034,7 +3225,6 @@ async function startMission(missionId) {
         blocklyPanel.style.flex = '';
         blocklyPanel.style.width = '';
         blocklyPanel.style.transition = '';
-        toggleBtn.textContent = '📦 顯示積木區';
         setBlocklyToggleA11y(false);
     }
     
@@ -3119,7 +3309,7 @@ async function startMission(missionId) {
     } else if (missionId === 2 || missionId === '2') {
         changeScene('city');
         logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
-        logToConsole('💡 須飛至受災區（綠箭嘴）降落結算；全數撲滅可額外 +200。');
+        logToConsole('💡 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。');
     } else {
         changeScene('free');
     }
@@ -3149,6 +3339,7 @@ async function startFreePlay() {
         return;
     }
     currentGameMode = 'freeplay';
+    updateModeSpecificUi();
     // 先顯示遊戲界面
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'none';
@@ -3166,7 +3357,6 @@ async function startFreePlay() {
         blocklyPanel.style.flex = '';
         blocklyPanel.style.width = '';
         blocklyPanel.style.transition = '';
-        toggleBtn.textContent = '📦 顯示積木區';
         setBlocklyToggleA11y(false);
     }
     
@@ -4048,6 +4238,99 @@ window.enableRoadMaskDebug = function () {
         '並在 Network 分頁確認 js/simulator.js 為 200。'
     );
 };
+
+// ==========================================
+// 互動式新手教學與行動裝置提示
+// ==========================================
+const tutorialSteps = [
+    { title: '開啟積木區', text: '按上方「顯示積木區」，準備編寫第一個飛行程式。', check: () => !!document.querySelector('#blocklyDiv.visible') },
+    { title: '加入起飛', text: '從「Basic Flight」拖入起飛積木，並接在程式開始下方。', type: 'drone_takeoff' },
+    { title: '加入短距離移動', text: '拖入「go forward … cm」積木，距離先設為 50 cm。', type: 'drone_move_cm' },
+    { title: '安全降落', text: '在最後接上降落積木，形成完整的起飛、移動、降落程序。', type: 'drone_land' },
+    { title: '執行小任務', text: '按右下角 ▶ 執行。觀察高亮積木、座標和飛行結果。', check: () => !!window.__tutorialRunAttempted }
+];
+let tutorialStepIndex = 0;
+let tutorialTimer = null;
+
+function hasTutorialBlock(type) {
+    return !!(workspace && workspace.getAllBlocks(false).some(block => block.type === type));
+}
+function tutorialStepComplete(step) {
+    return step.check ? !!step.check() : hasTutorialBlock(step.type);
+}
+function renderTutorialStep() {
+    const coach = document.getElementById('tutorial-coach');
+    if (!coach) return;
+    const step = tutorialSteps[tutorialStepIndex];
+    document.getElementById('tutorial-title').textContent = step.title;
+    document.getElementById('tutorial-instruction').textContent = step.text;
+    document.getElementById('tutorial-step-count').textContent = `${tutorialStepIndex + 1} / ${tutorialSteps.length}`;
+    document.getElementById('tutorial-progress-bar').style.width = `${((tutorialStepIndex + 1) / tutorialSteps.length) * 100}%`;
+    document.getElementById('tutorial-check').textContent = '等待你完成這一步…';
+    document.getElementById('tutorial-helper-btn').hidden = tutorialStepIndex === 0 || tutorialStepIndex === tutorialSteps.length - 1;
+}
+function checkTutorialProgress() {
+    const coach = document.getElementById('tutorial-coach');
+    if (!coach || coach.hidden) return;
+    if (!tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
+    document.getElementById('tutorial-check').textContent = '✅ 完成！準備下一步。';
+    if (tutorialStepIndex >= tutorialSteps.length - 1) {
+        clearInterval(tutorialTimer); tutorialTimer = null;
+        document.getElementById('tutorial-title').textContent = '第一次飛行完成！';
+        document.getElementById('tutorial-instruction').textContent = '你已掌握建立、執行和觀察程式的基本流程。現在可嘗試改變距離或加入轉向。';
+        return;
+    }
+    tutorialStepIndex += 1;
+    setTimeout(renderTutorialStep, 350);
+}
+function startInteractiveTutorial() {
+    const coach = document.getElementById('tutorial-coach');
+    if (!coach) return;
+    tutorialStepIndex = 0;
+    window.__tutorialRunAttempted = false;
+    coach.hidden = false;
+    renderTutorialStep();
+    if (tutorialTimer) clearInterval(tutorialTimer);
+    tutorialTimer = setInterval(checkTutorialProgress, 350);
+}
+function stopInteractiveTutorial() {
+    const coach = document.getElementById('tutorial-coach');
+    if (coach) coach.hidden = true;
+    if (tutorialTimer) clearInterval(tutorialTimer);
+    tutorialTimer = null;
+}
+function applyTutorialHelper() {
+    if (!document.querySelector('#blocklyDiv.visible')) toggleBlocklyPanel();
+    const ws = ensureBlocklyWorkspaceReady();
+    if (!ws) return;
+    const xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="30" y="30"><next><block type="drone_takeoff"><next><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">50</field></block></value><next><block type="drone_land"></block></next></block></next></block></next></block></xml>';
+    ws.clear();
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), ws);
+    if (typeof ws.zoomToFit === 'function') ws.zoomToFit();
+    flushBlocklyAutosave();
+    document.getElementById('tutorial-check').textContent = '✅ 已放入示範程式；你可以修改後執行。';
+}
+
+function updateDebugPosition() {
+    const out = document.getElementById('debug-position');
+    if (!out || typeof state === 'undefined') return;
+    out.textContent = `X ${state.x.toFixed(0)} · Y ${state.y.toFixed(0)} · Z ${state.z.toFixed(0)} · 航向 ${((state.heading % 360) + 360) % 360 | 0}°`;
+}
+setInterval(updateDebugPosition, 120);
+
+let orientationHintDismissed = false;
+function updateOrientationHint() {
+    const hint = document.getElementById('orientation-hint');
+    const game = document.getElementById('game-interface');
+    if (!hint || !game) return;
+    const gameVisible = getComputedStyle(game).display !== 'none';
+    const portraitPhone = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    hint.hidden = orientationHintDismissed || !gameVisible || !portraitPhone;
+}
+function dismissOrientationHint() { orientationHintDismissed = true; updateOrientationHint(); }
+window.addEventListener('resize', updateOrientationHint);
+window.addEventListener('orientationchange', updateOrientationHint);
+setInterval(updateOrientationHint, 700);
 
 window.addEventListener('load', () => {
     // 默認顯示主選單

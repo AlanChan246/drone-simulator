@@ -251,6 +251,7 @@ const assets = {
     stump: null,
     log: null,
     lily: null,
+    kenneyForest: {},
     kenneyDistrictTemplates: [],
     /** @type {{ straight: THREE.Object3D|null, bend: THREE.Object3D|null, cross: THREE.Object3D|null, tee: THREE.Object3D|null, end: THREE.Object3D|null }} */
     kenneyRoads: {
@@ -1247,6 +1248,50 @@ async function preloadModels() {
         { key: 'rock_flat', path: 'assets/models/nature/GLTF format/rock_smallFlatA.glb', required: false }
     ];
 
+    const kenneyForestModels = [
+        ['ground_grass', 'nature/ground_grass.glb'],
+        ['path_straight', 'nature/ground_pathStraight.glb'],
+        ['path_bend', 'nature/ground_pathBend.glb'],
+        ['path_tee', 'nature/ground_pathSplit.glb'],
+        ['path_cross', 'nature/ground_pathCross.glb'],
+        ['path_end', 'nature/ground_pathEnd.glb'],
+        ['path_tile', 'nature/ground_pathTile.glb'],
+        ['river_tile', 'nature/ground_riverTile.glb'],
+        ['forest_tree_a', 'nature/tree_default.glb'],
+        ['forest_tree_b', 'nature/tree_detailed.glb'],
+        ['forest_tree_c', 'nature/tree_tall.glb'],
+        ['forest_tree_burnt', 'nature/tree_oak_dark.glb'],
+        ['forest_rock_a', 'nature/rock_largeA.glb'],
+        ['forest_rock_b', 'nature/rock_largeB.glb'],
+        ['forest_rock_flat', 'nature/rock_smallFlatA.glb'],
+        ['forest_stump', 'nature/stump_old.glb'],
+        ['forest_fire_logs', 'nature/campfire_logs.glb'],
+        ['base_floor', 'survival/floor.glb'],
+        ['base_tent', 'survival/tent.glb'],
+        ['goal_floor', 'survival/structure-metal-floor.glb'],
+        ['goal_shelter', 'survival/structure-canvas.glb'],
+        ['supply_box', 'survival/box.glb'],
+        ['supply_box_large', 'survival/box-large.glb'],
+        ['supply_barrel', 'survival/barrel.glb'],
+        ['base_sign', 'survival/signpost.glb'],
+        ['goal_sign', 'survival/signpost-single.glb'],
+        ['fire_pit', 'survival/campfire-pit.glb'],
+        ['charge_machine', 'factory/machine.glb'],
+        ['charge_screen', 'factory/screen-panel-small.glb'],
+        ['charge_pad', 'factory/indicator-special-area.glb'],
+        ['charge_button', 'factory/button-floor-round.glb'],
+        ['charge_warning', 'factory/warning-orange.glb']
+    ];
+    kenneyForestModels.forEach(([key, relativePath]) => {
+        allModels.push({
+            key: `kenney_forest_${key}`,
+            forestKey: key,
+            path: `assets/models/kenney/${relativePath}`,
+            required: true,
+            preserveMaterial: true
+        });
+    });
+
     console.log("🚀 開始載入 3D 模型...");
 
     // 只載入存在的模型（跳過不存在的可選模型，避免 404 錯誤）
@@ -1274,14 +1319,15 @@ async function preloadModels() {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        // 讓模型稍微金屬化一點，符合 Holodeck 風格
-                        if (child.material) {
+                        // 舊模型沿用 Holodeck 材質；Kenney 模型保留原廠配色。
+                        if (child.material && !item.preserveMaterial) {
                             child.material.roughness = 0.5; 
                             child.material.metalness = 0.5; 
                         }
                     }
                 });
-                assets[item.key] = gltf.scene; 
+                if (item.forestKey) assets.kenneyForest[item.forestKey] = gltf.scene;
+                else assets[item.key] = gltf.scene;
                 console.log(`✅ Loaded: ${item.key}`);
                 resolve();
             }, undefined, (error) => {
@@ -2386,36 +2432,353 @@ function buildForestHeightGrid(grid) {
     return Array.from({ length: rows }, () => Array(cols).fill(0));
 }
 
-/** 任務二：建立充電站（黃色平台，懸停 3 秒補充電力） */
+function forestCellRandom(i, j, salt = 0) {
+    const n = Math.sin((i + 1) * 127.1 + (j + 1) * 311.7 + salt * 74.7) * 43758.5453;
+    return n - Math.floor(n);
+}
+
+function createKenneyForestInstance(key, footprint, heightCap, options = {}) {
+    const template = assets.kenneyForest[key];
+    if (!template) return null;
+    const root = new THREE.Group();
+    const model = template.clone(true);
+    root.add(model);
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const footprintScale = footprint / Math.max(size.x, size.z, 1e-3);
+    const heightScale = heightCap ? heightCap / Math.max(size.y, 1e-3) : footprintScale;
+    model.scale.setScalar(Math.min(footprintScale, heightScale));
+    model.updateMatrixWorld(true);
+    box.setFromObject(model);
+    model.position.x -= (box.min.x + box.max.x) / 2;
+    model.position.y -= box.min.y;
+    model.position.z -= (box.min.z + box.max.z) / 2;
+    root.rotation.y = options.rotation || 0;
+    root.position.set(options.x || 0, options.y || 0, options.z || 0);
+    root.traverse(obj => {
+        if (!obj.isMesh) return;
+        obj.castShadow = options.castShadow !== false;
+        obj.receiveShadow = true;
+        if (options.isWall) obj.isWall = true;
+    });
+    if (options.isWall) root.isWall = true;
+    return root;
+}
+
+function addKenneyForestProp(parent, key, footprint, heightCap, options = {}) {
+    const instance = createKenneyForestInstance(key, footprint, heightCap, options);
+    if (instance) parent.add(instance);
+    return instance;
+}
+
+function getForestPathPiece(grid, i, j) {
+    const open = (row, col) => !!grid[row] && grid[row][col] !== undefined && grid[row][col] !== 1;
+    const dirs = [open(i - 1, j), open(i, j + 1), open(i + 1, j), open(i, j - 1)];
+    const count = dirs.filter(Boolean).length;
+    let key = 'path_tile';
+    let nativeExits = [];
+    if (count >= 4) {
+        key = 'path_cross'; nativeExits = [0, 1, 2, 3];
+    } else if (count === 3) {
+        // Kenney ground_pathSplit 的原生出口為東、南、西。
+        key = 'path_tee'; nativeExits = [1, 2, 3];
+    } else if (count === 2 && ((dirs[0] && dirs[2]) || (dirs[1] && dirs[3]))) {
+        // ground_pathStraight 原生方向為北、南。
+        key = 'path_straight'; nativeExits = [0, 2];
+    } else if (count === 2) {
+        // ground_pathBend 原生出口為東、南。
+        key = 'path_bend'; nativeExits = [1, 2];
+    } else if (count === 1) {
+        // ground_pathEnd 原生出口朝南。
+        key = 'path_end'; nativeExits = [2];
+    }
+
+    const desired = dirs.map(Boolean);
+    for (let steps = 0; steps < 4; steps++) {
+        const rotated = [false, false, false, false];
+        nativeExits.forEach(direction => {
+            // Three.js 正 Y 軸旋轉：北→西→南→東。
+            rotated[(direction - steps + 4) % 4] = true;
+        });
+        if (rotated.every((value, direction) => value === desired[direction])) {
+            return { key, rotation: steps * Math.PI / 2 };
+        }
+    }
+    return { key, rotation: 0 };
+}
+
+function addForestGroundTile(grid, i, j, x, z, cellSize, value) {
+    let piece = { key: 'ground_grass', rotation: 0 };
+    if (value === 5) piece = { key: 'river_tile', rotation: 0 };
+    else if (value !== 1) piece = getForestPathPiece(grid, i, j);
+    const tile = createKenneyForestInstance(piece.key, cellSize, 30, {
+        rotation: piece.rotation,
+        castShadow: false
+    });
+    if (!tile) return;
+    tile.position.set(x, -0.5, z);
+    environmentGroup.add(tile);
+}
+
+let forestFlameSpriteSheet = null;
+
+function createForestFlameSpriteSheet() {
+    if (forestFlameSpriteSheet) return forestFlameSpriteSheet;
+    const frameSize = 128;
+    const frameCount = 8;
+    const canvas = document.createElement('canvas');
+    canvas.width = frameSize * frameCount;
+    canvas.height = frameSize;
+    const ctx = canvas.getContext('2d');
+
+    for (let frame = 0; frame < frameCount; frame++) {
+        const left = frame * frameSize;
+        const sway = Math.sin((frame / frameCount) * Math.PI * 2) * 9;
+        const pulse = Math.sin((frame / frameCount) * Math.PI * 4) * 5;
+        const flamePath = (baseY, width, tipY, offsetX) => {
+            ctx.beginPath();
+            ctx.moveTo(left + 64 - width / 2, baseY);
+            ctx.bezierCurveTo(left + 35 + offsetX, 92, left + 47 + sway, 55, left + 64 + sway, tipY);
+            ctx.bezierCurveTo(left + 79 + sway, 58, left + 94 + offsetX, 91, left + 64 + width / 2, baseY);
+            ctx.bezierCurveTo(left + 82, 119, left + 45, 120, left + 64 - width / 2, baseY);
+            ctx.closePath();
+        };
+
+        const outer = ctx.createLinearGradient(0, 25, 0, 122);
+        outer.addColorStop(0, 'rgba(255,235,86,0.92)');
+        outer.addColorStop(0.42, 'rgba(255,122,22,0.96)');
+        outer.addColorStop(1, 'rgba(190,30,8,0.05)');
+        ctx.fillStyle = outer;
+        flamePath(120, 80 + pulse, 20 + pulse, sway * 0.25);
+        ctx.fill();
+
+        const inner = ctx.createLinearGradient(0, 58, 0, 120);
+        inner.addColorStop(0, 'rgba(255,255,205,0.95)');
+        inner.addColorStop(0.55, 'rgba(255,218,60,0.94)');
+        inner.addColorStop(1, 'rgba(255,100,10,0.12)');
+        ctx.fillStyle = inner;
+        flamePath(121, 42 + pulse * 0.5, 57 - pulse, -sway * 0.2);
+        ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    forestFlameSpriteSheet = texture;
+    return texture;
+}
+
+function createForestFireEffects(i, j) {
+    const effects = new THREE.Group();
+    effects.userData.isForestFireEffects = true;
+    const phase = forestCellRandom(i, j, 42) * 1000;
+
+    for (let planeIndex = 0; planeIndex < 2; planeIndex++) {
+        const texture = createForestFlameSpriteSheet().clone();
+        texture.needsUpdate = true;
+        texture.repeat.set(1 / 8, 1);
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending
+        });
+        const flame = new THREE.Mesh(new THREE.PlaneGeometry(64, 102), material);
+        flame.position.y = 53;
+        flame.rotation.y = planeIndex * Math.PI / 2;
+        flame.renderOrder = 3;
+        effects.add(flame);
+        window.mazeAnimations.push(() => {
+            if (!effects.visible) return;
+            const frame = Math.floor((Date.now() + phase) / 85) % 8;
+            texture.offset.x = frame / 8;
+            const flicker = 0.94 + Math.sin((Date.now() + phase) * 0.018) * 0.06;
+            flame.scale.set(flicker, 0.97 + (1 - flicker) * 0.6, 1);
+        });
+    }
+
+    const light = new THREE.PointLight(0xff7a24, 0.9, 260);
+    light.position.y = 55;
+    effects.add(light);
+
+    const smokeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x302d2a,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false
+    });
+    for (let smokeIndex = 0; smokeIndex < 4; smokeIndex++) {
+        const smoke = new THREE.Mesh(new THREE.SphereGeometry(10, 8, 8), smokeMaterial.clone());
+        effects.add(smoke);
+        window.mazeAnimations.push(() => {
+            if (!effects.visible) return;
+            const cycle = ((Date.now() + phase + smokeIndex * 420) % 1800) / 1800;
+            smoke.position.set(
+                Math.sin(cycle * Math.PI * 2 + smokeIndex) * 12,
+                78 + cycle * 115,
+                Math.cos(cycle * Math.PI * 2 + smokeIndex) * 9
+            );
+            smoke.scale.setScalar(0.7 + cycle * 1.7);
+            smoke.material.opacity = 0.2 * (1 - cycle);
+        });
+    }
+
+    window.mazeAnimations.push(() => {
+        if (!effects.visible) return;
+        light.intensity = 0.72 + Math.sin((Date.now() + phase) * 0.021) * 0.18 + Math.random() * 0.08;
+    });
+    return effects;
+}
+
+function renderKenneyForestCell(grid, i, j, x, z, h, cellSize, value) {
+    if (value === 0) return true;
+
+    if (value === 1) {
+        // 格位碰撞盒只負責物理判定，不會渲染。
+        const collider = new THREE.Mesh(
+            new THREE.BoxGeometry(cellSize, 400, cellSize),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        collider.position.set(x, h + 200, z);
+        collider.isWall = true;
+        environmentGroup.add(collider);
+
+        const nearFire = grid.some((row, fireI) => row.some((cell, fireJ) => {
+            if (cell !== 4) return false;
+            return Math.hypot(fireI - i, fireJ - j) < 1.6;
+        }));
+        const cluster = new THREE.Group();
+        cluster.position.set(x, h, z);
+        const variants = nearFire
+            ? ['forest_tree_burnt', 'forest_stump', 'forest_fire_logs']
+            : ['forest_tree_a', 'forest_tree_b', 'forest_tree_c', 'forest_rock_a', 'forest_rock_b'];
+        for (let k = 0; k < 3; k++) {
+            const r = forestCellRandom(i, j, k + 1);
+            const key = variants[Math.floor(r * variants.length)];
+            const isRock = key.includes('rock') || key.includes('stump') || key.includes('logs');
+            const angle = r * Math.PI * 2;
+            const radius = 14 + forestCellRandom(i, j, k + 9) * 38;
+            addKenneyForestProp(cluster, key, isRock ? 48 : 58, isRock ? 55 : 165, {
+                x: Math.cos(angle) * radius,
+                z: Math.sin(angle) * radius,
+                rotation: forestCellRandom(i, j, k + 18) * Math.PI * 2,
+                isWall: true
+            });
+        }
+        environmentGroup.add(cluster);
+        return true;
+    }
+
+    if (value === 2 || value === 3) {
+        const camp = new THREE.Group();
+        camp.position.set(x, h, z);
+        if (value === 2) {
+            addKenneyForestProp(camp, 'base_floor', 118, 16, { castShadow: false });
+            addKenneyForestProp(camp, 'base_tent', 62, 65, { x: 28, z: 25, rotation: Math.PI });
+            addKenneyForestProp(camp, 'supply_box', 25, 27, { x: -34, z: 28 });
+            addKenneyForestProp(camp, 'supply_barrel', 22, 34, { x: -35, z: -27 });
+            addKenneyForestProp(camp, 'base_sign', 24, 58, { x: 42, z: -34, rotation: -Math.PI / 4 });
+            startPosition = { x, y: h + 14, z, heading: 180 };
+            spawnPosition = { ...startPosition };
+            state.x = x; state.z = z; state.y = h + 14;
+            lastSafePos = { x, y: h + 14, z };
+            createWaypointArrowMarker(x, z, h + 10, {
+                color: 0x4dabf7,
+                emissive: 0x228be6,
+                kind: 'alpha'
+            });
+        } else {
+            addKenneyForestProp(camp, 'goal_floor', 118, 18, { castShadow: false });
+            addKenneyForestProp(camp, 'goal_shelter', 66, 70, { x: 25, z: 22, rotation: Math.PI });
+            addKenneyForestProp(camp, 'supply_box_large', 31, 34, { x: -31, z: 26 });
+            addKenneyForestProp(camp, 'goal_sign', 22, 56, { x: -38, z: -31, rotation: Math.PI / 4 });
+            targetPosition = { x, z };
+            createWaypointArrowMarker(x, z, h + 10, {
+                color: 0x51cf66,
+                emissive: 0x2f9e44,
+                kind: 'bravo'
+            });
+        }
+        environmentGroup.add(camp);
+        return true;
+    }
+
+    if (value === 4) {
+        const fire = new THREE.Group();
+        fire.position.set(x, h, z);
+        fire.userData.isForestFire = true;
+        fire.userData.fireIJ = `${i},${j}`;
+        const pit = addKenneyForestProp(fire, 'fire_pit', 78, 72, { rotation: forestCellRandom(i, j, 30) * Math.PI * 2 });
+        const logs = addKenneyForestProp(fire, 'forest_fire_logs', 62, 24, { y: 1, rotation: Math.PI / 3 });
+        [pit, logs].forEach(prop => {
+            if (!prop) return;
+            prop.traverse(child => {
+                if (!child.isMesh || !child.material) return;
+                child.material = child.material.clone();
+                if (child.material.color) child.material.color.multiplyScalar(0.62);
+            });
+        });
+        addKenneyForestProp(fire, 'forest_stump', 28, 38, { x: 45, z: 28, rotation: 1.2 });
+        const effects = createForestFireEffects(i, j);
+        fire.userData.effects = effects;
+        fire.add(effects);
+        createFireSiteLabel(fire, i, j);
+        environmentGroup.add(fire);
+        return true;
+    }
+
+    if (value === 5) {
+        const water = new THREE.Group();
+        water.position.set(x, h, z);
+        water.userData.isWaterSource = true;
+        for (let k = 0; k < 6; k++) {
+            const angle = (k / 6) * Math.PI * 2;
+            addKenneyForestProp(water, 'forest_rock_flat', 25, 12, {
+                x: Math.cos(angle) * 56,
+                z: Math.sin(angle) * 56,
+                rotation: angle
+            });
+        }
+        environmentGroup.add(water);
+        return true;
+    }
+
+    if (value === 6) {
+        createForestChargeStation(i, j, x, z, h);
+        return true;
+    }
+    return false;
+}
+
+/** 任務二：以 Kenney Factory Kit 組裝充電站。 */
 function createForestChargeStation(i, j, x, z, groundH) {
     const group = new THREE.Group();
     group.position.set(x, groundH, z);
+    addKenneyForestProp(group, 'charge_pad', 105, 20, { castShadow: false });
+    addKenneyForestProp(group, 'charge_machine', 58, 82, { z: 17, isWall: true });
+    addKenneyForestProp(group, 'charge_screen', 34, 44, { x: 38, z: -20, rotation: -Math.PI / 4 });
+    addKenneyForestProp(group, 'charge_button', 28, 12, { x: -38, z: -24, castShadow: false });
+    addKenneyForestProp(group, 'charge_warning', 20, 42, { x: -43, z: 28 });
 
-    const pad = new THREE.Mesh(
-        new THREE.CylinderGeometry(42, 48, 6, 6),
-        new THREE.MeshPhongMaterial({ color: 0x8a7028, flatShading: true })
-    );
-    pad.position.y = 5;
-    group.add(pad);
-
-    const bolt = new THREE.Mesh(
-        new THREE.BoxGeometry(8, 28, 4),
-        new THREE.MeshPhongMaterial({ color: 0xb8a050, emissive: 0x806820, emissiveIntensity: 0.28 })
-    );
-    bolt.position.y = 24;
-    group.add(bolt);
-
-    const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(38, 2.5, 8, 24),
-        new THREE.MeshBasicMaterial({ color: 0xc9a832, transparent: true, opacity: 0.58 })
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 8;
-    group.add(ring);
-
-    const light = new THREE.PointLight(0xc9a040, 0.38, 200);
-    light.position.y = 35;
-    group.add(light);
+    // clone(true) 仍會共用材質；每座充電站必須擁有獨立材質，才可分站發光。
+    const baseAppearance = [];
+    group.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        const cloned = materials.map(material => material.clone());
+        child.material = Array.isArray(child.material) ? cloned : cloned[0];
+        cloned.forEach(material => {
+            baseAppearance.push({
+                material,
+                color: material.color ? material.color.getHex() : null,
+                emissive: material.emissive ? material.emissive.getHex() : null,
+                emissiveIntensity: material.emissiveIntensity
+            });
+        });
+    });
 
     environmentGroup.add(group);
 
@@ -2425,7 +2788,8 @@ function createForestChargeStation(i, j, x, z, groundH) {
         label: '充電站',
         triggered: false,
         hoverTimer: 0,
-        mesh: group
+        mesh: group,
+        baseAppearance
     });
 }
 
@@ -2598,35 +2962,6 @@ function buildForestGridScene(forestGrid, logLabel) {
     forestHeightGrid = buildForestHeightGrid(forestGrid);
     forestChargeData = [];
 
-    // 2. 建立寫實森林材質與地面
-    const gridTex = new THREE.CanvasTexture(createForestTexture());
-    gridTex.wrapS = gridTex.wrapT = THREE.RepeatWrapping;
-    gridTex.repeat.set(8000/150, 8000/150); 
-
-    // 1.5 加入實體地面 (提升解析度至 128x128)
-    const groundGeo = new THREE.PlaneGeometry(8000, 8000, 128, 128);
-    const posAttr = groundGeo.attributes.position;
-    for (let i = 0; i < posAttr.count; i++) {
-        const vx = posAttr.getX(i);
-        const vy = posAttr.getY(i);
-        const height = getForestHeight(vx, -vy);
-        posAttr.setZ(i, height); 
-    }
-    groundGeo.computeVertexNormals();
-
-    const groundMat = new THREE.MeshPhongMaterial({ 
-        map: gridTex,
-        side: THREE.DoubleSide,
-        flatShading: true,
-        shininess: 0,
-        color: 0xa0a098
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.5;
-    ground.receiveShadow = true; 
-    environmentGroup.add(ground);
-
     addForestPerimeterLighting(offsetX, offsetZ, forestGrid[0].length * cellSize, forestGrid.length * cellSize);
 
     // 3. 放置場景物件（基地 2@1,1 · 受災區 3@1,12 · 水/火/充電見格網配置）
@@ -2636,6 +2971,8 @@ function buildForestGridScene(forestGrid, logLabel) {
             const x = j * cellSize + offsetX + cellSize/2;
             const z = i * cellSize + offsetZ + cellSize/2;
             const h = getForestHeight(x, z);
+            addForestGroundTile(forestGrid, i, j, x, z, cellSize, val);
+            if (renderKenneyForestCell(forestGrid, i, j, x, z, h, cellSize, val)) continue;
 
             if (val === 1) {
                 // --- 物理碰撞強化：增加隱形格位碰撞盒 ---
@@ -2664,77 +3001,31 @@ function buildForestGridScene(forestGrid, logLabel) {
                     if (isBurnt) break;
                 }
 
-                if (isBurnt && (assets.stump || assets.log)) {
-                    // 靠近火源：放置焦黑枯木
-                    const burntModel = (Math.random() > 0.5 ? assets.stump : assets.log).clone();
-                    const bx = x + (Math.random()-0.5)*40;
-                    const bz = z + (Math.random()-0.5)*40;
-                    const bh = getForestHeight(bx, bz);
-                    burntModel.position.set(bx, bh - 5, bz); // 稍微往下一點點，讓根部埋入土中
-                    burntModel.rotation.y = Math.random() * Math.PI * 2;
-                    burntModel.scale.set(130, 130, 130);
-                    // 變色處理
-                    burntModel.traverse(child => {
-                        if (child.isMesh) {
-                            child.material = child.material.clone();
-                            child.material.color.setHex(0x222222); // 焦黑色
-                        }
-                    });
-                    burntModel.isWall = true;
-                    environmentGroup.add(burntModel);
-                } else {
-                    // 正常的集群生成
-                    const count = 3 + Math.floor(Math.random() * 4);
-                    for (let k = 0; k < count; k++) {
-                        let model;
-                        const type = Math.random();
-                        let s = 100;
-
-                        if (type > 0.7 && assets.tree_pine) {
-                            model = assets.tree_pine.clone();
-                            s = 150 + Math.random() * 100;
-                        } else if (type > 0.4 && assets.tree_oak) {
-                            model = assets.tree_oak.clone();
-                            s = 100 + Math.random() * 80;
-                        } else if (type > 0.2 && assets.bush) {
-                            model = assets.bush.clone();
-                            s = 60 + Math.random() * 60;
-                        } else if (assets.rock) {
-                            model = assets.rock.clone();
-                            s = 40 + Math.random() * 60;
-                        }
-
-                        if (model) {
-                            const ox = (Math.random() - 0.5) * cellSize * 0.8;
-                            const oz = (Math.random() - 0.5) * cellSize * 0.8;
-                            const finalX = x + ox;
-                            const finalZ = z + oz;
-                            const finalH = getForestHeight(finalX, finalZ);
-                            model.position.set(finalX, finalH - 5, finalZ);
-                            model.rotation.y = Math.random() * Math.PI * 2;
-                            model.scale.set(s, s, s);
-                            
-                            // --- 強化樹木碰撞偵測 ---
-                            // 只要是樹木或大石頭 (val === 1 產生的物件)，全部設為牆壁
-                            model.isWall = true;
-                            // 增加一個碰撞體屬性，用於後續更精確的圓柱體碰撞檢測
-                            model.obstacleRadius = (s / 100) * 25; 
-                            
-                            environmentGroup.add(model);
-                        }
+                const cluster = new THREE.Group();
+                cluster.position.set(x, h, z);
+                const count = isBurnt ? 2 : 3;
+                for (let k = 0; k < count; k++) {
+                    const r = forestCellRandom(i, j, k + 1);
+                    const angle = r * Math.PI * 2;
+                    const radius = 16 + forestCellRandom(i, j, k + 10) * 34;
+                    const options = {
+                        x: Math.cos(angle) * radius,
+                        z: Math.sin(angle) * radius,
+                        rotation: forestCellRandom(i, j, k + 20) * Math.PI * 2,
+                        isWall: true
+                    };
+                    if (isBurnt) {
+                        addKenneyForestProp(cluster, k === 0 ? 'forest_tree_burnt' : 'forest_stump', k === 0 ? 55 : 34, k === 0 ? 145 : 45, options);
+                    } else {
+                        const variants = ['forest_tree_a', 'forest_tree_b', 'forest_tree_c', 'forest_rock_a', 'forest_rock_b'];
+                        const key = variants[Math.floor(r * variants.length)];
+                        const isRock = key.indexOf('rock') >= 0;
+                        addKenneyForestProp(cluster, key, isRock ? 50 : 58, isRock ? 58 : 165, options);
                     }
                 }
+                environmentGroup.add(cluster);
             } else if (val === 0) {
-                // 路徑裝飾
-                if (Math.random() > 0.8 && assets.grass) {
-                    const grass = assets.grass.clone();
-                    grass.scale.set(50, 50, 50);
-                    const gx = x + (Math.random()-0.5)*80;
-                    const gz = z + (Math.random()-0.5)*80;
-                    const gh = getForestHeight(gx, gz);
-                    grass.position.set(gx, gh, gz);
-                    environmentGroup.add(grass);
-                }
+                // 可飛行路徑已由 Kenney ground_path* 模型完整呈現。
             } else if (val === 2 || val === 3) {
                 // --- 森林救援木製平台 (替換原本的 H 停機坪) ---
                 const h = getForestHeight(x, z);
@@ -2906,8 +3197,7 @@ function buildForestGridScene(forestGrid, logLabel) {
             }
         }
     }
-    addForestPlayfieldGridOverlay(forestGrid, cellSize, offsetX, offsetZ);
-    console.log(logLabel || '🌲 山火場已載入');
+    console.log(logLabel || '🌲 Kenney 山火場已載入');
 }
 
 function createCityMap() {
@@ -3974,7 +4264,7 @@ function maybeLogCityFinishHint(reason) {
     _cityFinishHintLastLog = now;
     const required = getRequiredFires();
     const messages = {
-        not_on_goal: '⚠️ 請飛入受災區（綠色箭嘴）格子並降落，才能結算成績。',
+        not_on_goal: '⚠️ 請飛入受災區的金屬救援平台並降落，才能結算成績。',
         still_flying: '⚠️ 請在受災區使用「降落」積木完成交班（不可懸停結算）。',
         too_high: '⚠️ 請降低高度後在受災區降落。'
     };
@@ -4086,19 +4376,11 @@ function resetForestChargeStations() {
     forestChargeData.forEach((station) => {
         station.triggered = false;
         station.hoverTimer = 0;
-        if (!station.mesh || station.mesh.children.length < 2) return;
-        const pad = station.mesh.children[0];
-        const bolt = station.mesh.children[1];
-        if (pad.material) {
-            pad.material.color.setHex(0x8a7028);
-        }
-        if (bolt.material) {
-            bolt.material.color.setHex(0xb8a050);
-            if (bolt.material.emissive) {
-                bolt.material.emissive.setHex(0x806820);
-                bolt.material.emissiveIntensity = 0.28;
-            }
-        }
+        (station.baseAppearance || []).forEach(base => {
+            if (base.color !== null && base.material.color) base.material.color.setHex(base.color);
+            if (base.emissive !== null && base.material.emissive) base.material.emissive.setHex(base.emissive);
+            if (typeof base.emissiveIntensity === 'number') base.material.emissiveIntensity = base.emissiveIntensity;
+        });
     });
 }
 
@@ -4107,6 +4389,8 @@ function resetForestFires() {
     environmentGroup.traverse((obj) => {
         if (obj.userData && obj.userData.isForestFire) {
             obj.visible = true;
+            obj.userData.extinguished = false;
+            if (obj.userData.effects) obj.userData.effects.visible = true;
         }
     });
 }
@@ -4150,7 +4434,8 @@ function hideForestFireAt(i, j) {
     if (typeof environmentGroup === 'undefined') return;
     environmentGroup.traverse((obj) => {
         if (obj.userData && obj.userData.isForestFire && obj.userData.fireIJ === key) {
-            obj.visible = false;
+            obj.userData.extinguished = true;
+            if (obj.userData.effects) obj.userData.effects.visible = false;
         }
     });
 }
@@ -4192,11 +4477,14 @@ function completeForestCharge(station) {
     if (station.mesh) {
         station.mesh.traverse(child => {
             if (child.isMesh && child.material) {
-                child.material.color.setHex(0x81c784);
-                if (child.material.emissive) {
-                    child.material.emissive.setHex(0x4caf50);
-                    child.material.emissiveIntensity = 0.5;
-                }
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                materials.forEach(material => {
+                    if (material.color) material.color.setHex(0x81c784);
+                    if (material.emissive) {
+                        material.emissive.setHex(0x4caf50);
+                        material.emissiveIntensity = 0.5;
+                    }
+                });
             }
         });
     }
@@ -4439,7 +4727,8 @@ function animateLoop() {
 
     const displayAlt = isCityMissionScene() ? state.y - getForestHeight(state.x, state.z) : state.y;
     hudHTML += `Status: ${state.isFlying?'FLYING':'LANDED'}<br>Alt: ${Math.round(displayAlt)} cm`;
-    document.getElementById('hud-display').innerHTML = hudHTML;
+    // 結構化 Flight／NAV HUD 由 main.js 統一更新，避免每幀重建 DOM。
+    if (typeof window.updateFlightTelemetry === 'function') window.updateFlightTelemetry();
 
     updateCameraPosition();
     renderer.render(scene, camera);
