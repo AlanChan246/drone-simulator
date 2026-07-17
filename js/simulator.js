@@ -1652,6 +1652,146 @@ function syncDroneToStart() {
     }
 }
 
+/**
+ * 任務一：Kenney 建築、路面、起終點箭嘴
+ * @param {number[][]} mazeGrid
+ * @param {{ cellSize?: number, mazeRoadY?: number, gridStartX: number, gridStartZ: number, includeCheckpoints?: boolean, onStartCell?: Function, onGoalCell?: Function }} opts
+ */
+function buildUrbanMazeVisuals(mazeGrid, opts) {
+    const cellSize = opts.cellSize || 150;
+    const mazeRoadY = opts.mazeRoadY != null ? opts.mazeRoadY : 0.38;
+    const gridStartX = opts.gridStartX;
+    const gridStartZ = opts.gridStartZ;
+    const wallHeight = 120;
+
+    const addPiece = (obj) => {
+        environmentGroup.add(obj);
+        return obj;
+    };
+
+    const useKenney = assets.kenneyDistrictTemplates && assets.kenneyDistrictTemplates.length > 0;
+    const r = assets.kenneyRoads;
+    const useKenneyRoads = !!(r && r.straight && r.bend && r.cross && r.tee && r.end);
+    const roadMatOpts = { shininess: 10, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 };
+    const roadMat = new THREE.MeshPhongMaterial(Object.assign({ color: 0x323540 }, roadMatOpts));
+    const roadMatStart = new THREE.MeshPhongMaterial(Object.assign({ color: 0x353845 }, roadMatOpts));
+    const roadMatGoal = new THREE.MeshPhongMaterial(Object.assign({}, roadMatOpts, { color: 0x2a3d32, shininess: 12 }));
+    const wallGeo = new THREE.BoxGeometry(cellSize, wallHeight, cellSize);
+    const wallMat = new THREE.MeshPhongMaterial({
+        color: 0x1a1a1a,
+        specular: 0x00adb5,
+        shininess: 30,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    for (let i = 0; i < mazeGrid.length; i++) {
+        for (let j = 0; j < mazeGrid[i].length; j++) {
+            const val = mazeGrid[i][j];
+            const x = gridStartX + j * cellSize + cellSize / 2;
+            const z = gridStartZ + i * cellSize + cellSize / 2;
+
+            if (val !== 1) {
+                if (useKenneyRoads) {
+                    const placed = placeKenneyRoadForCell(i, j, x, z, cellSize, mazeRoadY, mazeGrid);
+                    if (!placed) {
+                        const rm = val === 3 ? roadMatGoal : (val === 2 ? roadMatStart : roadMat);
+                        const road = new THREE.Mesh(new THREE.PlaneGeometry(cellSize * 0.99, cellSize * 0.99), rm);
+                        road.rotation.x = -Math.PI / 2;
+                        road.position.set(x, mazeRoadY, z);
+                        road.receiveShadow = true;
+                        addPiece(road);
+                    }
+                } else {
+                    const rm = val === 3 ? roadMatGoal : (val === 2 ? roadMatStart : roadMat);
+                    const road = new THREE.Mesh(new THREE.PlaneGeometry(cellSize * 0.99, cellSize * 0.99), rm);
+                    road.rotation.x = -Math.PI / 2;
+                    road.position.set(x, mazeRoadY, z);
+                    road.receiveShadow = true;
+                    addPiece(road);
+                }
+            }
+
+            if (val === 1) {
+                if (useKenney) {
+                    const plotY = mazeRoadY - 0.04;
+                    const plot = createKenneyPlotInstance(cellSize, 0);
+                    if (plot) {
+                        plot.position.set(x, plotY, z);
+                        addPiece(plot);
+                    }
+                    const tIdx = (i * 7 + j * 11) % assets.kenneyDistrictTemplates.length;
+                    const tpl = assets.kenneyDistrictTemplates[tIdx];
+                    const rot = (i + j * 2) % 4;
+                    const heightCap = 230 + ((i + j) % 5) * 28;
+                    const building = createKenneyBuildingInstance(tpl, cellSize, rot, heightCap);
+                    building.position.set(x, 0, z);
+                    addPiece(building);
+                } else {
+                    const wall = new THREE.Mesh(wallGeo, wallMat);
+                    wall.position.set(x, wallHeight / 2, z);
+                    wall.isWall = true;
+                    const edges = new THREE.EdgesGeometry(wallGeo);
+                    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00adb5, transparent: true, opacity: 0.5 }));
+                    line.position.copy(wall.position);
+                    line.isWall = true;
+                    addPiece(line);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    addPiece(wall);
+                }
+            } else if (val === 2) {
+                const padY = mazeRoadY + 0.12;
+                addPiece(createLandingPad(x, z, padY));
+                const arrow = createWaypointArrowMarker(x, z, padY, {
+                    color: 0x4dabf7,
+                    emissive: 0x228be6,
+                    kind: 'alpha'
+                });
+
+                spawnPosition = { x, y: 0, z, heading: 180 };
+                startPosition = { x, y: 0, z, heading: 180 };
+                lastSafePos = { x, y: 0, z };
+                state.x = x;
+                state.z = z;
+                state.y = 0;
+                state.heading = 180;
+                if (typeof opts.onStartCell === 'function') opts.onStartCell(i, j, x, z);
+            } else if (val === 3) {
+                const goalLight = new THREE.PointLight(0x00ff00, 2, 500);
+                goalLight.position.set(x, 50, z);
+                goalLight.isExit = true;
+                addPiece(goalLight);
+
+                const exitMarker = new THREE.Mesh(
+                    new THREE.PlaneGeometry(cellSize, cellSize),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x00ff00,
+                        transparent: true,
+                        opacity: 0.35,
+                        side: THREE.DoubleSide
+                    })
+                );
+                exitMarker.rotation.x = -Math.PI / 2;
+                exitMarker.position.set(x, mazeRoadY + 0.15, z);
+                exitMarker.isExit = true;
+                addPiece(exitMarker);
+
+                const arrow = createWaypointArrowMarker(x, z, mazeRoadY + 0.15, {
+                    color: 0x51cf66,
+                    emissive: 0x2f9e44,
+                    kind: 'bravo'
+                });
+
+                targetPosition = { x, z };
+                if (typeof opts.onGoalCell === 'function') opts.onGoalCell(i, j, x, z);
+            } else if (val === 4 && opts.includeCheckpoints) {
+                createBeacon(i, j, x, z);
+            }
+        }
+    }
+}
+
 function createMazeMap() {
     createHolodeckRoom();
     loadRoadOverridesFromStorage();
@@ -3601,48 +3741,6 @@ function finishTunnelMission() {
                 exitScore: 200,
                 time: timeElapsed,
                 timeTierLabel: timeResult.label,
-                timeBonus: Math.floor(timeBonus),
-                total: Math.floor(finalScore)
-            });
-        } else if (typeof window.showAppMessage === 'function') {
-            window.showAppMessage({
-                variant: 'info',
-                title: '任務完成',
-                body: `總得分：${Math.floor(finalScore)}`,
-                nextStep: '成績單元件未載入時顯示此訊息；請重新整理或檢查 main.js 是否載入。',
-                autoHideMs: 12000,
-                focusClose: false
-            });
-        } else {
-            alert(`任務完成！總得分：${Math.floor(finalScore)}`);
-        }
-    }, 800);
-}
-
-function finishChallengeMazeMission() {
-    if (state.missionCompleted) return;
-    state.missionCompleted = true;
-    state.endTime = Date.now();
-
-    const timeElapsed = Math.floor((state.endTime - takeoffTime) / 1000);
-    const timeBonus = Math.max(0, (300 - timeElapsed) * 2);
-    const finalScore = 500 + (beaconsTriggered * 100) + timeBonus;
-
-    const finishMsg = '🏁 成功抵達出口！正在結算成績…';
-    console.log(finishMsg);
-    logToConsole(finishMsg);
-
-    state.stopSignal = true;
-    state.isRunning = false;
-
-    setTimeout(() => {
-        console.log("⏳ 準備調用 showResultModal...");
-        if (typeof window.showResultModal === 'function') {
-            window.showResultModal({
-                beacons: beaconsTriggered,
-                beaconsScore: beaconsTriggered * 100,
-                exitScore: 500,
-                time: timeElapsed,
                 timeBonus: Math.floor(timeBonus),
                 total: Math.floor(finalScore)
             });
