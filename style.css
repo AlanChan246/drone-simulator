@@ -1396,8 +1396,7 @@ body.blockly-resizing .blockly-resizer {
 }
 
 /* 任務選擇畫面樣式（與 hub 頂列一致） */
-#mission-select-menu.menu-screen--mission,
-#practice-select-menu.menu-screen--mission {
+#mission-select-menu.menu-screen--mission {
     display: flex;
     flex-direction: column;
     padding: 0;
@@ -1676,8 +1675,7 @@ body.blockly-resizing .blockly-resizer {
 /* 主選單／任務選擇：<768px 單欄 + 可捲動（僅 CSS，不影響 Three／Blockly） */
 @media (max-width: 767px) {
     #main-menu.menu-screen,
-    #mission-select-menu.menu-screen,
-    #practice-select-menu.menu-screen {
+    #mission-select-menu.menu-screen {
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
@@ -1702,8 +1700,7 @@ body.blockly-resizing .blockly-resizer {
         height: auto;
     }
 
-    #mission-select-menu,
-    #practice-select-menu {
+    #mission-select-menu {
         padding: 16px;
     }
 
@@ -2227,77 +2224,6 @@ body.blockly-resizing .blockly-resizer {
 .app-confirm-btn:focus-visible {
     outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: 2px;
-}
-
-.competition-password-label {
-    display: block;
-    margin: 0.75rem 0 0.35rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #cbd5e1;
-}
-
-.competition-password-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.65rem 0.85rem;
-    border-radius: 8px;
-    border: 1px solid rgba(var(--rgb-brand), 0.45);
-    background: rgba(15, 18, 24, 0.95);
-    color: #f8fafc;
-    font-size: 1rem;
-}
-
-.competition-password-input:focus-visible {
-    outline: var(--focus-ring-width) solid var(--focus-ring-color);
-    outline-offset: 2px;
-}
-
-.competition-password-error {
-    margin: 0.5rem 0 0;
-    font-size: 0.875rem;
-    color: #fca5a5;
-}
-
-.menu-screen--practice .mission-btn--practice.mission-btn--active,
-.menu-screen--practice .mission-btn--practice:focus-visible {
-    outline: 2px solid rgba(125, 211, 252, 0.85);
-    outline-offset: 2px;
-    box-shadow: var(--shadow-cta-hover), 0 0 18px rgba(125, 211, 252, 0.25);
-}
-
-.menu-screen--practice .mission-select-title {
-    color: #7dd3fc;
-}
-
-.menu-screen--practice .mission-select-subtitle {
-    max-width: 36rem;
-}
-
-.menu-screen--practice .mission-select-body {
-    align-items: stretch;
-    flex: 1 1 auto;
-}
-
-.menu-screen--practice .mission-list {
-    width: min(100%, 420px);
-    flex: 1 1 auto;
-    justify-content: center;
-    padding-top: 0;
-}
-
-.menu-screen--practice .mission-preview {
-    flex: 1 1 58%;
-    min-height: 280px;
-}
-
-.menu-screen--practice .mission-btn--practice {
-    background: linear-gradient(145deg, rgba(30, 58, 95, 0.95) 0%, rgba(22, 42, 68, 0.98) 100%);
-    border: 1px solid rgba(125, 211, 252, 0.35);
-}
-
-.menu-screen--practice .mission-btn--practice:hover {
-    border-color: rgba(125, 211, 252, 0.55);
 }
 
 .control-btn.road-editor-top-btn {

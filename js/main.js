@@ -21,7 +21,6 @@ const PRESCAN_LOOP_LIMIT = 600;
 /** 任務一／二預掃描：指令佇列最大長度 */
 const PRESCAN_CMD_QUEUE_LIMIT = 600;
 /** 挑戰迷宮即時模式：while 迴圈最大迭代次數 */
-const CHALLENGE_LOOP_LIMIT = 12000;
 
 function reportBlocklyGuardError(e) {
     const code = e && e.message;
@@ -30,7 +29,7 @@ function reportBlocklyGuardError(e) {
             variant: 'error',
             title: '迴圈次數過多',
             body: '「重複 while／重複直到」的條件可能幾乎永遠成立（例如「前方距離 ≠ 0」在空曠處幾乎永遠為真）。按「執行」時程式會同步跑很多圈，導致卡住。',
-            nextStep: '請改用「距離 < 120 cm」判斷前方是否有牆，或參考任務說明中的感應器範例。任務一／二不支援即時讀感應器的長迴圈；隨機迷宮挑戰模式才適合 while + 感應器。',
+            nextStep: '請改用「距離 < 120 cm」判斷前方是否有牆，或參考任務說明中的感應器範例。任務一／二在按「執行」時會預掃描整段程式，不適合依賴即時感測器的長 while 迴圈。',
             focusClose: true
         });
         logToConsole(`❌ 程式錯誤：迴圈超過安全上限（${PRESCAN_LOOP_LIMIT} 次）。請檢查 while 條件是否寫錯。`);
@@ -51,34 +50,22 @@ function reportBlocklyGuardError(e) {
 }
 
 function getBlocklyAutosaveKey() {
-    if (activeMissionId === 'challenge'
-        || (typeof currentSceneType !== 'undefined' && currentSceneType === 'challenge_maze')) {
-        return 'challenge';
-    }
     if (currentGameMode === 'freeplay') return 'freeplay';
-    if (activeMissionId === 'practice1') return 'practice-1';
-    if (activeMissionId === 'practice2') return 'practice-2';
     if (activeMissionId === 1 || activeMissionId === 'training') return 'mission-1';
     if (activeMissionId === 2) return 'mission-2';
     if (typeof currentSceneType !== 'undefined') {
-        if (currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice') {
-            return currentSceneType === 'tunnel_practice' ? 'practice-1' : 'mission-1';
-        }
-        if (currentSceneType === 'city' || currentSceneType === 'city_practice') {
-            return currentSceneType === 'city_practice' ? 'practice-2' : 'mission-2';
-        }
+        if (currentSceneType === 'tunnel') return 'mission-1';
+        if (currentSceneType === 'city') return 'mission-2';
     }
     return 'freeplay';
 }
 
 function isTunnelMissionScene() {
-    return typeof currentSceneType !== 'undefined'
-        && (currentSceneType === 'tunnel' || currentSceneType === 'tunnel_practice');
+    return typeof currentSceneType !== 'undefined' && currentSceneType === 'tunnel';
 }
 
 function isCityMissionScene() {
-    return typeof currentSceneType !== 'undefined'
-        && (currentSceneType === 'city' || currentSceneType === 'city_practice');
+    return typeof currentSceneType !== 'undefined' && currentSceneType === 'city';
 }
 
 function getBlocklyAutosaveStorageKey(contextKey) {
@@ -279,7 +266,6 @@ function updateModeSpecificUi() {
     });
 }
 let activeMissionId = null; // 當前活動的任務 ID
-let lastMissionMenu = 'competition'; // 'competition' | 'practice'
 let currentExecutingBlockId = null; // 當前執行的積木 ID
 let blockToCommandMap = new Map(); // 積木 ID 到命令索引的映射
 let commandToBlockMap = new Map(); // 命令索引到積木 ID 的映射
@@ -556,12 +542,6 @@ window.showAppMessage = showAppMessage;
 window.hideAppMessage = hideAppMessage;
 window.showAppConfirm = showAppConfirm;
 
-function isCompetitionUnlocked() {
-    return true;
-}
-
-window.isCompetitionUnlocked = isCompetitionUnlocked;
-
 // --- Console 介面功能 ---
 function logToConsole(msg) {
     const contentDiv = document.getElementById('console-content');
@@ -671,31 +651,6 @@ function runBlocklyCode() {
     
     // --- 開始代碼分析與執行 ---
     try {
-        // 🔥 隨機迷宮挑戰模式：跳過預掃描，直接進入即時執行引擎
-        if (currentSceneType === 'challenge_maze') {
-            console.log("🎲 偵測到挑戰模式，準備生成代碼...");
-            
-            if (typeof stopMazeCycling === 'function') stopMazeCycling();
-            if (typeof createChallengeMaze === 'function') createChallengeMaze();
-            
-            state.isRunning = true;
-
-            Blockly.JavaScript.INFINITE_LOOP_TRAP =
-                'if (state.stopSignal) throw new Error("STOP");\n' +
-                `if (++__challengeLoopCount > ${CHALLENGE_LOOP_LIMIT}) throw new Error("LOOP_GUARD");\n` +
-                'await wait(30);\n';
-            const rawCode = 'var __challengeLoopCount = 0;\n' + Blockly.JavaScript.workspaceToCode(currentWorkspace);
-            Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
-            
-            // 轉換為即時執行格式
-            const finalCode = rawCode.replace(/cmdQueue\.push\(/g, 'await executeCommandLive(');
-            
-            console.log("📜 [挑戰模式] 最終執行代碼內容:\n", finalCode);
-            
-            runBlocklyCodeChallenge(finalCode);
-            return;
-        }
-
         // --- 普通模式的預掃描邏輯 ---
         // 使用 Trap 防止 eval() 內的死循環（超過上限時拋錯並提示，而非卡死瀏覽器）
         Blockly.JavaScript.INFINITE_LOOP_TRAP =
@@ -822,96 +777,7 @@ function runBlocklyCode() {
 }
 
 /**
- * 🔥 [挑戰模式專用] 即時執行積木代碼
- */
-async function runBlocklyCodeChallenge(finalCode) {
-    console.log("🚀 啟動挑戰模式即時執行引擎...");
-    logToConsole("🚀 啟動自動導航引擎...");
-    
-    // 1. 使用 Async Function 執行
-    try {
-        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-        const executeLogic = new AsyncFunction(
-            'executeCommandLive', 
-            'wait', 
-            'state', 
-            'getSensorReading', 
-            'logToConsole', 
-            'THREE',
-            'console',
-            finalCode
-        );
-        
-        await executeLogic(
-            executeCommandLive, 
-            wait, 
-            state, 
-            getSensorReading, 
-            logToConsole,
-            THREE,
-            console
-        );
-        
-        if (!state.stopSignal) {
-            logToConsole("🏁 程式執行完畢。");
-        }
-    } catch (e) {
-        if (e && (e.message === 'STOP' || e.message === '程式已停止')) {
-            logToConsole("⏹️ 程式已停止。");
-        } else if (reportBlocklyGuardError(e)) {
-            /* 已顯示迴圈安全提示 */
-        } else {
-            console.error("挑戰模式執行出錯:", e);
-            logToConsole("❌ 執行出錯: " + (e ? e.message : "Unknown error"));
-        }
-    } finally {
-        console.log("🏁 [Challenge Mode] 引擎執行結束，重設 isRunning 為 false");
-        state.isRunning = false;
-    }
-}
-
-/**
- * 單條指令的即時執行器
- */
-async function executeCommandLive(cmd) {
-    if (state.stopSignal) throw new Error('STOP');
-    
-    console.log("⚡ [LIVE] 執行指令:", cmd.type, cmd);
-    
-    // 記錄指令開始時間
-    const cmdStartTime = Date.now();
-    
-    // 高亮積木
-    if (cmd && cmd._blockId) {
-        highlightBlock(cmd._blockId, true);
-    }
-    
-    // 執行指令邏輯
-    try {
-        await dispatchCommand(cmd);
-        
-        // 🔥 重要修正：如果指令因為碰撞而中止，強制等待一段時間，防止 while 迴圈過快重試
-        if (state.collisionDetected) {
-            console.log("⚠️ 偵測到碰撞，指令中斷，冷卻 500ms...");
-            await wait(500); // 增加延遲讓物理引擎穩定
-        }
-    } catch (e) {
-        console.error("❌ 指令執行失敗:", e);
-    }
-    
-    // 額外保護：如果指令執行時間少於 100ms（代表它可能被立刻中止了），強制等待
-    const duration = Date.now() - cmdStartTime;
-    if (duration < 100) {
-    await wait(100);
-    }
-    
-    if (cmd && cmd._blockId) {
-        highlightBlock(cmd._blockId, false);
-    }
-}
-
-/**
- * 核心指令派發器 (供 executeQueue 與 executeCommandLive 共享)
+ * 核心指令派發器 (供 executeQueue 共享)
  * 統一使用「增量更新 (Incremental)」邏輯，防止與物理碰撞引擎產生位置衝突（瞬移/抖動）
  */
 async function dispatchCommand(cmd) {
@@ -1208,235 +1074,6 @@ function loadMazeAnswer() {
         return;
     }
 
-    // 🔥 隨機迷宮挑戰模式答案
-    if (currentSceneType === 'challenge_maze') {
-        showAppConfirm(
-            '載入高小組參考答案？（感應器優先級 · 右手法則）',
-            { title: '挑戰難度', confirmLabel: '高小組', cancelLabel: '改選中學組' }
-        ).then((isPrimary) => {
-            if (isPrimary) {
-                workspace.clear();
-                const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"><next><block type="drone_takeoff"><next><block type="controls_whileUntil"><field name="MODE">WHILE</field><value name="BOOL"><block type="logic_boolean"><field name="BOOL">TRUE</field></block></value><statement name="DO"><block type="controls_if"><mutation elseif="1" else="1"></mutation><value name="IF0"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">right</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">120</field></block></value></block></value><statement name="DO0"><block type="drone_turn_degree"><field name="DIR">RIGHT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value><next><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></next></block></statement><value name="IF1"><block type="logic_compare"><field name="OP">GT</field><value name="A"><block type="drone_get_range"><field name="TYPE">front</field><field name="UNIT">cm</field></block></value><value name="B"><block type="math_number"><field name="NUM">100</field></block></value></block></value><statement name="DO1"><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">150</field></block></value></block></statement><statement name="ELSE"><block type="drone_turn_degree"><field name="DIR">LEFT</field><value name="DEGREE"><block type="math_number"><field name="NUM">90</field></block></value></block></statement></block></statement></block></next></block></next></block></xml>`;
-                Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), workspace);
-                logToConsole("✅ 已載入 [高小組] 參考答案");
-                return;
-            }
-            showAppConfirm(
-                '載入中學組參考答案？（單線 LiDAR · 記憶回溯）',
-                { title: '挑戰難度', confirmLabel: '中學組', cancelLabel: '取消' }
-            ).then((ok) => {
-                if (!ok) return;
-                workspace.clear();
-                const xmlText = `<xml xmlns="https://developers.google.com/blockly/xml">
-  <variables>
-    <variable id="v1">path_history</variable>
-  </variables>
-  <block type="event_start" x="20" y="20">
-    <next>
-      <block type="variables_set">
-        <field name="VAR" id="v1">path_history</field>
-        <value name="VALUE">
-          <block type="lists_create_empty"></block>
-        </value>
-        <next>
-          <block type="drone_takeoff">
-            <next>
-              <block type="controls_whileUntil">
-                <field name="MODE">WHILE</field>
-                <value name="BOOL">
-                  <block type="logic_boolean">
-                    <field name="BOOL">TRUE</field>
-                  </block>
-                </value>
-                <statement name="DO">
-                  <block type="controls_if">
-                    <mutation elseif="2" else="1"></mutation>
-                    <value name="IF0">
-                      <block type="logic_compare">
-                        <field name="OP">GT</field>
-                        <value name="A">
-                          <block type="drone_get_range">
-                            <field name="TYPE">right</field>
-                            <field name="UNIT">cm</field>
-                          </block>
-                        </value>
-                        <value name="B">
-                          <block type="math_number">
-                            <field name="NUM">120</field>
-                          </block>
-                        </value>
-                      </block>
-                    </value>
-                    <statement name="DO0">
-                      <block type="drone_turn_degree">
-                        <field name="DIR">RIGHT</field>
-                        <value name="DEGREE">
-                          <block type="math_number">
-                            <field name="NUM">90</field>
-                          </block>
-                        </value>
-                        <next>
-                          <block type="drone_move_cm">
-                            <field name="DIR">FORWARD</field>
-                            <value name="DIST">
-                              <block type="math_number">
-                                <field name="NUM">150</field>
-                              </block>
-                            </value>
-                            <next>
-                              <block type="lists_setIndex">
-                                <mutation at="false"></mutation>
-                                <field name="MODE">INSERT</field>
-                                <field name="WHERE">LAST</field>
-                                <value name="LIST">
-                                  <block type="variables_get">
-                                    <field name="VAR" id="v1">path_history</field>
-                                  </block>
-                                </value>
-                                <value name="TO">
-                                  <block type="text">
-                                    <field name="TEXT">TURN_RIGHT</field>
-                                  </block>
-                                </value>
-                              </block>
-                            </next>
-                          </block>
-                        </next>
-                      </block>
-                    </statement>
-                    <value name="IF1">
-                      <block type="logic_compare">
-                        <field name="OP">GT</field>
-                        <value name="A">
-                          <block type="drone_get_range">
-                            <field name="TYPE">front</field>
-                            <field name="UNIT">cm</field>
-                          </block>
-                        </value>
-                        <value name="B">
-                          <block type="math_number">
-                            <field name="NUM">120</field>
-                          </block>
-                        </value>
-                      </block>
-                    </value>
-                    <statement name="DO1">
-                      <block type="drone_move_cm">
-                        <field name="DIR">FORWARD</field>
-                        <value name="DIST">
-                          <block type="math_number">
-                            <field name="NUM">150</field>
-                          </block>
-                        </value>
-                        <next>
-                          <block type="lists_setIndex">
-                            <mutation at="false"></mutation>
-                            <field name="MODE">INSERT</field>
-                            <field name="WHERE">LAST</field>
-                            <value name="LIST">
-                              <block type="variables_get">
-                                <field name="VAR" id="v1">path_history</field>
-                              </block>
-                            </value>
-                            <value name="TO">
-                              <block type="text">
-                                <field name="TEXT">FORWARD</field>
-                              </block>
-                            </value>
-                          </block>
-                        </next>
-                      </block>
-                    </statement>
-                    <value name="IF2">
-                      <block type="logic_compare">
-                        <field name="OP">GT</field>
-                        <value name="A">
-                          <block type="drone_get_range">
-                            <field name="TYPE">left</field>
-                            <field name="UNIT">cm</field>
-                          </block>
-                        </value>
-                        <value name="B">
-                          <block type="math_number">
-                            <field name="NUM">120</field>
-                          </block>
-                        </value>
-                      </block>
-                    </value>
-                    <statement name="DO2">
-                      <block type="drone_turn_degree">
-                        <field name="DIR">LEFT</field>
-                        <value name="DEGREE">
-                          <block type="math_number">
-                            <field name="NUM">90</field>
-                          </block>
-                        </value>
-                        <next>
-                          <block type="drone_move_cm">
-                            <field name="DIR">FORWARD</field>
-                            <value name="DIST">
-                              <block type="math_number">
-                                <field name="NUM">150</field>
-                              </block>
-                            </value>
-                            <next>
-                              <block type="lists_setIndex">
-                                <mutation at="false"></mutation>
-                                <field name="MODE">INSERT</field>
-                                <field name="WHERE">LAST</field>
-                                <value name="LIST">
-                                  <block type="variables_get">
-                                    <field name="VAR" id="v1">path_history</field>
-                                  </block>
-                                </value>
-                                <value name="TO">
-                                  <block type="text">
-                                    <field name="TEXT">TURN_LEFT</field>
-                                  </block>
-                                </value>
-                              </block>
-                            </next>
-                          </block>
-                        </next>
-                      </block>
-                    </statement>
-                    <statement name="ELSE">
-                      <block type="drone_turn_degree">
-                        <field name="DIR">LEFT</field>
-                        <value name="DEGREE">
-                          <block type="math_number">
-                            <field name="NUM">180</field>
-                          </block>
-                        </value>
-                        <next>
-                          <block type="drone_print">
-                            <value name="TEXT">
-                              <block type="text">
-                                <field name="TEXT">💀 死胡同！執行回溯...</field>
-                              </block>
-                            </value>
-                          </block>
-                        </next>
-                      </block>
-                    </statement>
-                  </block>
-                </statement>
-              </block>
-            </next>
-          </block>
-        </next>
-      </block>
-    </next>
-  </block>
-</xml>`;
-            Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), workspace);
-            logToConsole("✅ 已載入 [中學組] 智慧導航參考答案");
-            });
-        });
-        return;
-    }
-
-    // 🔥 任務二：14×14 最優路線（4 火 · 配對水源 · 1 充電 · 終點降落）
     if (isCityMissionScene()) {
         showAppConfirm('這將會清除當前積木並載入「任務二：山火智能應對」最優路線參考答案，確定嗎？', { title: '載入參考答案' }).then((ok) => {
             if (!ok) return;
@@ -1687,7 +1324,7 @@ function updateFlightTelemetry() {
     }
     const alt = isCityMissionScene() ? state.y - getForestHeight(state.x, state.z) : state.y;
     const heading = Math.round(((state.heading % 360) + 360) % 360);
-    const hasNavigationTarget = isTunnelMissionScene() || isCityMissionScene() || currentSceneType === 'challenge_maze';
+    const hasNavigationTarget = isTunnelMissionScene() || isCityMissionScene();
     const targetDist = hasNavigationTarget && typeof targetPosition !== 'undefined' ? Math.hypot(state.x - targetPosition.x, state.z - targetPosition.z) : NaN;
     const flightState = document.getElementById('hud-flight-state');
     if (flightState) {
@@ -1718,13 +1355,11 @@ function updateFlightTelemetry() {
     let missionTitle = '自由練習';
     let missionProgress = '自由飛行';
     if (isTunnelMissionScene()) {
-        missionTitle = activeMissionConfig && activeMissionConfig.isPractice ? '試用一 · 廢墟搜救' : '任務一 · 廢墟搜救';
+        missionTitle = '任務一 · 廢墟搜救';
         missionProgress = `巡檢 ${beaconsTriggered}/${getRequiredBeacons()}`;
     } else if (isCityMissionScene()) {
-        missionTitle = activeMissionConfig && activeMissionConfig.isPractice ? '試用二 · 山火應對' : '任務二 · 山火應對';
+        missionTitle = '任務二 · 山火應對';
         missionProgress = `火點 ${firesExtinguished}/${getRequiredFires()}`;
-    } else if (currentSceneType === 'challenge_maze') {
-        missionTitle = '隨機迷宮挑戰'; missionProgress = '前往終點';
     }
     setTelemetryText('hud-mission-progress', missionProgress);
     setTelemetryText('active-mission-title', missionTitle);
@@ -1817,12 +1452,6 @@ function resetSimulator() {
         resetTunnelPatrolVisits();
     }
 
-    // 如果在隨機迷宮挑戰模式，重置後重新啟動輪換
-    if (currentSceneType === 'challenge_maze') {
-        if (typeof startMazeCycling === 'function') {
-            startMazeCycling();
-        }
-    }
     if (typeof syncDroneToStart === 'function') {
         syncDroneToStart();
     } else {
@@ -2736,27 +2365,6 @@ function returnToMissionSelect() {
     }
 }
 
-// 🔥 挑戰模式：隨機迷宮
-function startChallengeMode() {
-    activeMissionId = 'challenge';
-    currentGameMode = 'mission';
-    updateModeSpecificUi();
-    logToConsole('🔥 挑戰模式：隨機市區迷宮已啟動！');
-    logToConsole('💡 使用感應器自動導航；藍／綠箭嘴標示起點與終點。');
-    changeScene('challenge_maze');
-    logToConsole(`📍 起點已同步: (${state.x.toFixed(0)}, ${state.z.toFixed(0)})`);
-
-    onBlocklyContextChanged();
-
-    showAppConfirm('挑戰模式需要編寫「自動導航」積木（使用感應器）。是否清除當前積木？', { title: '挑戰模式' }).then((ok) => {
-        if (!ok || !workspace) return;
-        workspace.clear();
-        const xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="20" y="20"></block></xml>';
-        const xml = Blockly.utils.xml.textToDom(xmlText);
-        Blockly.Xml.domToWorkspace(xml, workspace);
-    });
-}
-
 // 顯示任務簡報
 const MISSION1_GRADE_TIERS = [
     { min: 920, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '3/3 巡檢 + 抵達終點 + 極速完成' },
@@ -2784,48 +2392,6 @@ const MISSION2_GRADE_TIERS = [
     { min: 750, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成滅火任務並有一定時間獎' },
     { min: 550, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '撲滅全部火點（基本達標）' }
 ];
-
-const PRACTICE1_GRADE_TIERS = [
-    { min: 450, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '巡檢 + 抵達終點 + 快速完成' },
-    { min: 350, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成交班並有巡檢加分' },
-    { min: 300, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '完成終點基本交班' }
-];
-
-const PRACTICE2_GRADE_TIERS = [
-    { min: 550, label: '一等', labelEn: '1st Class', css: 'grade-1', desc: '撲滅 2 處火點 + 高效率完成' },
-    { min: 450, label: '二等', labelEn: '2nd Class', css: 'grade-2', desc: '完成滅火並有一定時間獎' },
-    { min: 400, label: '三等', labelEn: '3rd Class', css: 'grade-3', desc: '撲滅全部火點（基本達標）' }
-];
-
-function getPractice1Grade(total) {
-    const score = Math.floor(Number(total) || 0);
-    for (const tier of PRACTICE1_GRADE_TIERS) {
-        if (score >= tier.min) return Object.assign({ score }, tier);
-    }
-    return {
-        score,
-        min: 0,
-        label: '待加強',
-        labelEn: 'Keep Trying',
-        css: 'grade-0',
-        desc: '尚未達三等門檻（300 分）— 請確認已在終點降落'
-    };
-}
-
-function getPractice2Grade(total) {
-    const score = Math.floor(Number(total) || 0);
-    for (const tier of PRACTICE2_GRADE_TIERS) {
-        if (score >= tier.min) return Object.assign({ score }, tier);
-    }
-    return {
-        score,
-        min: 0,
-        label: '待加強',
-        labelEn: 'Keep Trying',
-        css: 'grade-0',
-        desc: '尚未達三等門檻（400 分）— 請確認已在受災區降落'
-    };
-}
 
 function getMission2Grade(total) {
     const score = Math.floor(Number(total) || 0);
@@ -2944,21 +2510,7 @@ function showMissionBriefing(missionId) {
     
     if (!briefingModal || !title || !content) return;
     
-    if (targetMissionId === 'challenge') {
-        title.textContent = '挑戰模式：隨機迷宮';
-        icon.textContent = '🔥';
-        content.innerHTML = `
-            <p class="brief-lead">
-                每次生成隨機 13×13 迷宮，用感應器積木自動導航至終點。
-                <span class="brief-lead-en">Random 13×13 maze — navigate with sensor blocks.</span>
-            </p>
-            <h4 class="brief-section-title">提示 Tips</h4>
-            <ul class="brief-tips">
-                <li>按「執行」鎖定迷宮並開始計時。</li>
-                <li>建築不可翻越；建議用前／左／右距離感測搭配轉向。</li>
-            </ul>
-        `;
-    } else if (targetMissionId == 1) {
+    if (targetMissionId == 1) {
         title.textContent = '任務一：坍塌廢墟搜救';
         icon.textContent = '🏙️';
         content.innerHTML = `
@@ -3062,51 +2614,6 @@ function showMissionBriefing(missionId) {
                 <li>格線每格 150 cm；在水源格 Collect、火點格 Release。</li>
             </ul>
         `;
-    } else if (targetMissionId === 'practice1') {
-        title.textContent = '試用一：坍塌廢墟搜救（入門）';
-        icon.textContent = '🧪';
-        content.innerHTML = `
-            <p class="brief-lead">
-                <strong>試用關卡 · 非正式比賽地圖。</strong> 8×8 縮小版，1 處巡檢回報點，機制與任務一相同。
-                <span class="brief-lead-en">Practice map — 8×8 intro with one inspection checkpoint.</span>
-            </p>
-            <ol class="brief-steps">
-                <li class="brief-step"><span class="brief-step-icon">🛫</span><span class="brief-step-title">起點</span><span class="brief-step-sub">藍色箭嘴</span></li>
-                <li class="brief-step"><span class="brief-step-icon">📡</span><span class="brief-step-title">巡檢（可選）</span><span class="brief-step-sub">+100</span></li>
-                <li class="brief-step"><span class="brief-step-icon">🛬</span><span class="brief-step-title">終點降落</span><span class="brief-step-sub">+200</span></li>
-            </ol>
-            <h4 class="brief-section-title">等級門檻 Grades</h4>
-            ${renderBriefGradeGrid(PRACTICE1_GRADE_TIERS)}
-            <h4 class="brief-section-title">提示 Tips</h4>
-            <ul class="brief-tips">
-                <li>正式競賽任務為 14×14 完整地圖；此關卡供入門練習。</li>
-                <li>須沿路網飛行並在 Bravo 格降落結算。</li>
-            </ul>
-        `;
-    } else if (targetMissionId === 'practice2') {
-        title.textContent = '試用二：山火智能應對（入門）';
-        icon.textContent = '🧪';
-        content.innerHTML = `
-            <p class="brief-lead">
-                <strong>試用關卡 · 非正式比賽地圖。</strong> 8×8 縮小版，2 處火點、1 水源、1 充電站。
-                <span class="brief-lead-en">Practice map — 8×8 intro with 2 fires.</span>
-            </p>
-            <ol class="brief-steps">
-                <li class="brief-step"><span class="brief-step-icon">🛫</span><span class="brief-step-title">基地起飛</span></li>
-                <li class="brief-step"><span class="brief-step-icon">💧</span><span class="brief-step-title">取水</span></li>
-                <li class="brief-step"><span class="brief-step-icon">🔥</span><span class="brief-step-title">撲滅 2 處火點</span></li>
-                <li class="brief-step"><span class="brief-step-icon">⚡</span><span class="brief-step-title">充電站（可選）</span></li>
-                <li class="brief-step"><span class="brief-step-icon">🛬</span><span class="brief-step-title">受災區降落</span><span class="brief-step-sub">結算成績</span></li>
-            </ol>
-            <h4 class="brief-section-title">等級門檻 Grades</h4>
-            ${renderBriefGradeGrid(PRACTICE2_GRADE_TIERS)}
-            <h4 class="brief-section-title">提示 Tips</h4>
-            <ul class="brief-tips">
-                <li>火點 A (3,6) 優先於 B (5,5)；水源在 (1,4)。</li>
-                <li>須飛至受災區降落結算；全數撲滅 2/2 可額外 +200 分。</li>
-                <li>正式競賽為 14×14、4 火點。</li>
-            </ul>
-        `;
     }
     
     briefingModal.style.display = 'flex';
@@ -3136,8 +2643,6 @@ function closeBriefing() {
 function showMainMenu() {
     document.getElementById('main-menu').style.display = 'flex';
     document.getElementById('mission-select-menu').style.display = 'none';
-    const practiceMenu = document.getElementById('practice-select-menu');
-    if (practiceMenu) practiceMenu.style.display = 'none';
     document.getElementById('game-interface').style.display = 'none';
     
     // 初始化主菜單 3D 預覽（等待 DOM 更新和 Three.js 載入）
@@ -3159,11 +2664,8 @@ function showMainMenu() {
 
 // 顯示任務選擇畫面
 function showMissionSelect() {
-    lastMissionMenu = 'competition';
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'flex';
-    const practiceMenu = document.getElementById('practice-select-menu');
-    if (practiceMenu) practiceMenu.style.display = 'none';
     document.getElementById('game-interface').style.display = 'none';
     
     // 清理主菜單預覽
@@ -3180,22 +2682,10 @@ async function startMission(missionId) {
         return;
     }
 
-    const isCompetitionMission = missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
-
-    if (missionId === 'practice1' || missionId === 'practice2') {
-        lastMissionMenu = 'practice';
-    } else if (isCompetitionMission) {
-        lastMissionMenu = 'competition';
-    }
-
     currentGameMode = 'mission';
     updateModeSpecificUi();
     
-    if (missionId === 'practice1') {
-        activeMissionId = 'practice1';
-    } else if (missionId === 'practice2') {
-        activeMissionId = 'practice2';
-    } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
+    if (missionId === 'training' || missionId === 1 || missionId === '1') {
         activeMissionId = 1;
     } else if (missionId === 2 || missionId === '2') {
         activeMissionId = 2;
@@ -3209,8 +2699,6 @@ async function startMission(missionId) {
     // 先顯示遊戲界面
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('mission-select-menu').style.display = 'none';
-    const practiceMenu = document.getElementById('practice-select-menu');
-    if (practiceMenu) practiceMenu.style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
     gameInterface.style.display = 'flex';
     
@@ -3294,15 +2782,7 @@ async function startMission(missionId) {
     }
     
     // 根據任務 ID 設置場景
-    if (missionId === 'practice1') {
-        changeScene('tunnel_practice');
-        logToConsole('🧪 試用一：8×8 坍塌廢墟搜救（1 巡檢點 · 入門練習）');
-        logToConsole('💡 機制與正式任務一相同，地圖較小。');
-    } else if (missionId === 'practice2') {
-        changeScene('city_practice');
-        logToConsole('🧪 試用二：8×8 山火智能應對（2 火點 · 入門練習）');
-        logToConsole('💡 機制與正式任務二相同；須飛至受災區降落結算。');
-    } else if (missionId === 'training' || missionId === 1 || missionId === '1') {
+    if (missionId === 'training' || missionId === 1 || missionId === '1') {
         changeScene('tunnel');
         logToConsole('📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。');
         logToConsole('💡 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。');
@@ -3328,8 +2808,7 @@ async function startMission(missionId) {
 }
 
 function shouldAutoShowMissionBriefing(missionId) {
-    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2'
-        || missionId === 'practice1' || missionId === 'practice2';
+    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
 }
 
 // 啟動自由遊戲
@@ -4010,31 +3489,6 @@ const MISSION_PREVIEW_META = {
     2: { caption: '任務二：山火智能應對' }
 };
 
-const PRACTICE_PREVIEW_META = {
-    practice1: { caption: '試用一：坍塌廢墟搜救（8×8 · 1 巡檢點）', imgIndex: 1 },
-    practice2: { caption: '試用二：山火智能應對（8×8 · 2 火點）', imgIndex: 2 }
-};
-
-function setPracticePreview(missionId) {
-    const meta = PRACTICE_PREVIEW_META[missionId];
-    if (!meta) return;
-
-    document.querySelectorAll('#practice-preview .mission-preview__img').forEach(img => {
-        img.classList.toggle('mission-preview__img--active', Number(img.id.replace('practice-preview-img-', '')) === meta.imgIndex);
-    });
-
-    document.querySelectorAll('#practice-select-menu .mission-btn[data-mission-preview]').forEach(btn => {
-        btn.classList.toggle('mission-btn--active', btn.dataset.missionPreview === missionId);
-    });
-
-    const caption = document.getElementById('practice-preview-caption');
-    if (caption) caption.textContent = meta.caption;
-}
-
-function updatePracticePreview() {
-    setPracticePreview('practice1');
-}
-
 function setMissionPreview(missionId) {
     const id = Number(missionId);
     if (!MISSION_PREVIEW_META[id]) return;
@@ -4144,7 +3598,6 @@ window.showResultModal = function(data) {
     }
     const requiredBeacons = typeof getRequiredBeacons === 'function' ? getRequiredBeacons() : 3;
     const requiredFires = typeof getRequiredFires === 'function' ? getRequiredFires() : 4;
-    const isPractice = !!data.isPractice || activeMissionId === 'practice1' || activeMissionId === 'practice2';
 
     if (elBeacons) {
         elBeacons.innerText = data.row1Count
@@ -4162,13 +3615,7 @@ window.showResultModal = function(data) {
     const gradeDesc = document.getElementById('res-grade-desc');
     if (gradeBlock && gradeBadge && gradeDesc) {
         let grade = null;
-        if (isPractice && isMission2 && typeof getPractice2Grade === 'function') {
-            grade = getPractice2Grade(data.total);
-            gradeDesc.textContent = `${grade.desc}（試用門檻：一等 ≥550｜二等 450–549｜三等 400–449）`;
-        } else if (isPractice && isMission1 && typeof getPractice1Grade === 'function') {
-            grade = getPractice1Grade(data.total);
-            gradeDesc.textContent = `${grade.desc}（試用門檻：一等 ≥450｜二等 350–449｜三等 300–349）`;
-        } else if (isMission2 && typeof getMission2Grade === 'function') {
+        if (isMission2 && typeof getMission2Grade === 'function') {
             grade = getMission2Grade(data.total);
             gradeDesc.textContent = `${grade.desc}（門檻：一等 ≥950｜二等 750–949｜三等 550–749）`;
         } else if (isMission1 && typeof getMission1Grade === 'function') {

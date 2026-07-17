@@ -161,7 +161,7 @@
                 <button type="button" class="mission-briefing-entry" onclick="showMissionBriefing(); toggleUtilityMenu(false)">查看任務說明</button>
                 <button type="button" onclick="toggleConsole(true); toggleUtilityMenu(false)">開啟飛行紀錄</button>
             </div>
-            <button type="button" class="control-btn road-editor-top-btn road-editor-ui" onclick="toggleRoadEditorMode()" id="road-editor-toggle-btn" hidden aria-hidden="true" title="編輯試用關卡路面（僅試用一）">🛣️ 路面編輯</button>
+            <button type="button" class="control-btn road-editor-top-btn road-editor-ui" onclick="toggleRoadEditorMode()" id="road-editor-toggle-btn" hidden aria-hidden="true" title="編輯任務一路面（開發用）">🛣️ 路面編輯</button>
         </div>
 
         <!-- 首次進入遊戲介面：Blockly 尋址提示（localStorage 見 main.js） -->
@@ -191,7 +191,7 @@
                 <button type="button" class="road-editor-btn road-editor-btn--secondary" onclick="exportRoadOverrides()">匯出 JSON</button>
                 <button type="button" class="road-editor-btn road-editor-btn--secondary" onclick="roadEditorClearAllOverrides()">全部清除</button>
             </div>
-            <p class="road-editor-hint">左鍵點格 · R 轉 90° · 設定存於瀏覽器（試用一獨立儲存）</p>
+            <p class="road-editor-hint">左鍵點格 · R 轉 90° · 設定存於瀏覽器</p>
             <button type="button" class="road-editor-btn road-editor-btn--close" onclick="toggleRoadEditorMode(false)">關閉編輯</button>
         </div>
         
