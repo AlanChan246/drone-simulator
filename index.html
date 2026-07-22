@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drone Simulator</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚁</text></svg>">
+    <title>Drone Simulator — 救災無人機訓練</title>
+    <meta name="description" content="用積木程式操控無人機，在震後街區與災區場景中完成救災任務。競賽任務與自由練習皆可離線使用。">
+    <meta property="og:title" content="Drone Simulator — 救災無人機訓練">
+    <meta property="og:description" content="用積木程式操控無人機，在震後街區與災區場景中完成救災任務。">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%23080d12'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2352d3e6'/%3E%3Cpath stroke='%2352d3e6' stroke-width='1.5' d='M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="node_modules/three/build/three.min.js"></script>
     <script src="node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
     <script src="node_modules/blockly/blockly_compressed.js"></script>
     <script src="node_modules/blockly/blocks_compressed.js"></script>
     <script src="node_modules/blockly/javascript_compressed.js"></script>
     <script src="node_modules/blockly/msg/en.js"></script>
-    <link rel="stylesheet" href="style.css?v=mission2-photo-legend-20260717">
+    <link rel="stylesheet" href="style.css?v=hero-video-nowm-20260722">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -21,14 +28,21 @@
     </script>
 </head>
 <body>
+    <a class="skip-link" href="#main-menu-content">跳到主內容</a>
     <div id="app-loading" class="app-loading" role="status" aria-live="polite">
-        <div class="app-loading__drone">🚁</div>
+        <div class="app-loading__mark" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="3" fill="#52d3e6"/>
+                <path stroke="#52d3e6" stroke-width="1.5" d="M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4"/>
+            </svg>
+        </div>
         <strong>正在準備無人機訓練場…</strong>
         <span id="app-loading-status">載入本機程式庫與 3D 資源</span>
         <div class="app-loading__bar"><span></span></div>
     </div>
     <div id="orientation-hint" class="orientation-hint" hidden role="status">
-        <span>📱</span><strong>請將手機轉為橫向</strong><small>橫向畫面能同時顯示 3D 場景和積木工具。</small>
+        <strong>請將手機轉為橫向</strong>
+        <small>橫向畫面能同時顯示 3D 場景和積木工具。</small>
         <button type="button" onclick="dismissOrientationHint()">仍然繼續</button>
     </div>
     <!-- file:// 開啟時：瀏覽器禁止載入 GLB，必須改用 http://localhost -->
@@ -50,41 +64,54 @@
             }
         })();
     </script>
-    <!-- 主選單：模式優先 hub（方向 B） -->
+    <!-- 主選單：模式優先 hub -->
     <div id="main-menu" class="menu-screen menu-screen--hub">
         <header class="hub-header" role="banner">
-            <div class="hub-header__brand">
-                <span class="hub-header__title">Drone Simulator</span>
+            <div class="hub-header__brand hub-header__brand--compact">
+                <span class="hub-header__mark" aria-hidden="true"></span>
                 <span class="hub-header__tagline">Code to rescue</span>
             </div>
         </header>
-        <main class="hub-main" id="main-menu-content" aria-labelledby="hub-main-heading">
-            <h1 class="hub-main__h1" id="hub-main-heading">選擇你的體驗</h1>
+        <main class="hub-main" id="main-menu-content" aria-labelledby="hub-brand-heading">
+            <p class="hub-main__eyebrow">救災無人機訓練</p>
+            <h1 class="hub-main__brand" id="hub-brand-heading">Drone Simulator</h1>
             <p class="hub-main__lead">用積木程式操控無人機，在震後街區與災區場景中完成救災任務。</p>
-            <div class="hub-preview-wrap" aria-hidden="true">
-                <div class="menu-preview hub-menu-preview" id="main-menu-preview"></div>
+            <div class="hub-layout">
+                <div class="hub-preview-wrap">
+                    <div class="menu-preview hub-menu-preview" id="main-menu-preview">
+                        <video
+                            id="hero-loop-video"
+                            class="menu-preview__video"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            preload="auto"
+                            aria-label="救災無人機任務預告短片"
+                        >
+                            <source src="assets/video/hero-loop.webm" type="video/webm">
+                            <source src="assets/video/hero-loop.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                </div>
+                <div class="hub-mode-list" role="list">
+                    <article class="mode-row mode-row--primary" role="listitem">
+                        <div class="mode-row__copy">
+                            <h2 class="mode-row__title">競賽任務</h2>
+                            <p class="mode-row__desc">任務目標與計分、巡檢回報與計時加分。</p>
+                        </div>
+                        <button type="button" class="menu-btn mode-row__cta" onclick="showMissionSelect()">進入競賽</button>
+                    </article>
+                    <article class="mode-row mode-row--secondary" role="listitem">
+                        <div class="mode-row__copy">
+                            <h2 class="mode-row__title">自由練習</h2>
+                            <p class="mode-row__desc">自由探索場景，適合測試程式。</p>
+                        </div>
+                        <button type="button" class="menu-btn menu-btn--ghost mode-row__cta" onclick="startFreePlay()">開始練習</button>
+                    </article>
+                </div>
             </div>
-            <div class="hub-mode-cards">
-                <article class="mode-card">
-                    <h2 class="mode-card__title">競賽任務</h2>
-                    <ul class="mode-card__list">
-                        <li>任務目標與計分</li>
-                        <li>巡檢回報與計時加分</li>
-                    </ul>
-                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🏆</span></div>
-                    <button type="button" class="menu-btn mode-card__cta" onclick="showMissionSelect()">進入競賽</button>
-                </article>
-                <article class="mode-card">
-                    <h2 class="mode-card__title">自由練習</h2>
-                    <ul class="mode-card__list">
-                        <li>自由探索場景</li>
-                        <li>適合測試程式</li>
-                    </ul>
-                    <div class="mode-card__decor" aria-hidden="true"><span class="mode-card__decor-icon">🎮</span></div>
-                    <button type="button" class="menu-btn mode-card__cta" onclick="startFreePlay()">開始練習</button>
-                </article>
-            </div>
-            <p class="hub-onboarding" hidden>第一次使用？<a href="#" class="hub-onboarding__link">觀看導覽</a></p>
+            <p class="hub-onboarding">第一次使用？<button type="button" class="hub-onboarding__link" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">開始導覽教學</button></p>
         </main>
         <div class="hub-legacy-actions" hidden>
             <button type="button" class="menu-btn" onclick="showBasecamp()" style="display: none;" tabindex="-1">BASECAMP</button>
@@ -146,7 +173,7 @@
                 <button class="control-btn control-btn--quiet mission-briefing-entry" onclick="showMissionBriefing()" title="任務說明" id="mission-briefing-btn"><span class="ui-icon" aria-hidden="true">ⓘ</span><span>任務</span></button>
                 <button type="button" class="control-btn control-btn--quiet tutorial-start-btn" onclick="startInteractiveTutorial()" title="逐步新手教學"><span class="ui-icon" aria-hidden="true">?</span><span>教學</span></button>
             <!-- 任務一／任務二顯示；預設隱藏，由 updateMazeAnswerButtonVisibility 控制 -->
-            <button class="control-btn" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none; background-color: #ff9800; color: white;">💡 參考答案</button>
+            <button class="control-btn control-btn--hint" onclick="loadMazeAnswer()" id="maze-answer-btn" style="display:none;">參考答案</button>
             <!-- 隱藏場景選擇下拉選單 -->
             <select class="scene-select" id="scene-select" onchange="changeScene(this.value)" style="display: none;">
                 <option value="free">場景: 自由飛行</option>
@@ -388,28 +415,28 @@
     <div id="result-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
         <div class="result-card">
             <div class="result-header">
-                <h2 id="result-modal-title">任務完成！ MISSION COMPLETE</h2>
-                <div class="result-icon">🏆</div>
+                <h2 id="result-modal-title">任務完成</h2>
+                <div class="result-icon" aria-hidden="true"></div>
             </div>
             <div class="result-body">
                 <table class="result-table">
                     <tr>
-                        <td id="res-row1-label">巡檢回報 (Inspections)</td>
+                        <td id="res-row1-label">巡檢回報</td>
                         <td id="res-beacons">0 / 3</td>
                         <td id="res-beacons-score">+0</td>
                     </tr>
                     <tr>
                         <td id="res-row2-label">抵達終點</td>
-                        <td id="res-row2-status">YES</td>
+                        <td id="res-row2-status">是</td>
                         <td id="res-exit-score">+200</td>
                     </tr>
                     <tr>
-                        <td>任務耗時 (Time)</td>
+                        <td>任務耗時</td>
                         <td id="res-time">0s</td>
                         <td id="res-time-bonus">+0</td>
                     </tr>
                     <tr class="total-row">
-                        <td colspan="2">總得分 (TOTAL SCORE)</td>
+                        <td colspan="2">總得分</td>
                         <td id="res-total">0</td>
                     </tr>
                 </table>
@@ -429,14 +456,13 @@
     <div id="mission-briefing" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
         <div class="result-card briefing-card">
             <div class="result-header">
-                <h2 id="briefing-title">任務簡報 MISSION BRIEF</h2>
-                <div class="result-icon" id="briefing-icon">📋</div>
+                <h2 id="briefing-title">任務簡報</h2>
             </div>
             <div class="result-body briefing-body" id="briefing-content">
                 <!-- 內容由 JS 動態注入 -->
             </div>
             <div class="result-footer">
-                <button type="button" class="result-btn btn-continue" id="briefing-ok-btn" onclick="closeBriefing()" style="background: #4c6ef5; width: 100%;">我知道了，開始任務！</button>
+                <button type="button" class="result-btn btn-continue btn-continue--full" id="briefing-ok-btn" onclick="closeBriefing()">知道了，開始任務</button>
             </div>
         </div>
     </div>
@@ -477,10 +503,10 @@
         </div>
     </aside>
 
-    <script src="js/simulator.js?v=restore-atmosphere-20260717"></script>
+    <script src="js/simulator.js?v=city-perimeter-foundation-20260717"></script>
     <script src="js/blockly_def.js"></script>
     <script src="js/mission2_answer.js"></script>
-    <script src="js/main.js?v=silent-collision-20260717"></script>
+    <script src="js/main.js?v=hero-video-nowm-20260722"></script>
     <script>
         window.addEventListener('load', function () {
             var loader = document.getElementById('app-loading');

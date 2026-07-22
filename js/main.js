@@ -2512,7 +2512,7 @@ function showMissionBriefing(missionId) {
     
     if (targetMissionId == 1) {
         title.textContent = '任務一：坍塌廢墟搜救';
-        icon.textContent = '🏙️';
+        if (icon) icon.textContent = '';
         content.innerHTML = `
             <p class="brief-lead">
                 地震後通訊中斷，沿可通行路網把情報從起點送到終點。
@@ -2557,7 +2557,7 @@ function showMissionBriefing(missionId) {
         `;
     } else if (targetMissionId == 2) {
         title.textContent = '任務二：山火智能應對';
-        icon.textContent = '🔥';
+        if (icon) icon.textContent = '';
         content.innerHTML = `
             <p class="brief-lead">
                 水箱每次僅 1 次水量，須反覆取水、依優先序撲滅 4 處火點。
@@ -2644,22 +2644,26 @@ function showMainMenu() {
     document.getElementById('main-menu').style.display = 'flex';
     document.getElementById('mission-select-menu').style.display = 'none';
     document.getElementById('game-interface').style.display = 'none';
-    
-    // 初始化主菜單 3D 預覽（等待 DOM 更新和 Three.js 載入）
-    setTimeout(() => {
-        if (typeof THREE !== 'undefined') {
-            initMainMenuPreview();
-        } else {
-            console.warn('⚠️ THREE.js not loaded yet, retrying...');
-            setTimeout(() => {
-                if (typeof THREE !== 'undefined') {
-                    initMainMenuPreview();
-                } else {
-                    console.error('❌ THREE.js failed to load');
-                }
-            }, 500);
-        }
-    }, 200);
+
+    // 使用裁切水印後的 hero loop 影片（不再啟動選單 WebGL）
+    cleanupMainMenuPreview();
+    resumeHeroLoopVideo();
+}
+
+function pauseHeroLoopVideo() {
+    const heroVideo = document.getElementById('hero-loop-video');
+    if (heroVideo && !heroVideo.paused) {
+        heroVideo.pause();
+    }
+}
+
+function resumeHeroLoopVideo() {
+    const heroVideo = document.getElementById('hero-loop-video');
+    if (!heroVideo) return;
+    const playAttempt = heroVideo.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+        playAttempt.catch(function () { /* muted+playsinline 通常可自動播放 */ });
+    }
 }
 
 // 顯示任務選擇畫面
@@ -2668,8 +2672,8 @@ function showMissionSelect() {
     document.getElementById('mission-select-menu').style.display = 'flex';
     document.getElementById('game-interface').style.display = 'none';
     
-    // 清理主菜單預覽
     cleanupMainMenuPreview();
+    pauseHeroLoopVideo();
     
     // 更新任務預覽場景
     updateMissionPreview();
@@ -2701,6 +2705,7 @@ async function startMission(missionId) {
     document.getElementById('mission-select-menu').style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
     gameInterface.style.display = 'flex';
+    pauseHeroLoopVideo();
     
     // 確保積木區默認隱藏，並重置樣式
     const blocklyPanel = document.getElementById('blocklyDiv');
@@ -2824,6 +2829,7 @@ async function startFreePlay() {
     document.getElementById('mission-select-menu').style.display = 'none';
     const gameInterface = document.getElementById('game-interface');
     gameInterface.style.display = 'flex';
+    pauseHeroLoopVideo();
     
     // 確保積木區默認隱藏，並重置樣式
     const blocklyPanel = document.getElementById('blocklyDiv');
@@ -3010,70 +3016,60 @@ async function initMainMenuPreview() {
 
     // 創建場景
     mainMenuScene = new THREE.Scene();
-    
-    // 使用與主菜單一致的背景顏色（透明，讓 CSS 背景顯示）
-    // 主菜單背景：linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 50%, #ffffff 100%)
-    // 使用淺色背景，讓 3D 模型更突出
-    mainMenuScene.background = new THREE.Color(0xe0e7ff);
-    
-    // 如果需要使用圖片背景，可以取消下面的註釋
-    // const textureLoader = new THREE.TextureLoader();
-    // textureLoader.load('assets/backgrounds/preview-bg-gemini.png', (texture) => {
-    //     mainMenuScene.background = texture;
-    //     console.log('✅ Background image loaded');
-    // }, undefined, (error) => {
-    //     console.warn('⚠️ Failed to load background image, using default color:', error);
-    //     mainMenuScene.background = new THREE.Color(0xe0e7ff);
-    // });
+    mainMenuScene.background = new THREE.Color(0x0a1218);
+    mainMenuScene.fog = new THREE.FogExp2(0x0a1218, 0.045);
 
     // 創建相機
-    mainMenuCamera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    mainMenuCamera.position.set(0, 2, 8);
-    mainMenuCamera.lookAt(0, 0, 0);
+    mainMenuCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 200);
+    mainMenuCamera.position.set(4, 3.2, 8);
 
-    // 創建渲染器（確保正確的顏色輸出）
+    // 創建渲染器
     mainMenuRenderer = new THREE.WebGLRenderer({ 
         antialias: true, 
-        alpha: false,  // 改為 false，使用背景色
+        alpha: false,
         powerPreference: "high-performance"
     });
     mainMenuRenderer.setSize(width, height);
     mainMenuRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mainMenuRenderer.shadowMap.enabled = true;
     mainMenuRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // 確保正確的顏色空間
     if (mainMenuRenderer.outputEncoding !== undefined) {
         mainMenuRenderer.outputEncoding = THREE.sRGBEncoding;
     }
+    // 清空舊 canvas／video
+    while (previewContainer.firstChild) {
+        previewContainer.removeChild(previewContainer.firstChild);
+    }
     previewContainer.appendChild(mainMenuRenderer.domElement);
 
-    // 添加燈光（增強燈光以突出模型顏色）
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);  // 增強環境光
+    // Flight Deck 燈光
+    const ambientLight = new THREE.AmbientLight(0xb8d4de, 0.55);
     mainMenuScene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);  // 增強主光源
-    directionalLight.position.set(5, 10, 5);
+    const directionalLight = new THREE.DirectionalLight(0xe8f4f8, 1.05);
+    directionalLight.position.set(6, 14, 4);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
     mainMenuScene.add(directionalLight);
 
-    // 添加補光以突出顏色
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    fillLight.position.set(-5, 5, -5);
-    fillLight.userData.isFillLight = true;  // 標記為補光，用於動畫
+    const fillLight = new THREE.DirectionalLight(0x52d3e6, 0.35);
+    fillLight.position.set(-6, 6, -4);
+    fillLight.userData.isFillLight = true;
     mainMenuScene.add(fillLight);
 
-    const pointLight = new THREE.PointLight(0x667eea, 0.8);  // 增強彩色光源
-    pointLight.position.set(-5, 5, 5);
-    pointLight.userData.originalPosition = { x: -5, y: 5, z: 5 };  // 保存原始位置
+    const pointLight = new THREE.PointLight(0x52d3e6, 0.55, 40);
+    pointLight.position.set(-4, 5, 3);
+    pointLight.userData.originalPosition = { x: -4, y: 5, z: 3 };
     mainMenuScene.add(pointLight);
-    
-    // 添加額外的彩色光源
-    const accentLight = new THREE.PointLight(0x764ba2, 0.6);
-    accentLight.position.set(5, 3, -5);
-    accentLight.userData.originalPosition = { x: 5, y: 3, z: -5 };  // 保存原始位置
+
+    const accentLight = new THREE.PointLight(0xf4a261, 0.25, 30);
+    accentLight.position.set(5, 3, -6);
+    accentLight.userData.originalPosition = { x: 5, y: 3, z: -6 };
+    accentLight.userData.isFireAccent = true;
     mainMenuScene.add(accentLight);
+
+    buildMainMenuCinematicEnvironment();
 
     // 加載無人機模型
     console.log('📦 Loading drone model...');
@@ -3085,140 +3081,76 @@ async function initMainMenuPreview() {
                 console.log('✅ Drone model loaded successfully');
                 const droneModel = gltf.scene.clone();
                 
-                // 計算邊界框
                 const bbox = new THREE.Box3().setFromObject(droneModel);
                 const size = bbox.getSize(new THREE.Vector3());
                 const center = bbox.getCenter(new THREE.Vector3());
                 
-                console.log(`📏 Model size: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`);
-                
-                // 縮放模型
-                const targetSize = 3;
+                const targetSize = 1.15;
                 const scaleFactor = targetSize / Math.max(size.x, size.y, size.z);
                 droneModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                
-                // 旋轉模型
                 droneModel.rotation.y = -Math.PI / 2;
-                
-                // 調整位置
                 droneModel.position.set(-center.x * scaleFactor, -center.y * scaleFactor, -center.z * scaleFactor);
                 
-                // 設置材質（使用與遊戲中相同的顏色）
-                const propMeshes = [];  // 收集螺旋槳網格
-                const bodyMeshes = [];  // 收集機身網格
-                
+                const propMeshes = [];
                 droneModel.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        
                         const meshName = child.name.toLowerCase();
                         const isProp = meshName.includes('prop') || meshName.includes('propeller');
-                        const isBody = !isProp && (meshName.includes('body') || meshName.includes('frame') || meshName === '' || meshName.includes('guard'));
-                        
-                        if (isProp) {
-                            propMeshes.push(child);
-                        } else if (isBody) {
-                            bodyMeshes.push(child);
-                        }
-                        
+                        if (isProp) propMeshes.push(child);
                         if (child.material) {
-                            // 如果是數組材質，處理每個材質
                             const materials = Array.isArray(child.material) ? child.material : [child.material];
-                            
                             materials.forEach((mat) => {
-                                // 根據網格類型設置顏色（與遊戲中一致）
-                                if (isProp) {
-                                    // 螺旋槳：稍後根據位置設置紅色或黑色
-                                    mat.color.setHex(0x111111);  // 默認深色
-                                } else {
-                                    // 機身和框架：深灰色（與遊戲中一致）
-                                    mat.color.setHex(0x222222);
-                                }
-                                
-                                // 調整材質屬性
+                                mat.color.setHex(isProp ? 0x111111 : 0x222222);
                                 mat.roughness = 0.5;
                                 mat.metalness = 0.5;
                                 mat.needsUpdate = true;
                             });
-                            
-                            // 如果材質是數組，更新引用
-                            if (Array.isArray(child.material)) {
-                                child.material = materials;
-                            }
-                        } else {
-                            // 如果沒有材質，創建一個
-                            const color = isProp ? 0x111111 : 0x222222;
-                            child.material = new THREE.MeshStandardMaterial({
-                                color: color,
-                                roughness: 0.5,
-                                metalness: 0.5
-                            });
                         }
                     }
                 });
-                
-                // 設置螺旋槳顏色（與遊戲中一致：前兩個紅色，後兩個黑色）
-                if (propMeshes.length > 0) {
-                    // 根據位置排序螺旋槳
-                    propMeshes.sort((a, b) => {
-                        const aZ = a.position.z;
-                        const bZ = b.position.z;
-                        return aZ - bZ;  // Z值小的在前（前方）
+                propMeshes.sort((a, b) => a.position.z - b.position.z);
+                propMeshes.forEach((prop, index) => {
+                    const materials = Array.isArray(prop.material) ? prop.material : [prop.material];
+                    materials.forEach((mat) => {
+                        mat.color.setHex(index < 2 ? 0xff0000 : 0x111111);
+                        mat.needsUpdate = true;
                     });
-                    
-                    propMeshes.forEach((prop, index) => {
-                        const materials = Array.isArray(prop.material) ? prop.material : [prop.material];
-                        materials.forEach((mat) => {
-                            // 前兩個（Z值較小）設為紅色，後兩個（Z值較大）設為黑色
-                            if (index < 2) {
-                                mat.color.setHex(0xff0000);  // 紅色（前方）
-                            } else {
-                                mat.color.setHex(0x111111);  // 黑色（後方）
-                            }
-                            mat.needsUpdate = true;
-                        });
-                    });
-                }
+                });
                 
                 mainMenuDrone = new THREE.Group();
                 mainMenuDrone.add(droneModel);
                 mainMenuScene.add(mainMenuDrone);
-                
-                console.log('✅ Drone added to scene');
-                
-                // 開始動畫
+                heroLoopElapsed = 0;
                 animateMainMenuPreview();
             },
-            (progress) => {
-                // 載入進度
-                if (progress.total > 0) {
-                    const percent = (progress.loaded / progress.total) * 100;
-                    console.log(`📥 Loading: ${percent.toFixed(1)}%`);
-                }
-            },
+            undefined,
             (error) => {
                 console.warn('⚠️ Cannot load drone model, using default geometry:', error);
                 createDefaultDroneModel();
+                heroLoopElapsed = 0;
                 animateMainMenuPreview();
             }
         );
     } catch (error) {
         console.error('❌ Error loading model, using default geometry:', error);
         createDefaultDroneModel();
+        heroLoopElapsed = 0;
         animateMainMenuPreview();
     }
 
-    // 處理窗口大小變化
     const handleResize = () => {
         if (!previewContainer || !mainMenuCamera || !mainMenuRenderer) return;
         const newWidth = previewContainer.clientWidth;
         const newHeight = previewContainer.clientHeight;
+        if (newWidth < 2 || newHeight < 2) return;
         mainMenuCamera.aspect = newWidth / newHeight;
         mainMenuCamera.updateProjectionMatrix();
         mainMenuRenderer.setSize(newWidth, newHeight);
     };
     window.addEventListener('resize', handleResize);
+    mainMenuResizeHandler = handleResize;
 }
 
 // 創建預設無人機模型（如果 GLB 載入失敗）
@@ -3274,191 +3206,261 @@ function createDefaultDroneModel() {
     });
     
     mainMenuScene.add(mainMenuDrone);
+    mainMenuDrone.scale.set(0.55, 0.55, 0.55);
     console.log('✅ Default drone model created with game colors');
 }
 
-// 主菜單預覽動畫變數
-let animationTime = 0;
-let cameraOrbitRadius = 8;
-let cameraOrbitAngle = 0;
-let flightPathPhase = 0;  // 飛行路徑階段（0-1）
+// 主菜單 cinematic：10 秒無縫腳本動畫（起飛→街道→山火→降落）
+const HERO_LOOP_DURATION = 10;
+let heroLoopElapsed = 0;
+let heroLoopLastTs = 0;
+let mainMenuResizeHandler = null;
+let mainMenuSmoke = null;
+let mainMenuFireLight = null;
+let mainMenuEnvRoot = null;
 
-// 飛行路徑類型
-const FLIGHT_PATTERNS = {
-    FIGURE_8: 'figure8',      // 8字形
-    CIRCLE: 'circle',          // 圓形
-    WAVE: 'wave',              // 波浪形
-    SPIRAL: 'spiral',          // 螺旋形
-    SQUARE: 'square'           // 方形
-};
-
-let currentFlightPattern = FLIGHT_PATTERNS.FIGURE_8;
-let patternChangeTime = 0;
-
-// 計算飛行路徑位置
-function calculateFlightPath(time, pattern) {
-    const speed = 0.3;  // 飛行速度
-    const t = time * speed;
-    
-    switch(pattern) {
-        case FLIGHT_PATTERNS.FIGURE_8:
-            // 8字形路徑
-            const radius = 1.5;
-            const x = Math.sin(t) * radius;
-            const z = Math.sin(t * 2) * radius * 0.5;
-            const y = Math.sin(t * 1.5) * 0.4 + 0.2;
-            return { x, y, z, roll: Math.sin(t * 2) * 0.1, pitch: Math.cos(t) * 0.15 };
-            
-        case FLIGHT_PATTERNS.CIRCLE:
-            // 圓形路徑
-            const circleRadius = 1.2;
-            const cx = Math.cos(t) * circleRadius;
-            const cz = Math.sin(t) * circleRadius;
-            const cy = Math.sin(t * 2) * 0.3;
-            return { x: cx, y: cy, z: cz, roll: Math.sin(t) * 0.1, pitch: -Math.cos(t) * 0.1 };
-            
-        case FLIGHT_PATTERNS.WAVE:
-            // 波浪形路徑（前後移動 + 上下波動）
-            const waveX = Math.sin(t * 0.8) * 1.0;
-            const waveZ = t % (Math.PI * 2);
-            const waveY = Math.sin(waveZ * 2) * 0.5;
-            return { x: waveX, y: waveY, z: Math.cos(waveZ) * 0.8, roll: 0, pitch: Math.sin(waveZ) * 0.2 };
-            
-        case FLIGHT_PATTERNS.SPIRAL:
-            // 螺旋上升/下降
-            const spiralRadius = 1.0 + Math.sin(t * 0.5) * 0.3;
-            const spiralX = Math.cos(t) * spiralRadius;
-            const spiralZ = Math.sin(t) * spiralRadius;
-            const spiralY = (t % (Math.PI * 4)) / (Math.PI * 4) * 0.8 - 0.4;
-            return { x: spiralX, y: spiralY, z: spiralZ, roll: Math.sin(t) * 0.15, pitch: Math.cos(t) * 0.1 };
-            
-        case FLIGHT_PATTERNS.SQUARE:
-            // 方形路徑
-            const squareT = t % (Math.PI * 2);
-            let squareX, squareZ;
-            if (squareT < Math.PI / 2) {
-                squareX = 1.0;
-                squareZ = squareT / (Math.PI / 2) * 1.0 - 0.5;
-            } else if (squareT < Math.PI) {
-                squareX = 1.0 - (squareT - Math.PI / 2) / (Math.PI / 2) * 2.0;
-                squareZ = 0.5;
-            } else if (squareT < Math.PI * 1.5) {
-                squareX = -1.0;
-                squareZ = 0.5 - (squareT - Math.PI) / (Math.PI / 2) * 1.0;
-            } else {
-                squareX = -1.0 + (squareT - Math.PI * 1.5) / (Math.PI / 2) * 2.0;
-                squareZ = -0.5;
-            }
-            const squareY = Math.sin(t * 2) * 0.3;
-            return { x: squareX, y: squareY, z: squareZ, roll: 0, pitch: 0 };
-            
-        default:
-            return { x: 0, y: 0, z: 0, roll: 0, pitch: 0 };
-    }
+function heroEaseInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
-// 主菜單預覽動畫循環
-function animateMainMenuPreview() {
+function heroLerp(a, b, t) {
+    return a + (b - a) * t;
+}
+
+function heroLerpVec(a, b, t) {
+    return {
+        x: heroLerp(a.x, b.x, t),
+        y: heroLerp(a.y, b.y, t),
+        z: heroLerp(a.z, b.z, t)
+    };
+}
+
+/** 依 0–10s 取樣無人機／相機關鍵幀（首尾對齊以便 loop） */
+function sampleHeroCinematic(tSec) {
+    const t = ((tSec % HERO_LOOP_DURATION) + HERO_LOOP_DURATION) % HERO_LOOP_DURATION;
+    const keys = [
+        // 0s 起飛點
+        { t: 0.0, drone: { x: 0, y: 0.2, z: 5.2 }, yaw: Math.PI, cam: { x: 3.8, y: 2.6, z: 8.2 }, look: { x: 0, y: 0.6, z: 4.5 }, mood: 0 },
+        // 2.5s 升空
+        { t: 2.5, drone: { x: 0.2, y: 1.7, z: 2.0 }, yaw: Math.PI * 0.92, cam: { x: 4.2, y: 2.9, z: 5.5 }, look: { x: 0.1, y: 1.4, z: 1.8 }, mood: 0 },
+        // 5s 街道跟飛
+        { t: 5.0, drone: { x: -0.3, y: 1.9, z: -2.5 }, yaw: Math.PI * 0.55, cam: { x: 2.8, y: 2.4, z: 1.2 }, look: { x: -0.2, y: 1.6, z: -3.0 }, mood: 0.35 },
+        // 7.5s 山火／灑水接近
+        { t: 7.5, drone: { x: -2.4, y: 2.2, z: -6.5 }, yaw: Math.PI * 0.15, cam: { x: 0.6, y: 2.8, z: -3.2 }, look: { x: -2.6, y: 1.5, z: -7.2 }, mood: 1 },
+        // 9.2s 回航
+        { t: 9.2, drone: { x: -0.4, y: 1.2, z: 1.5 }, yaw: Math.PI * 0.85, cam: { x: 3.2, y: 2.5, z: 5.0 }, look: { x: 0, y: 0.9, z: 2.5 }, mood: 0.2 },
+        // 10s = 0s
+        { t: 10.0, drone: { x: 0, y: 0.2, z: 5.2 }, yaw: Math.PI, cam: { x: 3.8, y: 2.6, z: 8.2 }, look: { x: 0, y: 0.6, z: 4.5 }, mood: 0 }
+    ];
+
+    let i = 0;
+    while (i < keys.length - 1 && t > keys[i + 1].t) i += 1;
+    const a = keys[i];
+    const b = keys[i + 1];
+    const u = heroEaseInOut((t - a.t) / Math.max(0.0001, b.t - a.t));
+
+    let yawDelta = b.yaw - a.yaw;
+    while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+    while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+
+    return {
+        drone: heroLerpVec(a.drone, b.drone, u),
+        yaw: a.yaw + yawDelta * u,
+        cam: heroLerpVec(a.cam, b.cam, u),
+        look: heroLerpVec(a.look, b.look, u),
+        mood: heroLerp(a.mood, b.mood, u),
+        pitch: Math.sin(t * 1.4) * 0.06,
+        roll: Math.sin(t * 2.1) * 0.08
+    };
+}
+
+function buildMainMenuCinematicEnvironment() {
+    if (!mainMenuScene) return;
+    mainMenuEnvRoot = new THREE.Group();
+    mainMenuEnvRoot.name = 'heroEnv';
+
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(48, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1a2228, roughness: 0.95, metalness: 0.05 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    mainMenuEnvRoot.add(ground);
+
+    // 震後街區：兩側建築＋碎塊
+    const rubbleMat = new THREE.MeshStandardMaterial({ color: 0x3a4248, roughness: 0.9, metalness: 0.1 });
+    const buildingMat = new THREE.MeshStandardMaterial({ color: 0x2c343c, roughness: 0.85, metalness: 0.15 });
+    const damagedMat = new THREE.MeshStandardMaterial({ color: 0x4a3a32, roughness: 0.88, metalness: 0.05 });
+
+    const buildingSpecs = [
+        { x: -4.2, z: 2, w: 2.2, h: 3.2, d: 2.4, mat: buildingMat },
+        { x: 4.0, z: 1.2, w: 2.0, h: 2.6, d: 2.2, mat: damagedMat },
+        { x: -4.5, z: -1.5, w: 2.4, h: 4.0, d: 2.0, mat: buildingMat },
+        { x: 4.3, z: -2.2, w: 2.1, h: 3.4, d: 2.3, mat: damagedMat },
+        { x: -5.0, z: -5.5, w: 2.6, h: 2.8, d: 2.5, mat: buildingMat },
+        { x: 3.8, z: -6.0, w: 2.3, h: 3.6, d: 2.0, mat: damagedMat }
+    ];
+    buildingSpecs.forEach((b) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), b.mat);
+        mesh.position.set(b.x, b.h / 2, b.z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mainMenuEnvRoot.add(mesh);
+    });
+
+    for (let i = 0; i < 14; i += 1) {
+        const chunk = new THREE.Mesh(
+            new THREE.BoxGeometry(0.4 + Math.random() * 0.7, 0.25 + Math.random() * 0.4, 0.4 + Math.random() * 0.6),
+            rubbleMat
+        );
+        chunk.position.set((Math.random() - 0.5) * 10, 0.15, (Math.random() - 0.5) * 12);
+        chunk.rotation.y = Math.random() * Math.PI;
+        chunk.castShadow = true;
+        mainMenuEnvRoot.add(chunk);
+    }
+
+    // 起飛帳篷／基地標記
+    const tent = new THREE.Mesh(
+        new THREE.ConeGeometry(0.9, 1.1, 4),
+        new THREE.MeshStandardMaterial({ color: 0xc4b59a, roughness: 0.8 })
+    );
+    tent.position.set(1.6, 0.55, 5.6);
+    tent.rotation.y = Math.PI / 4;
+    mainMenuEnvRoot.add(tent);
+
+    const pad = new THREE.Mesh(
+        new THREE.CircleGeometry(0.85, 24),
+        new THREE.MeshStandardMaterial({ color: 0x52d3e6, emissive: 0x123840, roughness: 0.6, metalness: 0.3 })
+    );
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(0, 0.03, 5.2);
+    mainMenuEnvRoot.add(pad);
+
+    // 山火區
+    const fireGroup = new THREE.Group();
+    fireGroup.position.set(-3.2, 0, -7.2);
+    const fireCore = new THREE.Mesh(
+        new THREE.ConeGeometry(0.55, 1.4, 8),
+        new THREE.MeshStandardMaterial({
+            color: 0xff6b35,
+            emissive: 0xff4500,
+            emissiveIntensity: 0.85,
+            transparent: true,
+            opacity: 0.9
+        })
+    );
+    fireCore.position.y = 0.7;
+    fireGroup.add(fireCore);
+    const fireGlow = new THREE.PointLight(0xff6a2a, 1.4, 12);
+    fireGlow.position.set(0, 1.2, 0);
+    fireGroup.add(fireGlow);
+    mainMenuFireLight = fireGlow;
+    mainMenuEnvRoot.add(fireGroup);
+
+    // 水源反光（water-drop pass 目標）
+    const water = new THREE.Mesh(
+        new THREE.CircleGeometry(1.1, 28),
+        new THREE.MeshStandardMaterial({
+            color: 0x2a6f8a,
+            emissive: 0x0a3040,
+            metalness: 0.7,
+            roughness: 0.25
+        })
+    );
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(-1.2, 0.04, -5.5);
+    mainMenuEnvRoot.add(water);
+
+    // 煙霧粒子
+    const smokeCount = 80;
+    const smokeGeo = new THREE.BufferGeometry();
+    const smokePos = new Float32Array(smokeCount * 3);
+    const smokeVel = [];
+    for (let i = 0; i < smokeCount; i += 1) {
+        smokePos[i * 3] = -3.2 + (Math.random() - 0.5) * 2;
+        smokePos[i * 3 + 1] = 0.5 + Math.random() * 2.5;
+        smokePos[i * 3 + 2] = -7.2 + (Math.random() - 0.5) * 2;
+        smokeVel.push({
+            y: 0.25 + Math.random() * 0.45,
+            x: (Math.random() - 0.5) * 0.2,
+            z: (Math.random() - 0.5) * 0.2
+        });
+    }
+    smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+    const smokeMat = new THREE.PointsMaterial({
+        color: 0x8a9098,
+        size: 0.35,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false
+    });
+    mainMenuSmoke = new THREE.Points(smokeGeo, smokeMat);
+    mainMenuSmoke.userData.vel = smokeVel;
+    mainMenuEnvRoot.add(mainMenuSmoke);
+
+    mainMenuScene.add(mainMenuEnvRoot);
+}
+
+// 主菜單預覽動畫循環（真·無人機飛行動畫，10 秒 loop）
+function animateMainMenuPreview(nowTs) {
     if (!mainMenuRenderer || !mainMenuScene || !mainMenuCamera) {
-        console.warn('⚠️ Cannot animate: renderer, scene, or camera not initialized');
         return;
     }
-    
-    animationTime += 0.016;  // 假設 60fps
-    
-    // 每 15 秒切換一次飛行模式
-    patternChangeTime += 0.016;
-    if (patternChangeTime > 15) {
-        patternChangeTime = 0;
-        const patterns = Object.values(FLIGHT_PATTERNS);
-        const currentIndex = patterns.indexOf(currentFlightPattern);
-        currentFlightPattern = patterns[(currentIndex + 1) % patterns.length];
-        console.log(`🔄 Switching to flight pattern: ${currentFlightPattern}`);
-    }
-    
-    // 無人機動畫
+
+    const ts = typeof nowTs === 'number' ? nowTs : performance.now();
+    if (!heroLoopLastTs) heroLoopLastTs = ts;
+    let dt = (ts - heroLoopLastTs) / 1000;
+    heroLoopLastTs = ts;
+    if (dt > 0.05) dt = 0.05;
+    heroLoopElapsed = (heroLoopElapsed + dt) % HERO_LOOP_DURATION;
+
+    const frame = sampleHeroCinematic(heroLoopElapsed);
+
     if (mainMenuDrone) {
-        // 計算飛行路徑
-        const flightPath = calculateFlightPath(animationTime, currentFlightPattern);
-        
-        // 應用位置
-        mainMenuDrone.position.x = flightPath.x;
-        mainMenuDrone.position.y = flightPath.y;
-        mainMenuDrone.position.z = flightPath.z;
-        
-        // 應用旋轉（根據飛行方向）
-        mainMenuDrone.rotation.y += 0.005;  // 慢速自轉
-        
-        // 根據飛行路徑添加傾斜效果（roll 和 pitch）
-        const baseRotationY = mainMenuDrone.rotation.y;
-        mainMenuDrone.rotation.z = flightPath.roll;  // 左右傾斜
-        mainMenuDrone.rotation.x = flightPath.pitch;  // 前後傾斜
-        
-        // 螺旋槳旋轉動畫（如果找到螺旋槳）
+        mainMenuDrone.position.set(frame.drone.x, frame.drone.y, frame.drone.z);
+        mainMenuDrone.rotation.set(frame.pitch, frame.yaw, frame.roll);
         mainMenuDrone.traverse((child) => {
-            if (child.isMesh) {
-                const meshName = child.name.toLowerCase();
-                if (meshName.includes('prop') || meshName.includes('propeller')) {
-                    child.rotation.y += 0.3;  // 快速旋轉
-                }
+            if (!child.isMesh) return;
+            const meshName = (child.name || '').toLowerCase();
+            if (meshName.includes('prop') || meshName.includes('propeller')) {
+                child.rotation.y += dt * 28;
             }
         });
     }
-    
-    // 相機動畫（跟隨無人機，但保持一定距離）
-    if (mainMenuDrone) {
-        // 相機跟隨無人機，但保持相對位置
-        const followDistance = 6;
-        const followHeight = 3;
-        
-        // 計算相機應該在的位置（在無人機後方和上方）
-        const dronePos = mainMenuDrone.position;
-        const cameraOffsetX = Math.sin(mainMenuDrone.rotation.y) * followDistance;
-        const cameraOffsetZ = Math.cos(mainMenuDrone.rotation.y) * followDistance;
-        
-        const targetCameraX = dronePos.x - cameraOffsetX;
-        const targetCameraZ = dronePos.z - cameraOffsetZ;
-        const targetCameraY = dronePos.y + followHeight;
-        
-        // 平滑移動相機（使用線性插值）
-        const lerpFactor = 0.05;
-        mainMenuCamera.position.x += (targetCameraX - mainMenuCamera.position.x) * lerpFactor;
-        mainMenuCamera.position.y += (targetCameraY - mainMenuCamera.position.y) * lerpFactor;
-        mainMenuCamera.position.z += (targetCameraZ - mainMenuCamera.position.z) * lerpFactor;
-        
-        // 相機始終看向無人機
-        mainMenuCamera.lookAt(dronePos.x, dronePos.y, dronePos.z);
-    } else {
-        // 如果沒有無人機，使用軌道動畫
-        cameraOrbitAngle += 0.003;
-        const cameraX = Math.cos(cameraOrbitAngle) * cameraOrbitRadius;
-        const cameraZ = Math.sin(cameraOrbitAngle) * cameraOrbitRadius;
-        const cameraY = 2 + Math.sin(animationTime * 0.5) * 0.5;
-        
-        mainMenuCamera.position.set(cameraX, cameraY, cameraZ);
-        mainMenuCamera.lookAt(0, 0, 0);
+
+    mainMenuCamera.position.set(frame.cam.x, frame.cam.y, frame.cam.z);
+    mainMenuCamera.lookAt(frame.look.x, frame.look.y, frame.look.z);
+
+    // 山火氛圍隨 mood 增強
+    if (mainMenuFireLight) {
+        mainMenuFireLight.intensity = 0.6 + frame.mood * (1.2 + Math.sin(heroLoopElapsed * 8) * 0.35);
     }
-    
-    // 燈光動畫（讓燈光輕微移動，增加動態感）
-    if (mainMenuScene.children) {
-        mainMenuScene.children.forEach((child) => {
-            if (child.type === 'PointLight') {
-                // 點光源輕微移動
-                const lightAngle = animationTime * 0.4;
-                if (child.userData.originalPosition) {
-                    const orig = child.userData.originalPosition;
-                    child.position.x = orig.x + Math.sin(lightAngle) * 1;
-                    child.position.z = orig.z + Math.cos(lightAngle) * 1;
-                }
-            } else if (child.type === 'DirectionalLight' && child.userData.isFillLight) {
-                // 補光輕微移動
-                const lightAngle = animationTime * 0.3;
-                child.position.x = Math.cos(lightAngle) * 5;
-                child.position.z = Math.sin(lightAngle) * 5;
+    if (mainMenuScene.fog && mainMenuScene.fog.density !== undefined) {
+        mainMenuScene.fog.density = 0.035 + frame.mood * 0.025;
+        mainMenuScene.fog.color.setHex(frame.mood > 0.5 ? 0x1a1210 : 0x0a1218);
+    }
+    if (mainMenuScene.background && mainMenuScene.background.isColor) {
+        mainMenuScene.background.setHex(frame.mood > 0.55 ? 0x14100e : 0x0a1218);
+    }
+
+    if (mainMenuSmoke && mainMenuSmoke.geometry) {
+        const pos = mainMenuSmoke.geometry.attributes.position;
+        const vel = mainMenuSmoke.userData.vel || [];
+        for (let i = 0; i < pos.count; i += 1) {
+            const v = vel[i] || { x: 0, y: 0.3, z: 0 };
+            pos.setX(i, pos.getX(i) + v.x * dt);
+            pos.setY(i, pos.getY(i) + v.y * dt * (0.5 + frame.mood));
+            pos.setZ(i, pos.getZ(i) + v.z * dt);
+            if (pos.getY(i) > 4.5) {
+                pos.setY(i, 0.4);
+                pos.setX(i, -3.2 + (Math.random() - 0.5) * 2);
+                pos.setZ(i, -7.2 + (Math.random() - 0.5) * 2);
             }
-        });
+        }
+        pos.needsUpdate = true;
+        mainMenuSmoke.material.opacity = 0.15 + frame.mood * 0.4;
     }
-    
+
     mainMenuRenderer.render(mainMenuScene, mainMenuCamera);
     mainMenuAnimationId = requestAnimationFrame(animateMainMenuPreview);
 }
@@ -3469,10 +3471,16 @@ function cleanupMainMenuPreview() {
         cancelAnimationFrame(mainMenuAnimationId);
         mainMenuAnimationId = null;
     }
+    heroLoopLastTs = 0;
+
+    if (mainMenuResizeHandler) {
+        window.removeEventListener('resize', mainMenuResizeHandler);
+        mainMenuResizeHandler = null;
+    }
     
     if (mainMenuRenderer) {
         const previewContainer = document.getElementById('main-menu-preview');
-        if (previewContainer && mainMenuRenderer.domElement) {
+        if (previewContainer && mainMenuRenderer.domElement && mainMenuRenderer.domElement.parentNode === previewContainer) {
             previewContainer.removeChild(mainMenuRenderer.domElement);
         }
         mainMenuRenderer.dispose();
@@ -3482,6 +3490,9 @@ function cleanupMainMenuPreview() {
     mainMenuScene = null;
     mainMenuCamera = null;
     mainMenuDrone = null;
+    mainMenuSmoke = null;
+    mainMenuFireLight = null;
+    mainMenuEnvRoot = null;
 }
 
 const MISSION_PREVIEW_META = {
@@ -3572,7 +3583,7 @@ document.addEventListener('keydown', function onModalEscapeKeydown(e) {
 window.showResultModal = function(data) {
     _modalFocusResultReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     console.log("🏆 顯示結算彈窗:", data);
-    logToConsole("📊 任務完成！正在顯示成績單...");
+    logToConsole("📊 任務完成。正在顯示成績單…");
     
     // 填寫數據
     const elBeacons = document.getElementById('res-beacons');
@@ -3591,7 +3602,7 @@ window.showResultModal = function(data) {
         || (isCityMissionScene() && data.mission !== 1);
 
     if (elRow1Label) {
-        elRow1Label.textContent = data.row1Label || (isMission2 ? '撲滅火點' : '巡檢回報 (Inspections)');
+        elRow1Label.textContent = data.row1Label || (isMission2 ? '撲滅火點' : '巡檢回報');
     }
     if (elRow2Label) {
         elRow2Label.textContent = data.row2Label || (isMission2 ? '全數撲滅' : '抵達終點');
@@ -3604,7 +3615,10 @@ window.showResultModal = function(data) {
             || (isMission2 ? `${data.beacons ?? 0} / ${requiredFires}` : `${data.beacons ?? 0} / ${requiredBeacons}`);
     }
     if (elBeaconsScore) elBeaconsScore.innerText = `+${data.row1Score ?? data.beaconsScore ?? 0}`;
-    if (elRow2Status) elRow2Status.innerText = data.row2Status || 'YES';
+    if (elRow2Status) {
+        const raw = data.row2Status || 'YES';
+        elRow2Status.innerText = (raw === 'YES' || raw === true) ? '是' : (raw === 'NO' || raw === false) ? '否' : String(raw);
+    }
     if (elExitScore) elExitScore.innerText = `+${data.row2Score ?? data.exitScore ?? 0}`;
     if (elTime) elTime.innerText = data.timeTierLabel ? `${data.time}s · ${data.timeTierLabel}` : `${data.time}s`;
     if (elTimeBonus) elTimeBonus.innerText = `+${data.timeBonus}`;
@@ -3720,10 +3734,10 @@ function checkTutorialProgress() {
     const coach = document.getElementById('tutorial-coach');
     if (!coach || coach.hidden) return;
     if (!tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
-    document.getElementById('tutorial-check').textContent = '✅ 完成！準備下一步。';
+    document.getElementById('tutorial-check').textContent = '✅ 完成。準備下一步。';
     if (tutorialStepIndex >= tutorialSteps.length - 1) {
         clearInterval(tutorialTimer); tutorialTimer = null;
-        document.getElementById('tutorial-title').textContent = '第一次飛行完成！';
+        document.getElementById('tutorial-title').textContent = '第一次飛行完成';
         document.getElementById('tutorial-instruction').textContent = '你已掌握建立、執行和觀察程式的基本流程。現在可嘗試改變距離或加入轉向。';
         return;
     }

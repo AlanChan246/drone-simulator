@@ -211,17 +211,23 @@ const assets = {
     kenneyPlotTile: null
 };
 
-// 須以 setPath 載入：Kenney GLB 內嵌貼圖路徑為相對於檔案目錄的 Textures/colormap.png
+// 固定次序的混合模板：Starter City 提供低樓／綠化，Commercial Kit 提供商業大樓。
+// 每項保留自己的 baseDir，避免 GLB 的相對貼圖路徑解析到另一個資源包。
+const KENNEY_STARTER_CITY_DIR = 'assets/models/kenney/starter-city/models/';
 const KENNEY_COMMERCIAL_DIR = 'assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/';
-const KENNEY_DISTRICT_FILENAMES = [
-    'low-detail-building-a.glb',
-    'low-detail-building-f.glb',
-    'low-detail-building-i.glb',
-    'low-detail-building-wide-a.glb',
-    'building-g.glb',
-    'building-c.glb',
-    'building-skyscraper-a.glb',
-    'building-skyscraper-b.glb'
+const KENNEY_DISTRICT_MANIFEST = [
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-a.glb', role: 'building' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-b.glb', role: 'building' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-c.glb', role: 'building' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-d.glb', role: 'building' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-garage.glb', role: 'building' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'grass-trees.glb', role: 'landscape' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'grass-trees-tall.glb', role: 'landscape' },
+    { dir: KENNEY_STARTER_CITY_DIR, name: 'pavement-fountain.glb', role: 'landscape' },
+    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-g.glb', role: 'building' },
+    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-c.glb', role: 'building' },
+    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-skyscraper-a.glb', role: 'building' },
+    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-skyscraper-b.glb', role: 'building' }
 ];
 
 function prepareKenneyDistrictModel(root) {
@@ -241,23 +247,27 @@ function prepareKenneyDistrictModel(root) {
 }
 
 async function loadKenneyDistrictTemplates() {
-    assets.kenneyDistrictTemplates = [];
+    // 固定索引等同 City Builder 的 structure id；避免並行載入完成次序令城市每次改變。
+    assets.kenneyDistrictTemplates = new Array(KENNEY_DISTRICT_MANIFEST.length).fill(null);
     // 每個檔案使用獨立 GLTFLoader + setPath，避免並行 load 時共用 loader 內部 path 狀態，
     // 造成 Textures/colormap.png 解析到錯誤目錄而整體載入失敗。
-    const promises = KENNEY_DISTRICT_FILENAMES.map(name => new Promise(resolve => {
+    const promises = KENNEY_DISTRICT_MANIFEST.map((entry, index) => new Promise(resolve => {
         const fileLoader = new THREE.GLTFLoader();
-        fileLoader.setPath(KENNEY_COMMERCIAL_DIR);
-        fileLoader.load(name, (gltf) => {
+        fileLoader.setPath(entry.dir);
+        fileLoader.load(entry.name, (gltf) => {
             prepareKenneyDistrictModel(gltf.scene);
-            assets.kenneyDistrictTemplates.push(gltf.scene);
-            console.log(`✅ Kenney district: ${name}`);
+            gltf.scene.userData.cityRole = entry.role;
+            gltf.scene.userData.cityAssetName = entry.name;
+            assets.kenneyDistrictTemplates[index] = gltf.scene;
+            console.log(`✅ Kenney district: ${entry.name}`);
             resolve();
         }, undefined, (err) => {
-            console.error(`❌ Kenney district load failed (${name}):`, err);
+            console.error(`❌ Kenney district load failed (${entry.name}):`, err);
             resolve();
         });
     }));
     await Promise.all(promises);
+    assets.kenneyDistrictTemplates = assets.kenneyDistrictTemplates.filter(Boolean);
     if (assets.kenneyDistrictTemplates.length === 0) {
         console.warn('⚠️ 任務一街區：無 Kenney 建築載入，將使用盒子牆。（請用本機 http 伺服器開啟專案，勿用 file://）');
     } else {
@@ -265,6 +275,8 @@ async function loadKenneyDistrictTemplates() {
     }
 }
 
+// 任務道路沿用已校準 N/E/S/W 開口的 Kenney Road Kit；Starter Kit 道路的
+// 模型朝向不同，直接套用會令視覺道路與碰撞網格不一致。
 const KENNEY_ROADS_DIR = 'assets/models/kenney_city-kit-roads/Models/GLB format/';
 const KENNEY_COLORMAP_URL = KENNEY_ROADS_DIR + 'Textures/colormap.png';
 let _kenneyColormapTex = null;
@@ -304,25 +316,15 @@ function getKenneyRoadReferenceMaterial() {
     return found;
 }
 
-/** 建築格地塊：保留 GLB 的 UV，貼圖與道路相同（tile-low 的 UV 常落在色票空白→全白） */
+/** 建築格使用暖灰石材色，避免純白地塊令建築底部失去輪廓。 */
 function applyPlotMaterialsLikeRoad(root) {
-    const ref = getKenneyRoadReferenceMaterial();
-    const plotPhong = (ref && ref.map)
-        ? new THREE.MeshPhongMaterial({
-            map: ref.map,
-            color: ref.color && ref.color.clone ? ref.color.clone() : new THREE.Color(0xcccccc),
-            shininess: 14,
-            polygonOffset: true,
-            polygonOffsetFactor: 4,
-            polygonOffsetUnits: 4
-        })
-        : new THREE.MeshPhongMaterial({
-            color: 0x3a4552,
-            shininess: 10,
-            polygonOffset: true,
-            polygonOffsetFactor: 4,
-            polygonOffsetUnits: 4
-        });
+    const plotPhong = new THREE.MeshPhongMaterial({
+        color: 0xaaa79e,
+        shininess: 5,
+        polygonOffset: true,
+        polygonOffsetFactor: 4,
+        polygonOffsetUnits: 4
+    });
     root.traverse(child => {
         if (!child.isMesh) return;
         child.material = plotPhong.clone();
@@ -333,7 +335,7 @@ function applyPlotMaterialsLikeRoad(root) {
 
 function createSimplePlotPlane(cellSize) {
     const mat = new THREE.MeshPhongMaterial({
-        color: 0x3a4552,
+        color: 0xaaa79e,
         shininess: 10,
         polygonOffset: true,
         polygonOffsetFactor: 4,
@@ -367,13 +369,16 @@ function prepareKenneyRoadModel(root) {
     root.traverse(child => {
         if (!child.isMesh || !child.material) return;
         child.castShadow = false;
-        child.receiveShadow = true;
+        // 多個共面道路 tile 接收大型建築陰影時會出現 shadow acne／三角鋸齒。
+        // 道路保留光照材質，但不接收即時 shadow map。
+        child.receiveShadow = false;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach(m => {
             if (!m) return;
             m.polygonOffset = true;
-            m.polygonOffsetFactor = 2;
-            m.polygonOffsetUnits = 2;
+            // 負值令道路穩定顯示在城市底面／相鄰地塊之前。
+            m.polygonOffsetFactor = -2;
+            m.polygonOffsetUnits = -2;
             if ('roughness' in m && m.roughness !== undefined) {
                 m.roughness = 0.82;
                 if ('metalness' in m && m.metalness !== undefined) m.metalness = Math.min(0.06, m.metalness);
@@ -1092,6 +1097,8 @@ function createKenneyRoadInstance(templateScene, cellSize, rotSteps) {
     let box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const maxXZ = Math.max(size.x, size.z, 1e-3);
+    // 精確填滿一格；道路已透過 polygon offset 並停用接收陰影處理深度衝突，
+    // 不再縮小 tile，避免格與格之間出現可見細縫。
     const s = cellSize / maxXZ;
     model.scale.setScalar(s);
     model.updateMatrixWorld(true);
@@ -1106,7 +1113,7 @@ function createKenneyRoadInstance(templateScene, cellSize, rotSteps) {
     outer.traverse(obj => {
         if (obj.isMesh) {
             obj.castShadow = false;
-            obj.receiveShadow = true;
+            obj.receiveShadow = false;
         }
     });
     return outer;
@@ -1379,8 +1386,17 @@ async function init3D() {
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048; 
     dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.bias = -0.0008;
-    if (dirLight.shadow.normalBias !== undefined) dirLight.shadow.normalBias = 0.03;
+    // 預設 OrthographicShadowCamera 只有約 10×10，對厘米制城市會形成可見的
+    // frustum 邊界。覆蓋整張 12×12 任務地圖及外圍，消除橫跨地面的黑線。
+    dirLight.shadow.camera.left = -2800;
+    dirLight.shadow.camera.right = 2800;
+    dirLight.shadow.camera.top = 2800;
+    dirLight.shadow.camera.bottom = -2800;
+    dirLight.shadow.camera.near = 10;
+    dirLight.shadow.camera.far = 5000;
+    dirLight.shadow.camera.updateProjectionMatrix();
+    dirLight.shadow.bias = -0.00015;
+    if (dirLight.shadow.normalBias !== undefined) dirLight.shadow.normalBias = 1.2;
     scene.add(dirLight);
 
     scene.userData.mainHemiLight = hemiLight;
@@ -1768,8 +1784,18 @@ function buildUrbanMazeVisuals(mazeGrid, opts) {
                     const tpl = assets.kenneyDistrictTemplates[tIdx];
                     const rot = (i + j * 2) % 4;
                     const heightCap = 230 + ((i + j) % 5) * 28;
+                    if (tpl.userData.cityRole === 'building') {
+                        const foundation = new THREE.Mesh(
+                            new THREE.BoxGeometry(cellSize * 0.82, 8, cellSize * 0.82),
+                            new THREE.MeshPhongMaterial({ color: 0x3f454c, shininess: 4 })
+                        );
+                        foundation.position.set(x, 4, z);
+                        foundation.castShadow = false;
+                        foundation.receiveShadow = false;
+                        addPiece(foundation);
+                    }
                     const building = createKenneyBuildingInstance(tpl, cellSize, rot, heightCap);
-                    building.position.set(x, 0, z);
+                    building.position.set(x, tpl.userData.cityRole === 'building' ? 8 : 0, z);
                     addPiece(building);
                 } else {
                     const wall = new THREE.Mesh(wallGeo, wallMat);
@@ -1836,24 +1862,76 @@ function buildUrbanMazeVisuals(mazeGrid, opts) {
     }
 }
 
+/** 任務一外圍：低細節城市延伸、綠化與封鎖路障；純視覺，不參與任務碰撞。 */
+function buildMission1Perimeter(cellSize, halfWidth, halfDepth) {
+    const buildings = assets.kenneyDistrictTemplates.filter(t => t.userData.cityRole === 'building');
+    const landscapes = assets.kenneyDistrictTemplates.filter(t => t.userData.cityRole === 'landscape');
+    const positions = [];
+    for (let n = -4; n <= 4; n++) {
+        const p = n * cellSize * 1.25;
+        positions.push({ x:p, z:-halfDepth - 260 }, { x:p, z:halfDepth + 260 });
+        positions.push({ x:-halfWidth - 260, z:p }, { x:halfWidth + 260, z:p });
+    }
+    positions.forEach((pos, index) => {
+        const useLandscape = landscapes.length && index % 5 === 2;
+        const list = useLandscape ? landscapes : buildings;
+        if (!list.length) return;
+        const tpl = list[(index * 3 + 1) % list.length];
+        const obj = createKenneyBuildingInstance(tpl, cellSize * 0.92, index % 4, useLandscape ? 130 : 155);
+        obj.position.set(pos.x, 0, pos.z);
+        obj.traverse(child => {
+            child.isWall = false;
+            if (child.isMesh) {
+                child.castShadow = false;
+                child.receiveShadow = false;
+            }
+        });
+        obj.isWall = false;
+        environmentGroup.add(obj);
+    });
+
+    const barrierMat = new THREE.MeshPhongMaterial({ color: 0xd07a35, shininess: 8 });
+    [
+        { x:0, z:-halfDepth - 70, ry:0 }, { x:0, z:halfDepth + 70, ry:0 },
+        { x:-halfWidth - 70, z:0, ry:Math.PI / 2 }, { x:halfWidth + 70, z:0, ry:Math.PI / 2 }
+    ].forEach(pos => {
+        const barrier = new THREE.Group();
+        for (let k = -1; k <= 1; k++) {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(70, 10, 10), barrierMat);
+            rail.position.set(0, 18 + (k + 1) * 15, 0);
+            rail.rotation.z = k % 2 ? -0.12 : 0.12;
+            barrier.add(rail);
+        }
+        barrier.position.set(pos.x, 0, pos.z);
+        barrier.rotation.y = pos.ry;
+        barrier.traverse(child => { child.isWall = false; if (child.isMesh) child.castShadow = false; });
+        environmentGroup.add(barrier);
+    });
+}
+
 function createMazeMap() {
-    createHolodeckRoom();
     loadRoadOverridesFromStorage();
     clearRoadPieceRegistry();
 
-    scene.background = new THREE.Color(0x1e2228);
-    scene.fog = new THREE.Fog(0x1e2228, 1600, 5800);
+    // Starter City Builder 的清晰俯視城市語言；保留霧霾以呼應震後情境。
+    scene.background = new THREE.Color(0x9aa9ad);
+    scene.fog = new THREE.Fog(0x9aa9ad, 2100, 5200);
     
-    // 地面分層：網格與路面勿太近，否則與 Holodeck 底面（y≈0）易 Z-fighting / 陰影粉刺閃爍
-    const mazeGridY = 0.06;
+    // 實體道路已提供清楚路線；任務一不疊加 GridHelper，避免深度衝突（Z-fighting）。
     const mazeRoadY = 0.38;
     tunnelMazeRoadSurfaceY = mazeRoadY;
     ensureRoadEditorHighlightMesh();
 
-    // 1. 地面網格（街區：較低調）
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x3d5566, 0x252a32);
-    gridHelper.position.y = mazeGridY;
-    environmentGroup.add(gridHelper);
+    // 1. 城市基底（不再疊加 GridHelper）
+    const cityBase = new THREE.Mesh(
+        new THREE.PlaneGeometry(3600, 3600),
+        new THREE.MeshLambertMaterial({ color: 0x4f5e50 })
+    );
+    cityBase.rotation.x = -Math.PI / 2;
+    cityBase.position.y = -0.05;
+    // 道路 tile 的細縫會露出此底面；若接收高樓陰影便形成黑線／黑塊。
+    cityBase.receiveShadow = false;
+    environmentGroup.add(cityBase);
 
     // 2. 迷宮設計 (1: 牆壁, 0: 通路, 2: 指揮所 Alpha, 3: 集結區 Bravo, 4: 巡檢回報點)
     const mazeGrid = [
@@ -1900,6 +1978,7 @@ function createMazeMap() {
             tunnelGoalCell = { i, j };
         }
     });
+    buildMission1Perimeter(cellSize, mazeGrid[0].length * cellSize / 2, mazeGrid.length * cellSize / 2);
     updateRoadEditorHighlight();
     updateRoadEditorPanel();
 }
