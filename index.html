@@ -8,17 +8,17 @@
     <meta property="og:title" content="Drone Simulator — 救災無人機訓練">
     <meta property="og:description" content="用積木程式操控無人機，在震後街區與災區場景中完成救災任務。">
     <meta property="og:type" content="website">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%23080d12'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2352d3e6'/%3E%3Cpath stroke='%2352d3e6' stroke-width='1.5' d='M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%23000000'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23ffffff'/%3E%3Cpath stroke='%23ffffff' stroke-width='1.5' d='M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="node_modules/three/build/three.min.js"></script>
     <script src="node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
     <script src="node_modules/blockly/blockly_compressed.js"></script>
     <script src="node_modules/blockly/blocks_compressed.js"></script>
     <script src="node_modules/blockly/javascript_compressed.js"></script>
     <script src="node_modules/blockly/msg/en.js"></script>
-    <link rel="stylesheet" href="style.css?v=hero-video-nowm-20260722">
+    <link rel="stylesheet" href="style.css?v=spacex-hub-20260724">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -32,8 +32,8 @@
     <div id="app-loading" class="app-loading" role="status" aria-live="polite">
         <div class="app-loading__mark" aria-hidden="true">
             <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="3" fill="#52d3e6"/>
-                <path stroke="#52d3e6" stroke-width="1.5" d="M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4"/>
+                <circle cx="16" cy="16" r="3" fill="#ffffff"/>
+                <path stroke="#ffffff" stroke-width="1.5" d="M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4"/>
             </svg>
         </div>
         <strong>正在準備無人機訓練場…</strong>
@@ -64,52 +64,36 @@
             }
         })();
     </script>
-    <!-- 主選單：模式優先 hub -->
+    <!-- 主選單：SpaceX 全幅影片 hero -->
     <div id="main-menu" class="menu-screen menu-screen--hub">
-        <header class="hub-header" role="banner">
+        <div class="hub-hero" id="main-menu-preview" aria-hidden="true">
+            <video
+                id="hero-loop-video"
+                class="hub-hero__video"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="auto"
+                poster="assets/video/hero-ai-first-three-poster.jpg"
+                aria-label="救災無人機任務預告短片"
+            >
+                <source src="assets/video/hero-ai-first-three.webm" type="video/webm">
+                <source src="assets/video/hero-ai-first-three.mp4" type="video/mp4">
+            </video>
+        </div>
+        <header class="hub-header hub-header--overlay" role="banner">
             <div class="hub-header__brand hub-header__brand--compact">
-                <span class="hub-header__mark" aria-hidden="true"></span>
-                <span class="hub-header__tagline">Code to rescue</span>
+                <span class="hub-header__tagline">CODE TO RESCUE</span>
             </div>
         </header>
         <main class="hub-main" id="main-menu-content" aria-labelledby="hub-brand-heading">
             <p class="hub-main__eyebrow">救災無人機訓練</p>
-            <h1 class="hub-main__brand" id="hub-brand-heading">Drone Simulator</h1>
+            <h1 class="hub-main__brand" id="hub-brand-heading">DRONE SIMULATOR</h1>
             <p class="hub-main__lead">用積木程式操控無人機，在震後街區與災區場景中完成救災任務。</p>
-            <div class="hub-layout">
-                <div class="hub-preview-wrap">
-                    <div class="menu-preview hub-menu-preview" id="main-menu-preview">
-                        <video
-                            id="hero-loop-video"
-                            class="menu-preview__video"
-                            autoplay
-                            muted
-                            loop
-                            playsinline
-                            preload="auto"
-                            aria-label="救災無人機任務預告短片"
-                        >
-                            <source src="assets/video/hero-loop.webm" type="video/webm">
-                            <source src="assets/video/hero-loop.mp4" type="video/mp4">
-                        </video>
-                    </div>
-                </div>
-                <div class="hub-mode-list" role="list">
-                    <article class="mode-row mode-row--primary" role="listitem">
-                        <div class="mode-row__copy">
-                            <h2 class="mode-row__title">競賽任務</h2>
-                            <p class="mode-row__desc">任務目標與計分、巡檢回報與計時加分。</p>
-                        </div>
-                        <button type="button" class="menu-btn mode-row__cta" onclick="showMissionSelect()">進入競賽</button>
-                    </article>
-                    <article class="mode-row mode-row--secondary" role="listitem">
-                        <div class="mode-row__copy">
-                            <h2 class="mode-row__title">自由練習</h2>
-                            <p class="mode-row__desc">自由探索場景，適合測試程式。</p>
-                        </div>
-                        <button type="button" class="menu-btn menu-btn--ghost mode-row__cta" onclick="startFreePlay()">開始練習</button>
-                    </article>
-                </div>
+            <div class="hub-cta-row">
+                <button type="button" class="menu-btn menu-btn--ghost-pill" onclick="showMissionSelect()">進入競賽</button>
+                <button type="button" class="hub-text-link" onclick="startFreePlay()">開始練習</button>
             </div>
             <p class="hub-onboarding">第一次使用？<button type="button" class="hub-onboarding__link" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">開始導覽教學</button></p>
         </main>
@@ -121,13 +105,13 @@
         </div>
     </div>
 
-    <!-- 任務選擇畫面（與主選單 hub 頂列對齊） -->
+    <!-- 任務選擇畫面（SpaceX brand list） -->
     <div id="mission-select-menu" class="menu-screen menu-screen--mission" style="display: none;">
-        <header class="hub-header hub-header--mission" role="banner">
+        <header class="hub-header hub-header--overlay hub-header--mission" role="banner">
             <button type="button" class="back-btn back-btn--header" onclick="showMainMenu()" aria-label="返回主選單">←</button>
             <div class="hub-header__brand">
-                <span class="hub-header__title">Drone Simulator</span>
-                <span class="hub-header__tagline">Code to rescue</span>
+                <span class="hub-header__title">DRONE SIMULATOR</span>
+                <span class="hub-header__tagline">CODE TO RESCUE</span>
             </div>
             <div class="hub-header__spacer" aria-hidden="true"></div>
         </header>
@@ -150,7 +134,7 @@
                 </div>
                 <div class="mission-select-footer" aria-hidden="true">
                     <div class="footer-logo footer-logo--mission">
-                        <p class="footer-logo__muted">Drone Simulator</p>
+                        <p class="footer-logo__muted">DRONE SIMULATOR</p>
                     </div>
                 </div>
             </div>

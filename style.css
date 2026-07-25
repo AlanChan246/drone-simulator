@@ -4,7 +4,7 @@
    ========================================== */
 
 :root {
-    /* Flight Deck — sole visual system */
+    /* Flight Deck — simulator workspace (#game-interface) */
     --flight-bg: #080d12;
     --flight-panel: rgba(10, 18, 25, 0.94);
     --flight-panel-soft: rgba(12, 22, 31, 0.84);
@@ -16,6 +16,24 @@
     --flight-text: #ecf4f7;
     --flight-muted: #8fa6b3;
     --rgb-flight-cyan: 82, 211, 230;
+
+    /* SpaceX brand — menus / boot / gates (docs/design/spacex/DESIGN.md) */
+    --brand-canvas: #000000;
+    --brand-canvas-soft: #0a0a0a;
+    --brand-canvas-cool: #f0f0fa;
+    --brand-ink: #ffffff;
+    --brand-ink-mute: #f0f0fa;
+    --brand-ink-dim: #5a5a5f;
+    --brand-hairline: #3a3a3f;
+    --brand-pill-radius: 32px;
+    --brand-space-xxs: 4px;
+    --brand-space-xs: 8px;
+    --brand-space-sm: 12px;
+    --brand-space-md: 16px;
+    --brand-space-lg: 18px;
+    --brand-space-xl: 24px;
+    --brand-space-xxl: 32px;
+    --brand-space-huge: 48px;
 
     --bg-color: var(--flight-bg);
     --panel-bg: #101a23;
@@ -59,8 +77,12 @@
     --chrome-bar-bg: rgba(7, 12, 17, 0.97);
     --chrome-bar-border: 1px solid var(--flight-line);
 
+    /* Flight Deck type (sim workspace) */
     --font-sans: "IBM Plex Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    /* SpaceX brand type (Inter = documented D-DIN substitute) */
+    --font-brand-display: "Inter", "Arial Narrow", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-brand: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, Verdana, sans-serif;
 
     --z-base: 10;
     --z-panel: 100;
@@ -91,13 +113,13 @@ summary:focus-visible,
 }
 .menu-btn:focus-visible:hover {
     box-shadow:
-        0 0 0 2px rgba(56, 189, 248, 0.5),
-        var(--shadow-cta-hover);
+        0 0 0 2px rgba(255, 255, 255, 0.45),
+        none;
 }
 .mission-btn:focus-visible:hover {
     box-shadow:
-        0 0 0 2px rgba(56, 189, 248, 0.5),
-        var(--shadow-cta-hover);
+        0 0 0 2px rgba(255, 255, 255, 0.45),
+        none;
 }
 .back-btn:focus-visible:hover {
     box-shadow:
@@ -1105,7 +1127,8 @@ body.blockly-resizing .blockly-resizer {
 }
 
 /* ==========================================
-   主選單與任務選擇畫面樣式
+   主選單與任務選擇畫面樣式 — SpaceX brand surfaces
+   (docs/design/spacex/DESIGN.md). Flight Deck tokens stay for #game-interface.
    ========================================== */
 .menu-screen {
     position: fixed;
@@ -1119,40 +1142,24 @@ body.blockly-resizing .blockly-resizer {
     z-index: var(--z-modal);
     overflow: hidden;
     box-sizing: border-box;
+    background: var(--brand-canvas);
+    color: var(--brand-ink);
+    font-family: var(--font-brand);
 }
 
-/* 深色飛行甲板底＋細網格（非紫藍霓虹） */
-.menu-screen::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(var(--rgb-flight-cyan), 0.12), transparent 55%),
-        var(--flight-bg);
-    opacity: 1;
-    z-index: -2;
-}
-
+.menu-screen::before,
 .menu-screen::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-        linear-gradient(rgba(var(--rgb-flight-cyan), 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(var(--rgb-flight-cyan), 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity: 0.45;
-    z-index: -1;
-    pointer-events: none;
+    display: none;
 }
 
-/* 主選單：品牌主導 + 非對稱模式列 */
+.menu-screen button:not(:disabled):focus-visible,
+.menu-screen a[href]:focus-visible {
+    outline: 2px solid var(--brand-ink);
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+/* --- Hub: full-bleed video film title card --- */
 #main-menu.menu-screen--hub {
     display: flex;
     flex-direction: column;
@@ -1160,19 +1167,43 @@ body.blockly-resizing .blockly-resizer {
     overflow-x: hidden;
 }
 
+.hub-hero {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: var(--brand-canvas);
+    pointer-events: none;
+}
+
+.hub-hero__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: var(--brand-canvas);
+}
+
+.hub-hero canvas {
+    display: none !important;
+}
+
 .hub-header {
     flex: 0 0 auto;
-    min-height: 52px;
-    max-height: 56px;
+    min-height: 56px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 0 clamp(1rem, 4vw, 3rem);
+    padding: var(--brand-space-xl) var(--brand-space-xxl);
     box-sizing: border-box;
-    background: var(--chrome-bar-bg);
-    border-bottom: var(--chrome-bar-border);
-    backdrop-filter: blur(10px);
     z-index: 2;
+}
+
+.hub-header--overlay {
+    position: relative;
+    background: transparent;
+    border-bottom: none;
+    backdrop-filter: none;
 }
 
 .hub-header__brand {
@@ -1189,27 +1220,27 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .hub-header__mark {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    border: 1.5px solid var(--flight-cyan);
-    background:
-        radial-gradient(circle at center, var(--flight-cyan) 2px, transparent 2.5px);
-    flex-shrink: 0;
+    display: none;
 }
 
 .hub-header__title {
-    font-size: clamp(0.95rem, 2vw, 1.1rem);
-    font-weight: 600;
-    color: var(--flight-text);
-    letter-spacing: -0.01em;
+    font-family: var(--font-brand-display);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--brand-ink);
+    letter-spacing: 1.17px;
+    text-transform: uppercase;
+    line-height: 0.94;
 }
 
 .hub-header__tagline {
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--flight-cyan);
-    letter-spacing: 0.04em;
+    font-family: var(--font-brand);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--brand-ink-mute);
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
+    line-height: 2;
 }
 
 .hub-header__nav {
@@ -1220,156 +1251,128 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .hub-header__link {
-    color: #e2e8f0;
-    font-size: 0.875rem;
-    font-weight: 600;
+    color: var(--brand-ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 1.17px;
+    text-transform: uppercase;
     text-decoration: none;
     padding: 0.5rem 0.25rem;
-    border-radius: 6px;
 }
 
 .hub-header__link:hover {
-    color: #ffffff;
     text-decoration: underline;
 }
 
 .hub-main {
+    position: relative;
+    z-index: 1;
     flex: 1 1 auto;
     width: 100%;
-    max-width: 1080px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem) 2.5rem;
+    padding: clamp(2.5rem, 8vh, 5rem) clamp(1.25rem, 5vw, 3rem) var(--brand-space-huge);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    justify-content: flex-end;
     text-align: left;
-    z-index: 1;
 }
 
 .hub-main__eyebrow {
     margin: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--flight-cyan);
+    font-family: var(--font-brand);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.96px;
+    line-height: 2;
+    color: var(--brand-ink-mute);
 }
 
 .hub-main__brand {
-    margin: 0.35rem 0 0;
-    font-size: clamp(2.4rem, 7vw, 3.75rem);
+    margin: var(--brand-space-xs) 0 0;
+    font-family: var(--font-brand-display);
+    font-size: clamp(2.5rem, 8vw, 5rem);
     font-weight: 700;
-    color: var(--flight-text);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    color: var(--brand-ink);
+    line-height: 0.95;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
     text-wrap: balance;
 }
 
 .hub-main__h1 {
     margin: 0;
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-family: var(--font-brand-display);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
     font-weight: 700;
-    color: var(--flight-text);
+    color: var(--brand-ink);
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
 }
 
 .hub-main__lead {
-    margin: 0.85rem 0 0;
+    margin: var(--brand-space-lg) 0 0;
     max-width: 34rem;
-    font-size: 1.05rem;
-    line-height: 1.65;
-    color: var(--flight-muted);
+    font-family: var(--font-brand);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.7;
+    letter-spacing: 0.32px;
+    color: var(--brand-ink-mute);
 }
 
-.hub-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    gap: clamp(1.25rem, 3vw, 2rem);
-    align-items: stretch;
-    width: 100%;
-    margin-top: 2rem;
-}
-
-.hub-preview-wrap {
-    width: 100%;
-    min-width: 0;
-    margin-top: 0;
-}
-
-.hub-mode-list {
+.hub-cta-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    min-width: 0;
-    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--brand-space-xl);
+    margin-top: var(--brand-space-xxl);
 }
 
-.mode-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.85rem;
-    padding: 1.15rem 1.25rem 1.2rem;
-    background: var(--flight-panel-soft);
-    border: 1px solid var(--flight-line);
-    border-radius: 12px;
-    transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.mode-row--primary {
-    border-color: rgba(var(--rgb-flight-cyan), 0.4);
-    background: linear-gradient(160deg, rgba(var(--rgb-flight-cyan), 0.1) 0%, var(--flight-panel-soft) 55%);
-}
-
-.mode-row--secondary {
-    padding: 1rem 1.15rem;
-}
-
-.mode-row:hover {
-    border-color: rgba(var(--rgb-flight-cyan), 0.55);
-}
-
-.mode-row__title {
+.hub-text-link {
+    background: none;
+    border: none;
+    padding: 0;
     margin: 0;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--flight-text);
-    letter-spacing: -0.01em;
-}
-
-.mode-row__desc {
-    margin: 0.35rem 0 0;
-    font-size: 0.9rem;
+    color: var(--brand-ink);
+    font-family: var(--font-brand);
+    font-size: 16px;
+    font-weight: 400;
     line-height: 1.5;
-    color: var(--flight-muted);
+    letter-spacing: 0.32px;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
-.mode-row__cta {
-    width: 100%;
-    margin-top: 0.15rem;
-    min-height: 44px;
+.hub-text-link:hover {
+    color: var(--brand-ink-mute);
 }
 
-/* 舊 mode-card 兼容（若殘留） */
-.hub-mode-cards {
-    display: none;
-}
-
-.mode-card {
+/* Legacy layout stubs (removed from hub markup) */
+.hub-layout,
+.hub-preview-wrap,
+.hub-mode-list,
+.mode-row,
+.hub-mode-cards,
+.mode-card,
+.menu-preview {
     display: none;
 }
 
 .hub-onboarding {
-    margin: 1.75rem 0 0;
-    font-size: 0.9rem;
-    color: var(--flight-muted);
+    margin: var(--brand-space-xxl) 0 0;
+    font-size: 13.008px;
+    line-height: 1.5;
+    color: var(--brand-ink-mute);
 }
 
 .hub-onboarding__link {
-    color: var(--flight-cyan);
-    font-weight: 600;
-    text-decoration: none;
+    color: var(--brand-ink);
+    font-weight: 400;
+    text-decoration: underline;
     margin-left: 0.35rem;
     background: none;
     border: none;
@@ -1379,40 +1382,27 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .hub-onboarding__link:hover {
-    text-decoration: underline;
-    color: #7ee7f5;
-}
-
-@media (max-width: 900px) {
-    .hub-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .hub-main {
-        text-align: left;
-    }
-
-    .hub-main__lead {
-        font-size: 1rem;
-    }
+    color: var(--brand-ink-mute);
 }
 
 .menu-btn {
-    background: var(--flight-cyan);
-    border: 1px solid transparent;
-    color: #041018;
-    padding: 12px 20px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-family: inherit;
-    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--brand-ink);
+    color: var(--brand-ink);
+    padding: var(--brand-space-lg) var(--brand-space-xl);
+    font-size: 13.008px;
+    font-weight: 700;
+    font-family: var(--font-brand);
+    border-radius: var(--brand-pill-radius);
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    box-shadow: var(--shadow-cta);
-    text-transform: none;
-    letter-spacing: 0.01em;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    box-shadow: none;
+    text-transform: uppercase;
+    letter-spacing: 1.17px;
+    line-height: 0.94;
     position: relative;
     overflow: hidden;
+    min-height: 50px;
 }
 
 .menu-btn::before {
@@ -1420,82 +1410,34 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .menu-btn:hover {
-    background: #6adced;
+    background: var(--brand-canvas-cool);
+    color: var(--brand-canvas);
+    border-color: var(--brand-canvas-cool);
     transform: none;
-    box-shadow: var(--shadow-cta-hover);
+    box-shadow: none;
 }
 
 .menu-btn:active {
     transform: scale(0.98);
 }
 
+.menu-btn--ghost-pill,
 .menu-btn--ghost {
     background: transparent;
-    color: var(--flight-text);
-    border-color: var(--flight-line);
+    color: var(--brand-ink);
+    border-color: var(--brand-ink);
     box-shadow: none;
 }
 
+.menu-btn--ghost-pill:hover,
 .menu-btn--ghost:hover {
-    background: rgba(var(--rgb-flight-cyan), 0.1);
-    border-color: rgba(var(--rgb-flight-cyan), 0.45);
-    color: var(--flight-text);
+    background: var(--brand-canvas-cool);
+    color: var(--brand-canvas);
+    border-color: var(--brand-canvas-cool);
     box-shadow: none;
 }
 
-.menu-preview {
-    width: 100%;
-    height: 100%;
-    min-height: 220px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--flight-line);
-    background: #000;
-    position: relative;
-}
-
-#main-menu .hub-menu-preview {
-    height: 100%;
-    min-height: 240px;
-    max-height: none;
-    max-width: none;
-    margin: 0;
-}
-
-.menu-preview__video {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    background: #000;
-}
-
-.menu-preview canvas {
-    display: none !important;
-}
-
-/* 預覽框網格（影片之下，僅作輕微紋理；影片蓋住時幾乎不可見） */
-.menu-preview::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-        linear-gradient(rgba(var(--rgb-flight-cyan), 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(var(--rgb-flight-cyan), 0.06) 1px, transparent 1px);
-    background-size: 32px 32px;
-    opacity: 0.2;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* 任務選擇畫面樣式（與 hub 頂列一致） */
+/* --- Mission select --- */
 #mission-select-menu.menu-screen--mission {
     display: flex;
     flex-direction: column;
@@ -1504,6 +1446,7 @@ body.blockly-resizing .blockly-resizer {
     box-sizing: border-box;
     height: 100dvh;
     max-height: 100dvh;
+    background: var(--brand-canvas);
 }
 
 .hub-header--mission {
@@ -1518,6 +1461,7 @@ body.blockly-resizing .blockly-resizer {
 .hub-header--mission .hub-header__brand {
     justify-self: center;
     text-align: center;
+    align-items: center;
 }
 
 .hub-header__spacer {
@@ -1543,13 +1487,15 @@ body.blockly-resizing .blockly-resizer {
     padding: 0 clamp(1rem, 4vw, 2.5rem) 1.5rem;
     box-sizing: border-box;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 .back-btn {
-    background: rgba(var(--rgb-flight-cyan), 0.08);
-    border: 1px solid var(--flight-line);
-    color: var(--flight-cyan);
-    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--brand-hairline);
+    color: var(--brand-ink);
+    border-radius: 4px;
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, color 0.2s ease;
     display: flex;
@@ -1560,9 +1506,9 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .back-btn:hover {
-    background-color: rgba(var(--rgb-flight-cyan), 0.18);
-    color: var(--flight-text);
-    border-color: rgba(var(--rgb-flight-cyan), 0.5);
+    background-color: var(--brand-canvas-soft);
+    color: var(--brand-ink);
+    border-color: var(--brand-ink);
     box-shadow: none;
     transform: none;
 }
@@ -1575,6 +1521,8 @@ body.blockly-resizing .blockly-resizer {
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
@@ -1583,38 +1531,36 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .mission-select-header {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    margin-top: 0.5rem;
+    text-align: left;
+    margin-bottom: var(--brand-space-xl);
+    margin-top: var(--brand-space-md);
     flex: 0 0 auto;
 }
 
 .mission-select-title {
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-family: var(--font-brand-display);
+    font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 700;
-    color: var(--flight-text);
+    color: var(--brand-ink);
     margin: 0;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    text-transform: none;
-    font-family: inherit;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
 }
 
 .mission-select-subtitle {
-    margin: 0.5rem 0 0;
-    font-size: 1rem;
-    color: var(--flight-muted);
+    margin: var(--brand-space-sm) 0 0;
+    font-size: 16px;
+    color: var(--brand-ink-mute);
     line-height: 1.55;
+    letter-spacing: 0.32px;
     max-width: 28rem;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 .mission-select-body {
     display: flex;
     flex: 1 1 auto;
     gap: clamp(1rem, 3vw, 2.5rem);
-    padding: 0 clamp(0.25rem, 2vw, 1.5rem);
+    padding: 0;
     min-height: 0;
     overflow: hidden;
     height: auto;
@@ -1627,30 +1573,31 @@ body.blockly-resizing .blockly-resizer {
     width: 35%;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding-top: 20px;
-    flex-shrink: 0;  /* 不允許縮小 */
-    overflow: visible;  /* 允許內容可見 */
+    gap: var(--brand-space-md);
+    padding-top: var(--brand-space-xs);
+    flex-shrink: 0;
+    overflow: visible;
 }
 
 .mission-btn {
-    background: var(--flight-panel-soft);
-    border: 1px solid var(--flight-line);
-    color: var(--flight-text);
-    padding: 18px 22px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    font-family: inherit;
-    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--brand-hairline);
+    border-left: 3px solid transparent;
+    color: var(--brand-ink-mute);
+    padding: var(--brand-space-lg) var(--brand-space-xl);
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: var(--font-brand);
+    border-radius: 4px;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
     box-shadow: none;
     text-transform: none;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     position: relative;
     overflow: hidden;
     width: 100%;
-    min-height: 48px;
+    min-height: 52px;
     text-align: left;
 }
 
@@ -1659,8 +1606,9 @@ body.blockly-resizing .blockly-resizer {
 }
 
 .mission-btn:hover {
-    background: rgba(var(--rgb-flight-cyan), 0.12);
-    border-color: rgba(var(--rgb-flight-cyan), 0.45);
+    background: var(--brand-canvas-soft);
+    border-color: var(--brand-ink);
+    color: var(--brand-ink);
     transform: none;
     box-shadow: none;
 }
@@ -1675,9 +1623,10 @@ body.blockly-resizing .blockly-resizer {
 
 .mission-btn--active {
     outline: none;
-    border-color: rgba(var(--rgb-flight-cyan), 0.65);
-    background: rgba(var(--rgb-flight-cyan), 0.14);
-    color: var(--flight-text);
+    border-color: var(--brand-ink);
+    border-left-color: var(--brand-ink);
+    background: var(--brand-canvas-soft);
+    color: var(--brand-ink);
     box-shadow: none;
 }
 
@@ -1688,11 +1637,11 @@ body.blockly-resizing .blockly-resizer {
     min-height: 260px;
     height: auto;
     max-height: min(72vh, calc(100vh - 220px));
-    border-radius: 16px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--flight-line);
-    background: #0a0f18;
+    box-shadow: none;
+    border: 1px solid var(--brand-hairline);
+    background: var(--brand-canvas-soft);
     box-sizing: border-box;
     flex-shrink: 1;
     align-self: stretch;
@@ -1721,27 +1670,29 @@ body.blockly-resizing .blockly-resizer {
     bottom: 0;
     margin: 0;
     padding: 0.65rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #fff;
-    background: linear-gradient(180deg, transparent 0%, rgba(8, 12, 20, 0.82) 35%, rgba(8, 12, 20, 0.95) 100%);
-    letter-spacing: 0.02em;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--brand-ink);
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.75) 40%, rgba(0, 0, 0, 0.92) 100%);
+    letter-spacing: 0.04em;
 }
 
 .mission-select-footer {
     position: static;
     flex: 0 0 auto;
     margin-top: auto;
-    padding-top: 0.75rem;
+    padding-top: var(--brand-space-md);
     pointer-events: none;
     text-align: center;
 }
 
 .footer-logo--mission .footer-logo__muted {
-    font-size: 0.75rem;
-    color: #64748b;
+    font-family: var(--font-brand);
+    font-size: 12px;
+    color: var(--brand-ink-dim);
     margin: 0;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
 }
 
 .footer-logo {
@@ -1753,13 +1704,13 @@ body.blockly-resizing .blockly-resizer {
 
 .footer-logo h2 {
     font-size: 2rem;
-    font-weight: 900;
-    color: #ffffff;
+    font-weight: 700;
+    color: var(--brand-ink);
     margin: 0;
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: 3px;
-    font-family: 'Arial Black', sans-serif;
+    letter-spacing: 1.6px;
+    font-family: var(--font-brand-display);
     width: 100%;
     overflow: visible;
     text-overflow: clip;
@@ -1767,10 +1718,10 @@ body.blockly-resizing .blockly-resizer {
 
 .footer-logo p {
     font-size: 0.9rem;
-    color: #00adb5;
+    color: var(--brand-ink-mute);
     margin: 5px 0 0;
     font-weight: 400;
-    letter-spacing: 2px;
+    letter-spacing: 0.96px;
     white-space: nowrap;
     overflow: visible;
     text-transform: uppercase;
@@ -1778,7 +1729,13 @@ body.blockly-resizing .blockly-resizer {
     text-overflow: clip;
 }
 
-/* 主選單／任務選擇：<768px 單欄 + 可捲動（僅 CSS，不影響 Three／Blockly） */
+@media (max-width: 960px) {
+    .hub-main__brand {
+        font-size: clamp(2.25rem, 9vw, 3.75rem);
+        letter-spacing: 1.2px;
+    }
+}
+
 @media (max-width: 767px) {
     #main-menu.menu-screen,
     #mission-select-menu.menu-screen {
@@ -1787,32 +1744,35 @@ body.blockly-resizing .blockly-resizer {
         -webkit-overflow-scrolling: touch;
     }
 
-    .hub-main {
-        padding: 1.25rem 1rem 1.5rem;
+    .hub-header {
+        padding: var(--brand-space-md) var(--brand-space-xl);
     }
 
-    .hub-layout {
-        margin-top: 1.35rem;
-        gap: 1rem;
+    .hub-main {
+        padding: 1.5rem 1.25rem 2.5rem;
+        justify-content: flex-end;
     }
 
     .hub-main__brand {
-        font-size: clamp(2rem, 10vw, 2.6rem);
+        font-size: clamp(2rem, 10vw, 2.75rem);
+        letter-spacing: 0.96px;
+    }
+
+    .hub-main__lead {
+        font-size: 15px;
+    }
+
+    .hub-cta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--brand-space-lg);
+        width: 100%;
     }
 
     .menu-btn {
-        padding: 12px 18px;
-        font-size: 0.95rem;
-    }
-
-    #main-menu .hub-menu-preview {
-        min-height: 180px;
-        max-height: min(40vh, 300px);
-        height: auto;
-    }
-
-    #mission-select-menu {
-        padding: 16px;
+        width: 100%;
+        max-width: 280px;
+        text-align: center;
     }
 
     .back-btn--header {
@@ -1836,15 +1796,15 @@ body.blockly-resizing .blockly-resizer {
     .mission-select-header {
         margin-top: 0.5rem;
         margin-bottom: 20px;
+        text-align: left;
     }
 
     .mission-select-title {
-        font-size: clamp(1.25rem, 6vw, 2rem);
+        font-size: clamp(1.5rem, 7vw, 2.25rem);
     }
 
     .mission-select-subtitle {
         font-size: 0.9375rem;
-        padding: 0 0.5rem;
     }
 
     .mission-select-body {
@@ -1852,7 +1812,6 @@ body.blockly-resizing .blockly-resizer {
         height: auto;
         max-height: none;
         min-height: 0;
-        padding: 0 8px;
         gap: 20px;
         overflow: visible;
         align-items: stretch;
@@ -2701,15 +2660,17 @@ body.blockly-resizing .blockly-resizer {
 /* Next version: loading, guided learning and debugging */
 .app-loading {
     position: fixed; inset: 0; z-index: var(--z-blocker); display: grid; place-content: center;
-    gap: .65rem; text-align: center; color: var(--flight-text); font-family: var(--font-sans);
-    background: radial-gradient(circle at 50% 35%, #122532, var(--flight-bg) 70%);
+    gap: .65rem; text-align: center; color: var(--brand-ink); font-family: var(--font-brand);
+    background: var(--brand-canvas);
     transition: opacity .35s ease, visibility .35s ease;
 }
 .app-loading--done { opacity: 0; visibility: hidden; pointer-events: none; }
 .app-loading__mark { display: grid; place-items: center; animation: loading-hover 1.2s ease-in-out infinite alternate; }
 .app-loading__drone { font-size: 3rem; animation: loading-hover 1.2s ease-in-out infinite alternate; }
-.app-loading__bar { width: min(72vw, 320px); height: 6px; overflow: hidden; border-radius: 9px; background: #1e3a5f; }
-.app-loading__bar span { display: block; width: 45%; height: 100%; border-radius: inherit; background: var(--flight-cyan); animation: loading-bar 1.1s ease-in-out infinite alternate; }
+.app-loading strong { font-family: var(--font-brand-display); font-weight: 700; letter-spacing: 0.04em; }
+.app-loading #app-loading-status { color: var(--brand-ink-mute); font-size: 0.9rem; }
+.app-loading__bar { width: min(72vw, 320px); height: 2px; overflow: hidden; border-radius: 0; background: var(--brand-hairline); }
+.app-loading__bar span { display: block; width: 45%; height: 100%; border-radius: inherit; background: var(--brand-ink); animation: loading-bar 1.1s ease-in-out infinite alternate; }
 @keyframes loading-hover { to { transform: translateY(-10px); } }
 @keyframes loading-bar { to { transform: translateX(125%); } }
 
@@ -2745,11 +2706,12 @@ body.blockly-resizing .blockly-resizer {
 .tutorial-coach__actions button:last-child { background: transparent; }
 .blockly-breakpoint > .blocklyPath { stroke: #ef4444 !important; stroke-width: 5px !important; }
 
-.orientation-hint { position: fixed; inset: 0; z-index: var(--z-blocker); place-content: center; justify-items: center; gap: 10px; padding: 30px; text-align: center; color: white; background: rgba(4,12,24,.97); }
+.orientation-hint { position: fixed; inset: 0; z-index: var(--z-blocker); place-content: center; justify-items: center; gap: 10px; padding: 30px; text-align: center; color: var(--brand-ink); background: var(--brand-canvas); font-family: var(--font-brand); }
 .orientation-hint:not([hidden]) { display: grid; }
 .orientation-hint span { font-size: 3rem; }
-.orientation-hint small { max-width: 330px; color: #bae6fd; }
-.orientation-hint button { margin-top: 12px; padding: 10px 16px; border: 1px solid #7dd3fc; border-radius: 9px; color: white; background: transparent; }
+.orientation-hint small { max-width: 330px; color: var(--brand-ink-mute); }
+.orientation-hint button { margin-top: 12px; padding: 18px 24px; border: 1px solid var(--brand-ink); border-radius: var(--brand-pill-radius); color: var(--brand-ink); background: transparent; font-family: var(--font-brand); font-size: 13.008px; font-weight: 700; letter-spacing: 1.17px; text-transform: uppercase; cursor: pointer; }
+.orientation-hint button:hover { background: var(--brand-canvas-cool); color: var(--brand-canvas); border-color: var(--brand-canvas-cool); }
 
 @media (max-width: 1024px) {
     .debug-toolbar { left: 10px; right: 10px; bottom: 8px; transform: none; max-width: none; overflow-x: auto; justify-content: flex-start; }
@@ -3168,8 +3130,8 @@ body.blockly-resizing .blockly-resizer {
     z-index: 2147483000;
     padding: 24px;
     box-sizing: border-box;
-    background: rgba(15, 17, 22, 0.92);
-    backdrop-filter: blur(6px);
+    background: var(--brand-canvas);
+    font-family: var(--font-brand);
 }
 
 .file-origin-blocker:not([hidden]) {
@@ -3180,20 +3142,22 @@ body.blockly-resizing .blockly-resizer {
 
 .file-origin-card {
     max-width: 520px;
-    background: var(--panel-bg, #242731);
-    color: var(--text-color, #f0f0f0);
-    border: 1px solid rgba(76, 110, 245, 0.45);
-    border-radius: 16px;
+    background: var(--brand-canvas-soft);
+    color: var(--brand-ink);
+    border: 1px solid var(--brand-hairline);
+    border-radius: 8px;
     padding: 28px 32px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
 }
 
 .file-origin-title {
     margin: 0 0 16px;
+    font-family: var(--font-brand-display);
     font-size: 1.35rem;
     font-weight: 700;
-    line-height: 1.35;
-    color: #e7ebf5;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    color: var(--brand-ink);
 }
 
 .file-origin-lead,
@@ -3203,30 +3167,32 @@ body.blockly-resizing .blockly-resizer {
     margin: 0 0 12px;
     font-size: 0.95rem;
     line-height: 1.55;
-    color: var(--secondary-text, #adb5bd);
+    color: var(--brand-ink-mute);
 }
 
 .file-origin-lead code,
 .file-origin-hint code {
+    font-family: var(--font-mono);
     font-size: 0.88em;
     padding: 2px 6px;
     border-radius: 4px;
-    background: rgba(0, 0, 0, 0.35);
-    color: #c5d4ff;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--brand-ink);
 }
 
 .file-origin-code {
     margin: 0 0 16px;
     padding: 14px 16px;
-    border-radius: 10px;
-    background: #12141a;
-    color: #a8f5c0;
+    border-radius: 4px;
+    background: #000000;
+    color: var(--brand-ink-mute);
+    font-family: var(--font-mono);
     font-size: 0.88rem;
     line-height: 1.45;
     overflow-x: auto;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--brand-hairline);
 }
 
 .file-origin-url strong {
-    color: #7ce0ff;
+    color: var(--brand-ink);
 }

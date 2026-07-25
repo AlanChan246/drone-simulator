@@ -1,126 +1,163 @@
 #!/usr/bin/env bash
-# Build muted 10s cinematic hero loop from storyboard stills (Ken Burns + xfade).
-# Skips storyboard-04 (UI chrome) per brief.
+# Build the 14-second homepage loop from the approved v2 storyboard.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SB="$ROOT/assets/images/storyboard"
-OUT_DIR="$ROOT/assets/video"
-TMP="$OUT_DIR/.tmp_hero"
+STORYBOARD="$ROOT/assets/images/storyboard-v2"
+OUT="$ROOT/assets/video"
+TMP="$OUT/.tmp_hero_v2"
 
 FPS=30
-W=1280
-H=720
-SEG=2.75
-FADE=0.333
-LOOP_FADE=0.5
+WIDTH=1920
+HEIGHT=1080
+FADE=0.25
+LOOP_BLEND=0.50
 
 need() {
-  command -v "$1" >/dev/null 2>&1 || { echo "Missing dependency: $1" >&2; exit 1; }
-}
-need ffmpeg
-
-for f in \
-  storyboard-01-takeoff.png \
-  storyboard-02-pursuit.png \
-  storyboard-03-wildfire.png \
-  storyboard-05-landing-loop.png
-do
-  if [[ ! -f "$SB/$f" ]]; then
-    echo "Missing storyboard: $SB/$f" >&2
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Missing dependency: $1" >&2
     exit 1
-  fi
+  }
+}
+
+need ffmpeg
+need ffprobe
+
+shots=(
+  "01-programmed-base.png"
+  "02-city-takeoff.png"
+  "03-inspection-scan.png"
+  "04-smoke-water-transition.png"
+  "05-wildfire-response.png"
+  "06-rescue-approach.png"
+  "07-landing-loop.png"
+)
+
+for shot in "${shots[@]}"; do
+  [[ -f "$STORYBOARD/$shot" ]] || {
+    echo "Missing storyboard frame: $STORYBOARD/$shot" >&2
+    exit 1
+  }
 done
 
-mkdir -p "$OUT_DIR" "$TMP"
-rm -rf "$TMP"/*
-FRAMES="$(python3 -c "print(int(round($SEG * $FPS)))")"
+mkdir -p "$OUT" "$TMP"
+find "$TMP" -type f -delete
 
-# Prep: cover-crop to 1280x720 still, then Ken Burns via zoompan.
-# Teal flight-deck lift via colorbalance + slight desat.
-make_seg() {
-  local src="$1"
-  local dst="$2"
-  local zexpr="$3"
-  local xexpr="$4"
-  local yexpr="$5"
+# Durations include the 0.25s overlap. Their sum minus six overlaps is 14s.
+durations=(2.15 2.35 2.25 1.85 2.95 2.05 1.90)
+
+render_shot() {
+  local source="$1"
+  local target="$2"
+  local duration="$3"
+  local zoom="$4"
+  local x="$5"
+  local y="$6"
+  local frames
+  frames="$(awk -v d="$duration" -v fps="$FPS" 'BEGIN { printf "%d", d * fps + 0.5 }')"
 
   ffmpeg -y -hide_banner -loglevel error \
-    -loop 1 -i "$src" \
-    -vf "scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,zoompan=z='${zexpr}':x='${xexpr}':y='${yexpr}':d=${FRAMES}:s=${W}x${H}:fps=${FPS},colorbalance=rs=-0.08:gs=0.02:bs=0.10:rm=-0.05:bm=0.07,eq=saturation=0.90:contrast=1.04:brightness=-0.02" \
-    -t "$SEG" -an \
-    -c:v libx264 -pix_fmt yuv420p -preset medium -crf 19 \
-    "$dst"
+    -loop 1 -i "$source" \
+    -vf "scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,crop=${WIDTH}:${HEIGHT},setsar=1,zoompan=z='${zoom}':x='${x}':y='${y}':d=${frames}:s=${WIDTH}x${HEIGHT}:fps=${FPS},eq=contrast=1.025:saturation=0.94:brightness=-0.012,format=yuv420p" \
+    -t "$duration" -an \
+    -c:v libx264 -preset medium -crf 20 -g "$FPS" -keyint_min "$FPS" \
+    "$target"
 }
 
-echo "Rendering Ken Burns segments (${SEG}s each)…"
+echo "Rendering seven cinematic shots…"
 
-# 01 takeoff: slow push-in toward drone
-make_seg "$SB/storyboard-01-takeoff.png" "$TMP/01.mp4" \
-  "min(1.0+0.10*on/${FRAMES},1.10)" \
-  "iw/2-(iw/zoom/2)" \
-  "ih/2-(ih/zoom/2)-ih*0.02*(on/${FRAMES})"
+# 1: slow push toward the programmed base.
+render_shot "$STORYBOARD/${shots[0]}" "$TMP/01.mp4" "${durations[0]}" \
+  "min(1.0+0.055*on/${FPS}/2.15,1.055)" \
+  "iw/2-(iw/zoom/2)+iw*0.018*on/${FPS}/2.15" \
+  "ih/2-(ih/zoom/2)-ih*0.010*on/${FPS}/2.15"
 
-# 02 pursuit: slight forward-right pan while gently zooming
-make_seg "$SB/storyboard-02-pursuit.png" "$TMP/02.mp4" \
-  "min(1.05+0.06*on/${FRAMES},1.11)" \
-  "(iw-iw/zoom)*(0.15+0.55*on/${FRAMES})" \
+# 2: lift and accelerate down the city route.
+render_shot "$STORYBOARD/${shots[1]}" "$TMP/02.mp4" "${durations[1]}" \
+  "min(1.025+0.070*on/${FPS}/2.35,1.095)" \
+  "iw/2-(iw/zoom/2)+iw*0.030*on/${FPS}/2.35" \
+  "ih/2-(ih/zoom/2)-ih*0.028*on/${FPS}/2.35"
+
+# 3: settle into a precise inspection hover.
+render_shot "$STORYBOARD/${shots[2]}" "$TMP/03.mp4" "${durations[2]}" \
+  "min(1.015+0.045*on/${FPS}/2.25,1.060)" \
+  "iw/2-(iw/zoom/2)+iw*0.015*on/${FPS}/2.25" \
   "ih/2-(ih/zoom/2)"
 
-# 03 wildfire / water-drop pass: push toward fire glow
-make_seg "$SB/storyboard-03-wildfire.png" "$TMP/03.mp4" \
-  "min(1.02+0.12*on/${FRAMES},1.14)" \
-  "iw/2-(iw/zoom/2)+iw*0.04*(on/${FRAMES})" \
-  "ih/2-(ih/zoom/2)-ih*0.03*(on/${FRAMES})"
-
-# 05 landing → open aerial for loop match: ease zoom-out
-make_seg "$SB/storyboard-05-landing-loop.png" "$TMP/05.mp4" \
-  "max(1.12-0.10*on/${FRAMES},1.02)" \
-  "iw/2-(iw/zoom/2)" \
+# 4: lateral smoke match-cut from city to water and forest.
+render_shot "$STORYBOARD/${shots[3]}" "$TMP/04.mp4" "${durations[3]}" \
+  "1.045" \
+  "(iw-iw/zoom)*(0.18+0.62*on/${FPS}/1.85)" \
   "ih/2-(ih/zoom/2)"
 
-OFFSET1="$(python3 -c "print(round($SEG - $FADE, 3))")"
-OFFSET2="$(python3 -c "print(round($OFFSET1 + $SEG - $FADE, 3))")"
-OFFSET3="$(python3 -c "print(round($OFFSET2 + $SEG - $FADE, 3))")"
+# 5: brake above the fire while the water action holds on screen.
+render_shot "$STORYBOARD/${shots[4]}" "$TMP/05.mp4" "${durations[4]}" \
+  "min(1.010+0.060*on/${FPS}/2.95,1.070)" \
+  "iw/2-(iw/zoom/2)+iw*0.012*on/${FPS}/2.95" \
+  "ih/2-(ih/zoom/2)-ih*0.018*on/${FPS}/2.95"
 
-echo "Crossfading timeline (offsets ${OFFSET1}, ${OFFSET2}, ${OFFSET3})…"
+# 6: rise into the rescue-pad approach.
+render_shot "$STORYBOARD/${shots[5]}" "$TMP/06.mp4" "${durations[5]}" \
+  "max(1.085-0.055*on/${FPS}/2.05,1.030)" \
+  "iw/2-(iw/zoom/2)-iw*0.012*on/${FPS}/2.05" \
+  "ih/2-(ih/zoom/2)-ih*0.015*on/${FPS}/2.05"
 
+# 7: ease down to the landing composition.
+render_shot "$STORYBOARD/${shots[6]}" "$TMP/07.mp4" "${durations[6]}" \
+  "min(1.010+0.035*on/${FPS}/1.90,1.045)" \
+  "iw/2-(iw/zoom/2)+iw*0.008*on/${FPS}/1.90" \
+  "ih/2-(ih/zoom/2)+ih*0.010*on/${FPS}/1.90"
+
+echo "Assembling the 14-second timeline…"
 ffmpeg -y -hide_banner -loglevel error \
-  -i "$TMP/01.mp4" -i "$TMP/02.mp4" -i "$TMP/03.mp4" -i "$TMP/05.mp4" \
+  -i "$TMP/01.mp4" -i "$TMP/02.mp4" -i "$TMP/03.mp4" \
+  -i "$TMP/04.mp4" -i "$TMP/05.mp4" -i "$TMP/06.mp4" -i "$TMP/07.mp4" \
   -filter_complex "\
-[0:v][1:v]xfade=transition=fade:duration=${FADE}:offset=${OFFSET1}[v01];\
-[v01][2:v]xfade=transition=fade:duration=${FADE}:offset=${OFFSET2}[v012];\
-[v012][3:v]xfade=transition=fade:duration=${FADE}:offset=${OFFSET3}[vline]" \
-  -map "[vline]" -an \
-  -c:v libx264 -pix_fmt yuv420p -preset medium -crf 19 \
+[0:v][1:v]xfade=transition=fade:duration=${FADE}:offset=1.90[v12];\
+[v12][2:v]xfade=transition=fade:duration=${FADE}:offset=4.00[v123];\
+[v123][3:v]xfade=transition=fade:duration=${FADE}:offset=6.00[v1234];\
+[v1234][4:v]xfade=transition=fade:duration=${FADE}:offset=7.60[v12345];\
+[v12345][5:v]xfade=transition=fade:duration=${FADE}:offset=10.30[v123456];\
+[v123456][6:v]xfade=transition=fade:duration=${FADE}:offset=12.10,fps=${FPS},trim=duration=14,setpts=PTS-STARTPTS[linear]" \
+  -map "[linear]" -an \
+  -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p \
   "$TMP/linear.mp4"
 
-# Seamless loop polish: blend last LOOP_FADE seconds into opening
-HEAD_DUR="$(python3 -c "print(round(10.0 - $LOOP_FADE, 3))")"
-echo "Applying ${LOOP_FADE}s end→start loop blend…"
-
+# Blend the final landing half-second into the opening base frame. This keeps
+# environment and light continuity without a black frame or reverse playback.
+echo "Polishing the end-to-start loop seam…"
 ffmpeg -y -hide_banner -loglevel error \
   -i "$TMP/linear.mp4" \
   -filter_complex "\
-[0:v]fps=${FPS},setpts=PTS-STARTPTS,split=3[v0][v1][v2];\
-[v0]trim=duration=${HEAD_DUR},setpts=PTS-STARTPTS[head];\
-[v1]trim=start=${HEAD_DUR},setpts=PTS-STARTPTS,fps=${FPS}[tail];\
-[v2]trim=duration=${LOOP_FADE},setpts=PTS-STARTPTS,fps=${FPS}[open];\
-[tail][open]xfade=transition=fade:duration=${LOOP_FADE}:offset=0,fps=${FPS}[blend];\
-[head][blend]concat=n=2:v=1:a=0,fps=${FPS},trim=duration=10,setpts=PTS-STARTPTS[outv]" \
+[0:v]fps=${FPS},split=3[body_src][tail_src][open_src];\
+[body_src]trim=duration=13.5,setpts=PTS-STARTPTS,fps=${FPS},settb=AVTB[body];\
+[tail_src]trim=start=13.5:end=14,setpts=PTS-STARTPTS,fps=${FPS},settb=AVTB[tail];\
+[open_src]trim=duration=${LOOP_BLEND},setpts=PTS-STARTPTS,fps=${FPS},settb=AVTB[open];\
+[tail][open]xfade=transition=fade:duration=${LOOP_BLEND}:offset=0[seam];\
+[body][seam]concat=n=2:v=1:a=0,fps=${FPS},tpad=stop_mode=clone:stop_duration=0.034,trim=duration=14,setpts=PTS-STARTPTS[outv]" \
   -map "[outv]" -an \
-  -c:v libx264 -pix_fmt yuv420p -preset medium -crf 19 \
-  -movflags +faststart \
-  "$OUT_DIR/hero-loop.mp4"
+  -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p \
+  -g "$FPS" -keyint_min "$FPS" -movflags +faststart \
+  "$OUT/hero-loop-v2.mp4"
 
-echo "Encoding WebM…"
+echo "Encoding VP9 WebM…"
 ffmpeg -y -hide_banner -loglevel error \
-  -i "$OUT_DIR/hero-loop.mp4" \
-  -an -c:v libvpx-vp9 -b:v 0 -crf 32 -row-mt 1 -pix_fmt yuv420p \
-  "$OUT_DIR/hero-loop.webm"
+  -i "$OUT/hero-loop-v2.mp4" \
+  -an -c:v libvpx-vp9 -b:v 0 -crf 35 -row-mt 1 -tile-columns 2 \
+  -g "$FPS" -pix_fmt yuv420p \
+  "$OUT/hero-loop-v2.webm"
 
-rm -rf "$TMP"
+echo "Writing poster frame…"
+ffmpeg -y -hide_banner -loglevel error \
+  -ss 0 -i "$OUT/hero-loop-v2.mp4" -frames:v 1 \
+  "$OUT/hero-loop-v2-poster.jpg"
 
-echo "Done:"
-ls -lh "$OUT_DIR/hero-loop.mp4" "$OUT_DIR/hero-loop.webm"
-ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$OUT_DIR/hero-loop.mp4"
+find "$TMP" -type f -delete
+rmdir "$TMP"
+
+echo "Built:"
+ls -lh "$OUT/hero-loop-v2.mp4" "$OUT/hero-loop-v2.webm" "$OUT/hero-loop-v2-poster.jpg"
+ffprobe -v error \
+  -show_entries stream=width,height,r_frame_rate:format=duration,size \
+  -of default=noprint_wrappers=1 \
+  "$OUT/hero-loop-v2.mp4"
