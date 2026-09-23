@@ -57,6 +57,8 @@
 .top-bar .tutorial-start-btn,.top-bar .camera-mode-btn{display:none}
 .road-editor-panel{position:absolute;right:16px;top:140px;z-index:40;width:280px;padding:20px;background:var(--v2-surface);box-shadow:var(--v2-shadow);border-radius:var(--v2-radius)}
 .road-editor-panel button,.road-editor-panel select{min-height:44px;margin:4px 0;max-width:100%}
-.v2-deck[data-running=true] .blockly-workspace{opacity:.85}
+.v2-deck[data-running=true] .blockly-workspace{cursor:default}
 
 .v2-world-label{position:absolute;top:0;left:0;z-index:4;pointer-events:none;padding:4px 8px;background:var(--v2-secondary);color:var(--v2-surface);font-size:11px;border-radius:var(--v2-radius-small);white-space:nowrap}.v2-world-label::after{content:'';position:absolute;top:100%;left:50%;height:12px;border-left:1px solid var(--v2-secondary)}.v2-world-label--goal{background:var(--v2-success)}.v2-camera-tools button[aria-pressed=true]{outline:2px solid var(--v2-secondary);outline-offset:-2px}.blocklyHighlighted>.blocklyPath{stroke:var(--v2-secondary)!important;stroke-width:4px!important}
+
+.canvas-panel>canvas{touch-action:none}.canvas-panel>canvas:focus-visible{outline:3px solid var(--v2-focus);outline-offset:-3px}

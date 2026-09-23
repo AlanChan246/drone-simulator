@@ -6,6 +6,7 @@ const APP_SHELL = [
   "js/v2_ui.js",
   "js/medical_drone_model.js",
   "js/main.js",
+  "js/blockly_workspace_io.js",
   "js/scene_lifecycle.js",
   "js/mission2_answer.js",
   "js/flight_deck_view.js",
@@ -140,7 +141,26 @@ const APP_SHELL = [
   "node_modules/blockly/blockly_compressed.js",
   "node_modules/blockly/blocks_compressed.js",
   "node_modules/blockly/javascript_compressed.js",
-  "node_modules/blockly/msg/zh-hant.js"
+  "node_modules/blockly/msg/zh-hant.js",
+  "node_modules/blockly/media/1x1.gif",
+  "node_modules/blockly/media/click.mp3",
+  "node_modules/blockly/media/click.ogg",
+  "node_modules/blockly/media/click.wav",
+  "node_modules/blockly/media/delete.mp3",
+  "node_modules/blockly/media/delete.ogg",
+  "node_modules/blockly/media/delete.wav",
+  "node_modules/blockly/media/disconnect.mp3",
+  "node_modules/blockly/media/disconnect.ogg",
+  "node_modules/blockly/media/disconnect.wav",
+  "node_modules/blockly/media/dropdown-arrow.svg",
+  "node_modules/blockly/media/handclosed.cur",
+  "node_modules/blockly/media/handdelete.cur",
+  "node_modules/blockly/media/handopen.cur",
+  "node_modules/blockly/media/pilcrow.png",
+  "node_modules/blockly/media/quote0.png",
+  "node_modules/blockly/media/quote1.png",
+  "node_modules/blockly/media/sprites.png",
+  "node_modules/blockly/media/sprites.svg"
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_VERSION).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

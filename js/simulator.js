@@ -1331,6 +1331,20 @@ async function init3D() {
     renderer.domElement.style.order = '1'; // 確保在 console 之前
     // 注意：不設置 height，讓 flex 布局自動計算
     
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute('role', 'img');
+    renderer.domElement.setAttribute('aria-label', '無人機 3D 場景。方向鍵旋轉視角，加減鍵縮放；也可使用跟隨、全景與俯視按鈕。');
+    renderer.domElement.addEventListener('keydown', event => {
+        if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-'].includes(event.key)) return;
+        event.preventDefault();
+        if(event.key==='ArrowLeft')camTheta-=10;
+        if(event.key==='ArrowRight')camTheta+=10;
+        if(event.key==='ArrowUp')camPhi=Math.max(10,camPhi-5);
+        if(event.key==='ArrowDown')camPhi=Math.min(85,camPhi+5);
+        if(event.key==='+'||event.key==='=')camRadius=Math.max(60,camRadius*.9);
+        if(event.key==='-')camRadius=Math.min(4000,camRadius*1.1);
+        updateCameraPosition();
+    });
     container.appendChild(renderer.domElement);
     
     // 初始化時設置正確的大小（考慮 console-panel）
@@ -1405,10 +1419,10 @@ async function init3D() {
 
     // 監聽器
     window.addEventListener('resize', onWindowResize);
-    container.addEventListener('contextmenu', e => e.preventDefault());
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
     
     // 滑鼠事件
-    container.addEventListener('mousedown', (e) => { 
+    renderer.domElement.addEventListener('mousedown', (e) => {
         if (roadEditorMode && e.button === 0) return;
         if (e.button === 0) isMouseDown = true; 
         else if (e.button === 2) {
@@ -1419,13 +1433,13 @@ async function init3D() {
     });
     window.addEventListener('mouseup', () => { isMouseDown = false; isRightMouseDown = false; });
     window.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('wheel', onMouseWheel);
+    renderer.domElement.addEventListener('wheel', onMouseWheel);
 
     // 觸控事件 (支援 iPad)
     let lastTouchX = 0, lastTouchY = 0;
     let lastTouchDist = 0;
 
-    container.addEventListener('touchstart', (e) => {
+    renderer.domElement.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             isMouseDown = true;
             lastTouchX = e.touches[0].clientX;
@@ -1446,7 +1460,7 @@ async function init3D() {
         }
     }, { passive: false });
 
-    container.addEventListener('touchmove', (e) => {
+    renderer.domElement.addEventListener('touchmove', (e) => {
         e.preventDefault(); // 防止頁面捲動
         
         if (e.touches.length === 1) {
@@ -1470,7 +1484,7 @@ async function init3D() {
             // 縮放 (Zoom)
             const zoomDelta = (lastTouchDist - dist) * 2;
             camRadius += zoomDelta;
-            camRadius = Math.max(100, Math.min(1000, camRadius));
+            camRadius = Math.max(60, Math.min(4000, camRadius));
             lastTouchDist = dist;
 
             // 雙指移動 (Pan)
@@ -1489,7 +1503,7 @@ async function init3D() {
         }
     }, { passive: false });
 
-    container.addEventListener('touchend', () => {
+    renderer.domElement.addEventListener('touchend', () => {
         isMouseDown = false;
         lastTouchDist = 0;
     });
@@ -1691,19 +1705,19 @@ function restoreDefaultSceneLighting() {
 /** 任務二：山火場氛圍（中等照度，介於全暗與過亮之間） */
 function applyForestSceneAtmosphere() {
     if (typeof scene === 'undefined' || !scene) return;
-    scene.background = new THREE.Color(0x2e2820);
-    scene.fog = new THREE.FogExp2(0x3a342c, 0.00042);
+    scene.background = new THREE.Color(0x9ea99b);
+    scene.fog = new THREE.Fog(0x9ea99b, 3500, 7000);
 
     const hemi = scene.userData.mainHemiLight;
     const dir = scene.userData.mainDirLight;
     if (hemi) {
-        hemi.color.setHex(0x6a6458);
-        hemi.groundColor.setHex(0x1a1814);
-        hemi.intensity = 0.62;
+        hemi.color.setHex(0xd1ded5);
+        hemi.groundColor.setHex(0x474b37);
+        hemi.intensity = 0.85;
     }
     if (dir) {
         dir.color.setHex(0xd8d0c4);
-        dir.intensity = 0.68;
+        dir.intensity = 0.95;
     }
 }
 
@@ -2134,7 +2148,7 @@ function createFreeFlightMap() {
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     environmentGroup.add(ground);
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x56877d, 0xb3c5b4);
+    const gridHelper = new THREE.GridHelper(5000, 200, 0x34695f, 0x789b90);
     environmentGroup.add(gridHelper);
     
     startPosition = { x: 0, y: 0, z: 0, heading: 180 };
@@ -3903,7 +3917,7 @@ function finishTunnelMission() {
 
     const completedAt = state.endTime;
     setTimeout(() => {
-        if (!state.missionCompleted || state.endTime !== completedAt) return;
+        if (!state.missionCompleted || state.endTime !== completedAt || document.getElementById('game-interface')?.style.display === 'none') return;
         if (typeof window.showResultModal === 'function') {
             window.showResultModal({
                 mission: activeMissionConfig.id,
@@ -4105,7 +4119,7 @@ function finishCityMission() {
 
     const completedAt = state.endTime;
     setTimeout(() => {
-        if (!state.missionCompleted || state.endTime !== completedAt) return;
+        if (!state.missionCompleted || state.endTime !== completedAt || document.getElementById('game-interface')?.style.display === 'none') return;
         if (typeof window.showResultModal === 'function') {
             window.showResultModal({
                 mission: activeMissionConfig.id,
@@ -4409,14 +4423,8 @@ function onWindowResize() {
     // canvas 的可用高度 = 容器高度 - console 高度
     const canvasHeight = Math.max(containerHeight - consoleHeight, 100);
     
-    // 獲取 canvas 元素的實際顯示尺寸（在 flex 布局中）
-    const canvas = renderer.domElement;
-    const canvasRect = canvas.getBoundingClientRect();
-    const actualCanvasHeight = canvasRect.height || canvasHeight;
-    
-    // 使用實際顯示高度
-    const finalHeight = actualCanvasHeight > 0 ? actualCanvasHeight : canvasHeight;
-    
+    const finalHeight = canvasHeight;
+
     if (width > 0 && finalHeight > 0) {
         camera.aspect = width / finalHeight;
         camera.updateProjectionMatrix();
@@ -4424,7 +4432,7 @@ function onWindowResize() {
         console.log(`Resized canvas: ${width}x${finalHeight} (container: ${containerHeight}px, console: ${consoleHeight}px)`);
     }
 }
-function onMouseWheel(e) { camRadius+=e.deltaY*0.5; camRadius=Math.max(100,Math.min(1000,camRadius)); updateCameraPosition(); e.preventDefault(); }
+function onMouseWheel(e) { camRadius+=e.deltaY*0.5; camRadius=Math.max(60,Math.min(4000,camRadius)); updateCameraPosition(); e.preventDefault(); }
 function onMouseMove(e) {
     if (!isMouseDown && !isRightMouseDown) return;
     const dx = e.clientX - mouseX; const dy = e.clientY - mouseY; mouseX=e.clientX; mouseY=e.clientY;

@@ -44,6 +44,7 @@ jobs:
           cp node_modules/three/examples/js/loaders/GLTFLoader.js _site/node_modules/three/examples/js/loaders/
           cp node_modules/blockly/blockly_compressed.js node_modules/blockly/blocks_compressed.js node_modules/blockly/javascript_compressed.js _site/node_modules/blockly/
           cp node_modules/blockly/msg/zh-hant.js _site/node_modules/blockly/msg/
+          cp -r node_modules/blockly/media _site/node_modules/blockly/
           cp sw.js _site/
           cp .nojekyll _site/
 

@@ -14,6 +14,7 @@ let blocklyAutosaveContextKey = null;
 let blocklyAutosaveLoadedKey = null;
 let blocklyAutosaveTimer = null;
 let blocklyAutosaveRestoring = false;
+const unreadableBlocklySaves = new Set();
 let blocklyAutosaveBeforeUnloadHooked = false;
 
 /** 任務一／二預掃描：while 迴圈最大迭代次數（防止條件錯誤卡死瀏覽器） */
@@ -74,11 +75,17 @@ function getBlocklyAutosaveStorageKey(contextKey) {
 
 function saveBlocklyWorkspaceToKey(ws, contextKey) {
     if (!ws || blocklyAutosaveRestoring || typeof Blockly === 'undefined') return;
+    if (unreadableBlocklySaves.has(contextKey)) {
+        setTelemetryText('v2-save-status', '原有儲存未能讀取 · 請先匯出備份');
+        return;
+    }
     try {
         const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(ws));
         localStorage.setItem(getBlocklyAutosaveStorageKey(contextKey), xml);
+        setTelemetryText('v2-save-status', '已儲存此任務的積木');
     } catch (err) {
         console.warn('[blockly-autosave] 無法寫入 localStorage', err);
+        setTelemetryText('v2-save-status', '未能自動儲存 · 請匯出積木');
     }
 }
 
@@ -88,16 +95,19 @@ function restoreBlocklyWorkspaceFromKey(ws, contextKey) {
     try {
         raw = localStorage.getItem(getBlocklyAutosaveStorageKey(contextKey));
     } catch (err) {
+        unreadableBlocklySaves.add(contextKey);
+        setTelemetryText('v2-save-status', '未能讀取儲存 · 請保留或匯出積木');
         return;
     }
     if (!raw) { ws.clear(); return; }
     try {
         blocklyAutosaveRestoring = true;
-        ws.clear();
-        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(raw), ws);
+        BlocklyWorkspaceIO.replace(Blockly, ws, raw);
         console.log('[blockly-autosave] 已還原:', contextKey);
     } catch (err) {
+        unreadableBlocklySaves.add(contextKey);
         console.warn('[blockly-autosave] 還原失敗', err);
+        showAppMessage({variant:'warn',title:'未能還原積木',body:'這份儲存內容未能完整讀取。',nextStep:'如有匯出的 XML 備份，請重新匯入；離開前先匯出仍可使用的積木。'});
     } finally {
         blocklyAutosaveRestoring = false;
     }
@@ -331,11 +341,19 @@ function initBlockly() {
             
             workspace = Blockly.inject('blockly-workspace', {
                 toolbox: document.getElementById('toolbox'),
+                media: 'node_modules/blockly/media/',
                 scrollbars: true, 
                 trashcan: true,
                 grid: { spacing: 24, length: 1, colour: '#bcc8be', snap: true },
                 theme: { 
-                    'base': 'classic', 
+                    'base': 'classic',
+                    'blockStyles': {
+                        colour_blocks:{colourPrimary:'#96630c'}, list_blocks:{colourPrimary:'#75518e'},
+                        logic_blocks:{colourPrimary:'#356b8b'}, loop_blocks:{colourPrimary:'#3c7045'},
+                        math_blocks:{colourPrimary:'#46689e'}, procedure_blocks:{colourPrimary:'#86528d'},
+                        text_blocks:{colourPrimary:'#21776c'}, variable_blocks:{colourPrimary:'#915278'},
+                        variable_dynamic_blocks:{colourPrimary:'#915278'}
+                    },
                     'componentStyles': { 
                         'workspaceBackgroundColour': '#fffef9', 
                         'toolboxBackgroundColour': '#e9eee5', 'toolboxForegroundColour': '#173b37', 'flyoutBackgroundColour': '#e9eee5', 'flyoutForegroundColour': '#173b37', 'flyoutOpacity': 1 
@@ -1262,6 +1280,7 @@ async function dispatchCollectWater() {
         updateHUD();
     } else {
         logToConsole("❌ 取水失敗：必須在水源 (藍色池塘) 正上方執行。");
+        showAppMessage({variant:'warn',title:'還未對準水源',body:'這次沒有取到水。',nextStep:'調整路線，飛到藍色水源正上方，再加入取水積木。',focusClose:false});
     }
 }
 
@@ -1270,6 +1289,7 @@ async function dispatchReleaseWater() {
     
     if (!state.hasWater) {
         logToConsole("❌ 滅火失敗：水箱是空的，請先去取水！");
+        showAppMessage({variant:'warn',title:'水箱已空',body:'這次沒有撲滅火點。',nextStep:'先到水源取水，再飛回火點噴水。',focusClose:false});
         return;
     }
 
@@ -1296,6 +1316,7 @@ async function dispatchReleaseWater() {
         updateHUD();
     } else {
         logToConsole("❌ 滅火失敗：下方沒有火源。請對準火焰中心執行。");
+        showAppMessage({variant:'warn',title:'還未對準火點',body:'無人機下方沒有可撲滅的火源。',nextStep:'調整移動距離，對準火點中心後再噴水。',focusClose:false});
     }
 }
 
@@ -1865,6 +1886,7 @@ async function executeQueueSuperseded() {
 }
 
 async function executeQueue() {
+    if (window.V2UI) V2UI.prepareRun();
     state.isRunning = true;
     state.stopSignal = false;
     updateProgress(0, cmdQueue.length);
@@ -1874,7 +1896,7 @@ async function executeQueue() {
         catch (error) { console.warn('清除高亮失敗:', error); }
     }
 
-    await FlightCommandExecution.runQueue(cmdQueue, {
+    const executionResult = await FlightCommandExecution.runQueue(cmdQueue, {
         shouldStop: () => state.stopSignal,
         beforeCommand: async ({ command, index, total }) => {
             const blockId = commandToBlockMap.get(index) || command._blockId || null;
@@ -1912,11 +1934,11 @@ async function executeQueue() {
                 && !state.isFlying && cmdQueue.some(command => command.type === 'takeoff')
                 && cmdQueue.some(command => command.type.startsWith('move_'))
                 && cmdQueue.at(-1)?.type === 'land';
-            if (window.V2UI) V2UI.programEnded();
+            if (window.V2UI) V2UI.programEnded(result);
         }
     });
 
-    if (!state.stopSignal && !state.missionCompleted && currentGameMode === 'mission') {
+    if (!state.stopSignal && executionResult.completed === executionResult.total && !state.missionCompleted && currentGameMode === 'mission') {
         const mission = MissionRules.forScene(currentSceneType);
         const pending = mission.pending({
             inspectionCheckpoints: beaconsTriggered,
@@ -2157,18 +2179,18 @@ function applyBlocklyWorkspaceXmlText(xmlText) {
     if (!ws) return false;
     try {
         blocklyAutosaveRestoring = true;
-        ws.clear();
-        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), ws);
+        BlocklyWorkspaceIO.replace(Blockly, ws, xmlText);
+        unreadableBlocklySaves.delete(getBlocklyAutosaveKey());
         if (!blocklyAutosaveLoadedKey) {
             blocklyAutosaveLoadedKey = getBlocklyAutosaveKey();
         }
-        flushBlocklyAutosave();
         return true;
     } catch (err) {
         console.error('[blockly-io] 匯入失敗', err);
         return false;
     } finally {
         blocklyAutosaveRestoring = false;
+        flushBlocklyAutosave();
     }
 }
 
@@ -2196,15 +2218,17 @@ function exportBlocklyWorkspace() {
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(url);
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
         console.error('[blockly-io] 下載失敗', err);
         showAppMessage({
             variant: 'error',
             title: '匯出失敗',
             body: '無法建立下載檔案。',
-            nextStep: '請再試一次，或從主控台查看錯誤訊息。',
+            nextStep: '請再試一次，或檢查瀏覽器是否允許下載。',
             focusClose: true
         });
         return;
@@ -2314,6 +2338,7 @@ function initBlocklyResizer() {
         if (newWidth >= minWidth && newWidth <= maxWidth) {
             const percentage = (newWidth / containerWidth) * 100;
             savedBlocklyWidth = percentage;
+            resizer.setAttribute('aria-valuenow', String(Math.round(percentage)));
             blocklyPanel.style.transition = 'none';
             blocklyPanel.style.flex = `0 0 ${percentage}%`;
             blocklyPanel.style.width = `${percentage}%`;
@@ -2344,6 +2369,14 @@ function initBlocklyResizer() {
             blocklyPanel.style.transition = 'opacity 0.3s ease';
         }
     }
+
+    resizer.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        beginResize(0, null);
+        applyPanelWidth(event.key === 'ArrowRight' ? 24 : -24);
+        endResize();
+    });
 
     if (window.PointerEvent) {
         resizer.addEventListener('pointerdown', (e) => {
@@ -3720,6 +3753,13 @@ window.showResultModal = function(data) {
         }
     }
     
+    const remaining = (isMission2 ? requiredFires : requiredBeacons) - (data.beacons || 0);
+    setTelemetryText('v2-result-next', remaining > 0
+        ? `下一次挑戰：${isMission2 ? '還有 ' + remaining + ' 個火點可撲滅' : '還有 ' + remaining + ' 處巡檢可完成'}。調整路線，爭取更多救援分數。`
+        : '所有加分目標已完成。試試用更精簡的程式或更短的路線再次救援。');
+    hideAppMessage();
+    const nextButton = document.querySelector('[onclick="V2UI.nextMission()"]');
+    if (nextButton) nextButton.textContent = isMission2 ? '選擇其他任務' : '下一個任務';
     const modal = document.getElementById('result-modal');
     if (modal) {
         // 強制顯示
@@ -3781,7 +3821,7 @@ window.enableRoadMaskDebug = function () {
 const tutorialSteps = [
     { title: '開啟積木區', text: '開啟程式積木，準備編寫第一個飛行程式。', check: () => !!document.querySelector('#blocklyDiv.visible') },
     { title: '加入起飛', text: '從「飛行指令」拖入起飛積木，並接在程式開始下方。', type: 'drone_takeoff' },
-    { title: '加入短距離移動', text: '拖入「go forward … cm」積木，距離先設為 50 cm。', type: 'drone_move_cm' },
+    { title: '加入短距離移動', text: '拖入「向前飛行」積木，距離先設為 50 cm。', type: 'drone_move_cm' },
     { title: '安全降落', text: '在最後接上降落積木，形成完整的起飛、移動、降落程序。', type: 'drone_land' },
     { title: '執行小任務', text: '按執行，觀察高亮積木與無人機，直到它安全降落。', check: () => !!window.__tutorialFlightCompleted }
 ];
@@ -3809,7 +3849,7 @@ function checkTutorialProgress() {
     const coach = document.getElementById('tutorial-coach');
     if (!coach || coach.hidden) return;
     if (!tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
-    document.getElementById('tutorial-check').textContent = '✅ 完成。準備下一步。';
+    document.getElementById('tutorial-check').textContent = '完成。準備下一步。';
     if (tutorialStepIndex >= tutorialSteps.length - 1) {
         clearInterval(tutorialTimer); tutorialTimer = null;
         document.getElementById('tutorial-title').textContent = '第一次飛行完成';
