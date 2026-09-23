@@ -17,7 +17,7 @@ Spacing tokens: 4, 8, 12, 16, 24, 32, 48, 64 px. Radius: 6 px controls, 12 px su
 - Primary: rescue orange, one decision per screen (start, run, next mission).
 - Secondary: bordered neutral buttons (practice, reset, retry).
 - Tertiary: text link or quiet tool.
-- Icon: consistent authored 24×24 SVG strokes, 20 px rendered in ≥44 px target.
+- Icon: consistent authored 24×24 SVG strokes, 20 px rendered in 44 px tool targets (desktop view tabs use 36 px; tablet tabs use 44 px).
 - Destructive/stop: danger text with an explicit word.
 - Focus: 3 px blue outline with offset; reduced motion disables nonessential transitions.
 
@@ -36,3 +36,9 @@ Camera framing, free-practice ground/sky, world labels and rendering visibility 
 ## Assets and provenance
 
 Mission preview images and all GLBs are pre-existing local assets; their original notices remain in assets. UI SVG paths and free-practice ground are authored in code. No new third-party bitmap, model or icon package was added. Legacy media provenance remains a baseline limitation, not a claim of new licensing review.
+
+## Learning feedback and safe persistence
+
+Custom blocks use dark event ochre `#96630c`, flight blue `#2768ad`, water teal `#007c80`, and fire rust `#b64322`, with white text. Blockly's category identifiers and serialized field values remain unchanged. A current-command panel and a projected drone/action label connect the highlighted block to the world. Practice ground uses a 25 cm visual grid; it does not alter movement or collision rules.
+
+`js/blockly_workspace_io.js` stages XML in a temporary Blockly workspace before replacing the visible program, and restores the previous XML on render failure. Unreadable autosaves are protected from silent overwrite. This is a persistence boundary, separate from the presentation module.

@@ -1,6 +1,6 @@
-# v2 audit — working evidence
+# v2 audit — evidence register
 
-Status: Phase 0 in progress. This is an evidence register, not a completed QA claim.
+Status: source/behavior/asset audit and browser evidence recorded. Final verification and explicit limits are in v2-qa.md.
 
 ## Baseline
 
@@ -29,7 +29,7 @@ Test origin: https://alanchan246.github.io/drone-simulator/ via in-app browser. 
 - A: Home → competition → Tunnel Rescue → briefing → open Blockly → drag event and takeoff → Run. Drone reached 80 cm, block highlighting/progress appeared. Then imported `test/fixtures/tunnel-direct.xml` using the actual UI and ran the entire road route to Bravo. Result: 20 s, 0/3 optional checkpoints, 200 exit + 500 time = 700, third class. This proves checkpoints are optional for completion.
 - B: Returned home and entered free practice/tutorial. Existing workspace retained its takeoff block when new context had no saved XML; observed tutorial starting at step 3 after opening editor. Source restore returns before clearing on missing save, explaining the context leakage.
 - C: Empty Run shows an actionable missing-command message. A takeoff-only mission program ends with incorrect text requiring all three optional checkpoints. Reset preserves blocks. Full program import uses confirmation and reports success.
-- D: Selected mission, ran, reset, returned and selected again. Repeated briefing and hidden editor add friction. Additional pause/step/stop/repeat checks pending.
+- D: Selected mission, ran, reset, returned and selected again. Repeated briefing and hidden editor add friction. Pause/step/stop/repeat checks were subsequently exercised in browser QA.
 - E: At 1024×768, editor remains ~310 px wide, blocks clip horizontally, large tutorial overlaps flight controls, and mission name/progress disappears from the top bar. Full physical touch testing pending.
 - Tutorial helper inserted takeoff → move 50 cm → land. Executed to landed at Z=50. Tutorial announced completion immediately during command 1/3 rather than after successful landing.
 
@@ -76,6 +76,8 @@ Flight history is currently a session log, not a persistent history database. Be
 - REVIEW REQUIRED: old hero video variants, non-Kenney model/video provenance. Preserve files until usage/provenance decisions are grounded.
 - REMOVE: none authorised by this audit yet.
 
-## Remaining Phase 0 checks
+## Audit completion and sequencing limits
 
-Complete returning persistence/reload, error recovery edit/retry, teacher debug controls, mission 2, remaining viewport baselines, keyboard/modals, runtime/deployment asset errors and source-level event/state audit. Save evidence before replacing UI.
+Returning persistence/reload, error edit/retry, teacher debug controls, city completion, responsive layouts, keyboard/modals and offline/Pages packaging were subsequently exercised; see v2-qa.md. Source boundaries and asset inventory were inspected before implementation, but some browser/accessibility checks continued after the first UI checkpoint. This is a deviation from the requested strictly sequential full-audit-before-UI process, not a claim that every baseline journey preceded edits. Production city end-to-end and physical iPad touch were not completed; v2 city and emulated tablet evidence are separately identified.
+
+Retained debt: classic global scripts and inline handlers, a dormant duplicate execution function, old reference-route scripts and unused cinematic code/assets. No broad speculative cleanup was performed. Presentation now has separate CSS modules/V2UI, and XML replacement has a transaction boundary; this improves maintainability without pretending the entire simulator was modularised.

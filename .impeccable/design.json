@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-23T16:34:56.264637+00:00",
+  "title": "Design System: Drone Simulator v2",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "floating",
+        "value": "0 12px 36px #183e3826",
+        "purpose": "Dialogs and floating hints"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tablet",
+        "value": "1100px"
+      },
+      {
+        "name": "compact",
+        "value": "700px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Run",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary execution action",
+      "html": "<button class=\"program-btn\">執行</button>",
+      "css": ".program-btn { min-height:48px; padding:10px 20px; background:#bf461e; color:#fffef9; border:1px solid #bf461e; border-radius:6px; font:600 14px sans-serif; } .program-btn:focus-visible { outline:3px solid #146b88; outline-offset:3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Rescue field school",
+    "overview": "A student sees a program become a flight.",
+    "keyCharacteristics": [
+      "World first",
+      "Chinese action labels",
+      "Progressive disclosure"
+    ],
+    "dos": [
+      "Preserve mission facts and simulation boundaries"
+    ],
+    "donts": [
+      "Do not invent saved achievements"
+    ]
+  }
+}
