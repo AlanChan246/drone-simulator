@@ -6,49 +6,48 @@ Blockly.defineBlocksWithJsonArray([
     // --- Events ---
     {
         "type": "event_start",
-        "message0": "when %1 clicked",
-        "args0": [{"type": "field_image", "src": "https://www.gstatic.com/images/icons/material/system/1x/play_arrow_white_24dp.png", "width": 15, "height": 15, "alt": "play"}],
+        "message0": "當按下執行",
         "nextStatement": null, "colour": "#FFBF00", "tooltip": "程式開始"
     },
     {
         "type": "event_wait_key",
-        "message0": "wait for key input",
+        "message0": "等待按下空白鍵",
         "previousStatement": null, "nextStatement": null, "colour": "#FFBF00", "tooltip": "暫停直到按下空白鍵"
     },
     // --- Basic Flight ---
     {
         "type": "drone_takeoff",
-        "message0": "take off",
+        "message0": "起飛",
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_land",
-        "message0": "land",
+        "message0": "降落",
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_collect_water",
-        "message0": "COLLECT WATER 取水",
+        "message0": "取水",
         "previousStatement": null, "nextStatement": null, "colour": "#00adb5",
         "tooltip": "在水源上方取水"
     },
     {
         "type": "drone_release_water",
-        "message0": "RELEASE WATER 噴水滅火",
+        "message0": "噴水滅火",
         "previousStatement": null, "nextStatement": null, "colour": "#ff5722",
         "tooltip": "在火場上方噴水滅火"
     },
     {
         "type": "drone_hover",
-        "message0": "hover for %1 second(s)",
+        "message0": "懸停 %1 秒",
         "args0": [{ "type": "input_value", "name": "DURATION", "check": "Number" }],
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_move_time",
-        "message0": "go %1 for %2 second(s) at %3 %% power",
+        "message0": "向 %1 飛行 %2 秒，動力 %3 %%",
         "args0": [
-            { "type": "field_dropdown", "name": "DIR", "options": [["forward", "FORWARD"], ["backward", "BACKWARD"], ["left", "LEFT"], ["right", "RIGHT"], ["up", "UP"], ["down", "DOWN"]] },
+            { "type": "field_dropdown", "name": "DIR", "options": [["前", "FORWARD"], ["後", "BACKWARD"], ["左", "LEFT"], ["右", "RIGHT"], ["上", "UP"], ["下", "DOWN"]] },
             { "type": "input_value", "name": "DURATION", "check": "Number" },
             { "type": "input_value", "name": "POWER", "check": "Number" }
         ],
@@ -56,25 +55,25 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_move_cm",
-        "message0": "go %1 %2 cm",
+        "message0": "向 %1 飛行 %2 cm",
         "args0": [
-            { "type": "field_dropdown", "name": "DIR", "options": [["forward", "FORWARD"], ["backward", "BACKWARD"], ["left", "LEFT"], ["right", "RIGHT"], ["up", "UP"], ["down", "DOWN"]] },
+            { "type": "field_dropdown", "name": "DIR", "options": [["前", "FORWARD"], ["後", "BACKWARD"], ["左", "LEFT"], ["右", "RIGHT"], ["上", "UP"], ["下", "DOWN"]] },
             { "type": "input_value", "name": "DIST", "check": "Number" }
         ],
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_turn",
-        "message0": "turn %1 %2 degrees",
+        "message0": "向 %1 轉 %2 度",
         "args0": [
-            { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
+            { "type": "field_dropdown", "name": "DIR", "options": [["左", "LEFT"], ["右", "RIGHT"]] },
             { "type": "input_value", "name": "DEGREE", "check": "Number" }
         ],
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_goto_xyz",
-        "message0": "go to coordinate (x, y, z) = (%1, %2, %3) m",
+        "message0": "飛往座標 (x, y, z) = (%1, %2, %3) m",
         "args0": [
             { "type": "input_value", "name": "X", "check": "Number" },
             { "type": "input_value", "name": "Y", "check": "Number" },
@@ -84,18 +83,18 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_turn_degree",
-        "message0": "turn %1 %2 degrees",
+        "message0": "向 %1 轉 %2 度",
         "args0": [
-            { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
+            { "type": "field_dropdown", "name": "DIR", "options": [["左", "LEFT"], ["右", "RIGHT"]] },
             { "type": "input_value", "name": "DEGREE", "check": "Number" }
         ],
         "previousStatement": null, "nextStatement": null, "colour": "#4C97FF"
     },
     {
         "type": "drone_turn_time",
-        "message0": "turn %1 for %2 second(s) at %3 %% power",
+        "message0": "向 %1 轉 %2 秒，動力 %3 %%",
         "args0": [
-            { "type": "field_dropdown", "name": "DIR", "options": [["left", "LEFT"], ["right", "RIGHT"]] },
+            { "type": "field_dropdown", "name": "DIR", "options": [["左", "LEFT"], ["右", "RIGHT"]] },
             { "type": "input_value", "name": "DURATION", "check": "Number" },
             { "type": "input_value", "name": "POWER", "check": "Number" }
         ],
@@ -104,37 +103,37 @@ Blockly.defineBlocksWithJsonArray([
     // --- Advanced Flight ---
     {
         "type": "drone_set_variable",
-        "message0": "set %1 to %2 %%",
+        "message0": "設定 %1 為 %2 %%",
         "args0": [
-            { "type": "field_dropdown", "name": "VAR", "options": [["roll", "ROLL"], ["pitch", "PITCH"], ["yaw", "YAW"], ["throttle", "THROTTLE"]] },
+            { "type": "field_dropdown", "name": "VAR", "options": [["橫滾", "ROLL"], ["俯仰", "PITCH"], ["偏航", "YAW"], ["升降", "THROTTLE"]] },
             { "type": "input_value", "name": "VAL", "check": "Number" }
         ],
         "previousStatement": null, "nextStatement": null, "colour": "#364d99"
     },
     {
         "type": "drone_turn_heading",
-        "message0": "turn to heading %1 °",
+        "message0": "轉至航向 %1 °",
         "args0": [{ "type": "input_value", "name": "DEGREE", "check": "Number" }],
         "previousStatement": null, "nextStatement": null, "colour": "#364d99"
     },
     {
         "type": "drone_move_complex",
-        "message0": "move %1 second(s)",
+        "message0": "按目前動力飛行 %1 秒",
         "args0": [{ "type": "input_value", "name": "DURATION", "check": "Number" }],
         "previousStatement": null, "nextStatement": null, "colour": "#364d99"
     },
     {
         "type": "drone_move_complex_infinite",
-        "message0": "move()",
+        "message0": "按目前動力飛行一小步",
         "previousStatement": null, "nextStatement": null, "colour": "#364d99",
         "tooltip": "使用當前參數移動一小步"
     },
     // --- Lights ---
     {
         "type": "drone_set_led_color",
-        "message0": "set %1 LED color to %2 with brightness %3",
+        "message0": "設定 %1 燈光為 %2，亮度 %3",
         "args0": [
-            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "drone"]] },
+            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["無人機", "drone"]] },
             { "type": "input_value", "name": "COLOR" },
             { "type": "input_value", "name": "BRIGHTNESS", "check": "Number" }
         ],
@@ -144,9 +143,9 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_set_led_rgb",
-        "message0": "set %1 LED R= %2 , G= %3 , B= %4 , %5",
+        "message0": "設定 %1 燈光 R %2 G %3 B %4，亮度 %5",
         "args0": [
-            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "drone"]] },
+            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["無人機", "drone"]] },
             { "type": "input_value", "name": "R_VAL", "check": "Number" },
             { "type": "input_value", "name": "G_VAL", "check": "Number" },
             { "type": "input_value", "name": "B_VAL", "check": "Number" },
@@ -158,9 +157,9 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_led_off",
-        "message0": "turn %1 LED off",
+        "message0": "關閉 %1 燈光",
         "args0": [
-            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "drone"]] }
+            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["無人機", "drone"]] }
         ],
         "inputsInline": true,
         "previousStatement": null, "nextStatement": null, "colour": 260,
@@ -168,10 +167,10 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_led_sequence",
-        "message0": "set %1 LED sequence %2 with color R= %3 , G= %4 , B= %5 and speed %6",
+        "message0": "設定 %1 燈效 %2，R %3 G %4 B %5，速度 %6",
         "args0": [
-            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["drone", "drone"]] },
-            { "type": "field_dropdown", "name": "SEQUENCE", "options": [["dimming", "DIMMING"], ["blinking", "BLINKING"]] },
+            { "type": "field_dropdown", "name": "DRONE_ID", "options": [["無人機", "drone"]] },
+            { "type": "field_dropdown", "name": "SEQUENCE", "options": [["漸變", "DIMMING"], ["閃爍", "BLINKING"]] },
             { "type": "input_value", "name": "R_VAL", "check": "Number" },
             { "type": "input_value", "name": "G_VAL", "check": "Number" },
             { "type": "input_value", "name": "B_VAL", "check": "Number" },
@@ -184,16 +183,16 @@ Blockly.defineBlocksWithJsonArray([
     // --- Sensors ---
     {
         "type": "drone_get_range",
-        "message0": "get %1 range in %2",
+        "message0": "讀取 %1 距離（%2）",
         "args0": [
             {
                 "type": "field_dropdown",
                 "name": "TYPE",
                 "options": [
-                    ["front", "front"],
-                    ["left", "left"],
-                    ["right", "right"],
-                    ["bottom", "bottom"]
+                    ["前方", "front"],
+                    ["左", "left"],
+                    ["右", "right"],
+                    ["下方", "bottom"]
                 ]
             },
             {
@@ -213,7 +212,7 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_get_height",
-        "message0": "get height in %1",
+        "message0": "讀取高度（%1）",
         "args0": [
             {
                 "type": "field_dropdown",
@@ -233,7 +232,7 @@ Blockly.defineBlocksWithJsonArray([
     // --- Console ---
     {
         "type": "drone_print",
-        "message0": "print %1",
+        "message0": "記錄 %1",
         "args0": [
             {
                 "type": "input_value",
@@ -247,7 +246,7 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "drone_get_pos",
-        "message0": "get current %1 coordinate",
+        "message0": "讀取目前 %1 座標",
         "args0": [
             {
                 "type": "field_dropdown",
@@ -399,3 +398,5 @@ Blockly.JavaScript['drone_print'] = function(block) {
         text: 'Print Output'
     }, {_blockId: '${block.id}'}));\n`;
 };
+// Legacy XML used the shorter turn block name; retain identical command semantics.
+Blockly.JavaScript['drone_turn'] = Blockly.JavaScript['drone_turn_degree'];

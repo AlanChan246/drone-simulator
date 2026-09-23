@@ -1,60 +1,169 @@
-const CACHE_VERSION = 'drone-simulator-deep-modules-20260725';
+const CACHE_VERSION = 'drone-simulator-v2-20260923';
 const APP_SHELL = [
-  './', './index.html', './style.css',
-  './js/flight_command_execution.js', './js/mission_rules.js',
-  './js/scene_lifecycle.js', './js/flight_deck_view.js',
-  './js/simulator.js', './js/blockly_def.js', './js/mission2_answer.js', './js/main.js',
-  './node_modules/three/build/three.min.js',
-  './node_modules/three/examples/js/loaders/GLTFLoader.js',
-  './node_modules/blockly/blockly_compressed.js',
-  './node_modules/blockly/blocks_compressed.js',
-  './node_modules/blockly/javascript_compressed.js',
-  './node_modules/blockly/msg/en.js',
-  './assets/models/kenney/starter-city/models/road-straight.glb',
-  './assets/models/kenney/starter-city/models/road-corner.glb',
-  './assets/models/kenney/starter-city/models/road-split.glb',
-  './assets/models/kenney/starter-city/models/road-intersection.glb',
-  './assets/models/kenney/starter-city/models/pavement.glb',
-  './assets/models/kenney/starter-city/models/pavement-fountain.glb',
-  './assets/models/kenney/starter-city/models/building-small-a.glb',
-  './assets/models/kenney/starter-city/models/building-small-b.glb',
-  './assets/models/kenney/starter-city/models/building-small-c.glb',
-  './assets/models/kenney/starter-city/models/building-small-d.glb',
-  './assets/models/kenney/starter-city/models/building-garage.glb',
-  './assets/models/kenney/starter-city/models/grass-trees.glb',
-  './assets/models/kenney/starter-city/models/grass-trees-tall.glb',
-  './assets/models/kenney/starter-city/models/Textures/colormap.png',
-  './assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-g.glb',
-  './assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-c.glb',
-  './assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-a.glb',
-  './assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-b.glb',
-  './assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/Textures/colormap.png'
+  "./",
+  "index.html",
+  "style.css",
+  "js/v2_ui.js",
+  "js/medical_drone_model.js",
+  "js/main.js",
+  "js/scene_lifecycle.js",
+  "js/mission2_answer.js",
+  "js/flight_deck_view.js",
+  "js/blockly_def.js",
+  "js/flight_command_execution.js",
+  "js/mission_rules.js",
+  "js/simulator.js",
+  "assets/video/hero-loop-v2-poster.jpg",
+  "assets/video/hero-ai-first-three-poster.jpg",
+  "assets/images/mission-preview-1.png",
+  "assets/images/mission-preview-2.png",
+  "assets/models/drone.glb",
+  "assets/models/corridor.glb",
+  "assets/styles/tokens.css",
+  "assets/styles/hub.css",
+  "assets/styles/overlays.css",
+  "assets/styles/v2.css",
+  "assets/styles/deck.css",
+  "assets/styles/base.css",
+  "assets/models/kenney/nature/stump_old.glb",
+  "assets/models/kenney/nature/ground_pathCross.glb",
+  "assets/models/kenney/nature/ground_pathEnd.glb",
+  "assets/models/kenney/nature/ground_pathSplit.glb",
+  "assets/models/kenney/nature/tree_detailed.glb",
+  "assets/models/kenney/nature/ground_pathTile.glb",
+  "assets/models/kenney/nature/ground_pathBend.glb",
+  "assets/models/kenney/nature/rock_smallFlatA.glb",
+  "assets/models/kenney/nature/tree_tall.glb",
+  "assets/models/kenney/nature/tree_default.glb",
+  "assets/models/kenney/nature/tree_oak_dark.glb",
+  "assets/models/kenney/nature/rock_largeA.glb",
+  "assets/models/kenney/nature/ground_riverTile.glb",
+  "assets/models/kenney/nature/ground_pathStraight.glb",
+  "assets/models/kenney/nature/rock_largeB.glb",
+  "assets/models/kenney/nature/ground_grass.glb",
+  "assets/models/kenney/nature/campfire_logs.glb",
+  "assets/models/kenney/factory/button-floor-round.glb",
+  "assets/models/kenney/factory/screen-panel-small.glb",
+  "assets/models/kenney/factory/indicator-special-area.glb",
+  "assets/models/kenney/factory/warning-orange.glb",
+  "assets/models/kenney/factory/machine.glb",
+  "assets/models/kenney/survival/floor.glb",
+  "assets/models/kenney/survival/signpost-single.glb",
+  "assets/models/kenney/survival/campfire-pit.glb",
+  "assets/models/kenney/survival/barrel.glb",
+  "assets/models/kenney/survival/structure-canvas.glb",
+  "assets/models/kenney/survival/box.glb",
+  "assets/models/kenney/survival/tent.glb",
+  "assets/models/kenney/survival/box-large.glb",
+  "assets/models/kenney/survival/structure-metal-floor.glb",
+  "assets/models/kenney/survival/signpost.glb",
+  "assets/models/kenney/survival/Textures/colormap.png",
+  "assets/models/kenney/factory/Textures/colormap.png",
+  "assets/models/kenney/starter-city/models/grass.glb",
+  "assets/models/kenney/starter-city/models/building-garage.glb",
+  "assets/models/kenney/starter-city/models/road-intersection.glb",
+  "assets/models/kenney/starter-city/models/building-small-a.glb",
+  "assets/models/kenney/starter-city/models/building-small-c.glb",
+  "assets/models/kenney/starter-city/models/building-small-b.glb",
+  "assets/models/kenney/starter-city/models/road-straight-lightposts.glb",
+  "assets/models/kenney/starter-city/models/grass-trees-tall.glb",
+  "assets/models/kenney/starter-city/models/building-small-d.glb",
+  "assets/models/kenney/starter-city/models/pavement-fountain.glb",
+  "assets/models/kenney/starter-city/models/grass-trees.glb",
+  "assets/models/kenney/starter-city/models/road-corner.glb",
+  "assets/models/kenney/starter-city/models/road-straight.glb",
+  "assets/models/kenney/starter-city/models/road-split.glb",
+  "assets/models/kenney/starter-city/models/pavement.glb",
+  "assets/models/kenney/starter-city/models/Textures/colormap.png",
+  "assets/models/kenney/flood/prototype/figurine.glb",
+  "assets/models/kenney/flood/prototype/indicator-round-a.glb",
+  "assets/models/kenney/flood/prototype/crate-color.glb",
+  "assets/models/kenney/flood/prototype/wheelchair.glb",
+  "assets/models/kenney/flood/prototype/flag.glb",
+  "assets/models/kenney/flood/suburban/building-type-c.glb",
+  "assets/models/kenney/flood/suburban/fence-1x4.glb",
+  "assets/models/kenney/flood/suburban/building-type-a.glb",
+  "assets/models/kenney/flood/suburban/building-type-j.glb",
+  "assets/models/kenney/flood/suburban/tree-large.glb",
+  "assets/models/kenney/flood/watercraft/boat-tug-a.glb",
+  "assets/models/kenney/flood/watercraft/boat-row-small.glb",
+  "assets/models/kenney/flood/watercraft/cargo-pile-a.glb",
+  "assets/models/kenney/flood/watercraft/arrow-standing.glb",
+  "assets/models/kenney/flood/watercraft/ramp-wide.glb",
+  "assets/models/kenney/flood/watercraft/buoy-flag.glb",
+  "assets/models/kenney/flood/watercraft/Textures/colormap.png",
+  "assets/models/kenney/flood/suburban/Textures/colormap.png",
+  "assets/models/kenney/flood/prototype/Textures/colormap.png",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-c.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-g.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-i.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-b.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-wide-a.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-a.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-f.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-a.glb",
+  "assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/Textures/colormap.png",
+  "assets/models/nature/GLTF format/grass.glb",
+  "assets/models/nature/GLTF format/stump_old.glb",
+  "assets/models/nature/GLTF format/log.glb",
+  "assets/models/nature/GLTF format/lily_large.glb",
+  "assets/models/nature/GLTF format/rock_smallFlatA.glb",
+  "assets/models/nature/GLTF format/tree_oak.glb",
+  "assets/models/nature/GLTF format/plant_bushLarge.glb",
+  "assets/models/nature/GLTF format/tree_pineTallA.glb",
+  "assets/models/nature/GLTF format/tree_pineSmallA.glb",
+  "assets/models/nature/GLTF format/campfire_logs.glb",
+  "assets/models/nature/GLTF format/rock_smallA.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-crossroad.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-bend.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-square.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-end.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-straight.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/road-split.glb",
+  "assets/models/kenney_city-kit-roads/Models/GLB format/Textures/colormap.png",
+  "assets/images/storyboard-v2/05-wildfire-response.png",
+  "assets/images/storyboard-v2/06-rescue-approach.png",
+  "assets/images/storyboard-v2/02-city-takeoff.png",
+  "assets/images/storyboard-v2/01-programmed-base.png",
+  "assets/images/storyboard-v2/04-smoke-water-transition.png",
+  "assets/images/storyboard-v2/07-landing-loop.png",
+  "assets/images/storyboard-v2/03-inspection-scan.png",
+  "assets/images/mission2-legend/fire.png",
+  "assets/images/mission2-legend/charge.png",
+  "assets/images/mission2-legend/forest.png",
+  "assets/images/mission2-legend/rescue-goal.png",
+  "assets/images/mission2-legend/water.png",
+  "assets/images/mission2-legend/start-base.png",
+  "node_modules/three/build/three.min.js",
+  "node_modules/three/examples/js/loaders/GLTFLoader.js",
+  "node_modules/three/examples/js/geometries/RoundedBoxGeometry.js",
+  "node_modules/blockly/blockly_compressed.js",
+  "node_modules/blockly/blocks_compressed.js",
+  "node_modules/blockly/javascript_compressed.js",
+  "node_modules/blockly/msg/zh-hant.js"
 ];
-
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_VERSION).then(cache => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_VERSION).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
-
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_VERSION).map(key => caches.delete(key))))
-  );
-  self.clients.claim();
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('drone-simulator-') && key !== CACHE_VERSION).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fromNetwork = fetch(event.request).then(response => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then(cache => cache.put(event.request, copy));
-        }
-        return response;
-      });
-      return cached || fromNetwork.catch(() => caches.match('./index.html'));
-    })
-  );
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_VERSION);
+    const cached = await cache.match(event.request, {ignoreSearch: true});
+    const isCode = event.request.mode === 'navigate' || /\.(?:js|css|html)$/.test(url.pathname);
+    if (cached && !isCode) return cached;
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) await cache.put(event.request, response.clone());
+      return response;
+    } catch (error) {
+      if (cached) return cached;
+      if (event.request.mode === 'navigate') return await cache.match('./index.html') || Response.error();
+      return Response.error();
+    }
+  })());
 });

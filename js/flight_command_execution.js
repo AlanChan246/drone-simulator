@@ -10,7 +10,7 @@
         'drone_set_variable', 'drone_turn_heading', 'drone_move_complex',
         'drone_move_complex_infinite', 'drone_set_color', 'drone_set_led_color',
         'drone_set_led_rgb', 'drone_led_off', 'drone_led_sequence',
-        'drone_set_heading', 'console_print'
+        'drone_set_heading', 'console_print', 'drone_print', 'drone_turn'
     ]);
 
     function isCommandBlockType(type) {

@@ -1,0 +1,26 @@
+* { box-sizing:border-box; }
+html,body { margin:0; width:100%; height:100%; overflow:hidden; }
+body { font:15px/1.5 var(--v2-font); background:var(--v2-bg); color:var(--v2-text); }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible,summary:focus-visible { outline:3px solid var(--v2-focus); outline-offset:3px; }
+[hidden] { display:none!important; }
+::selection { color:var(--v2-surface); background:var(--v2-secondary); }
+* { scrollbar-color:var(--v2-border) transparent; scrollbar-width:thin; }
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.skip-link { position:fixed; top:-100px; left:16px; z-index:9999; padding:12px; background:var(--v2-surface); color:var(--v2-text); }
+.skip-link:focus { top:12px; }
+.menu-screen { position:fixed; inset:0; display:flex; flex-direction:column; }
+.app-loading,.orientation-hint,.file-origin-blocker { position:fixed; inset:0; z-index:9000; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px; background:var(--v2-bg); padding:32px; text-align:center; }
+.app-loading__mark { background:var(--v2-secondary); padding:16px; border-radius:var(--v2-radius); }
+.app-loading__bar { width:200px; height:4px; background:var(--v2-border); }
+.app-loading__bar>span { display:block; height:100%; width:60%; background:var(--v2-primary); }
+.app-loading--done { opacity:0; pointer-events:none; }
+.orientation-hint strong { font-size:28px; }
+.orientation-hint button { min-height:48px; padding:12px 20px; background:var(--v2-secondary); color:white; border:0; border-radius:var(--v2-radius-small); }
+.file-origin-card { width:min(650px,100%); overflow:auto; text-align:left; }
+.file-origin-code { background:var(--v2-divider); padding:20px; white-space:pre-wrap; }
+.ui-icon { width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
+.v2-icon { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }

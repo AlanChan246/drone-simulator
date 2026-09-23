@@ -1,0 +1,38 @@
+:root {
+  --v2-bg: #f4f2eb;
+  --v2-surface: #fffef9;
+  --v2-elevated: #ffffff;
+  --v2-primary: #bf461e;
+  --v2-primary-hover: #9b3414;
+  --v2-secondary: #164d48;
+  --v2-accent: #f0b95d;
+  --v2-success: #286c4b;
+  --v2-warning: #825713;
+  --v2-danger: #b12c36;
+  --v2-info: #276780;
+  --v2-text: #173b37;
+  --v2-text-secondary: #4f625c;
+  --v2-text-muted: #64736b;
+  --v2-border: #cdd4c8;
+  --v2-divider: #e1e5dc;
+  --v2-focus: #146b88;
+  --v2-mission-active: var(--v2-primary);
+  --v2-mission-complete: var(--v2-success);
+  --v2-mission-failed: var(--v2-danger);
+  --v2-flight-running: var(--v2-secondary);
+  --v2-flight-paused: var(--v2-warning);
+  --v2-space-1: 4px;
+  --v2-space-2: 8px;
+  --v2-space-3: 12px;
+  --v2-space-4: 16px;
+  --v2-space-6: 24px;
+  --v2-space-8: 32px;
+  --v2-space-12: 48px;
+  --v2-space-16: 64px;
+  --v2-radius-small: 6px;
+  --v2-radius: 12px;
+  --v2-shadow: 0 12px 36px #183e3826;
+  --v2-font: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --v2-display: 'IBM Plex Sans', 'Noto Sans TC', sans-serif;
+  --v2-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}

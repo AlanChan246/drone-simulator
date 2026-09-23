@@ -5,7 +5,7 @@
 // Blockly 工作區變數（延遲初始化）
 let workspace = null;
 // 保存積木區寬度（百分比）
-let savedBlocklyWidth = 30; // 默認 30%
+let savedBlocklyWidth = 38; // 並排時保留足夠的積木閱讀寬度
 
 // Blockly 自動儲存（依任務分開存於 localStorage）
 const BLOCKLY_AUTOSAVE_PREFIX = 'drone-simulator:v1:blockly-workspace:';
@@ -90,7 +90,7 @@ function restoreBlocklyWorkspaceFromKey(ws, contextKey) {
     } catch (err) {
         return;
     }
-    if (!raw) return;
+    if (!raw) { ws.clear(); return; }
     try {
         blocklyAutosaveRestoring = true;
         ws.clear();
@@ -183,7 +183,7 @@ function updatePauseButton() {
     if (!btn) return;
     const icon = btn.querySelector('span[aria-hidden="true"]');
     const label = btn.querySelector('.debug-pause-label');
-    if (icon) icon.textContent = executionDebug.paused ? '▶' : 'Ⅱ';
+    if (icon && window.V2UI) icon.innerHTML = V2UI.icon(executionDebug.paused ? 'play' : 'pause');
     if (label) label.textContent = executionDebug.paused ? '繼續' : '暫停';
     btn.classList.toggle('is-active', executionDebug.paused);
     btn.setAttribute('aria-label', executionDebug.paused ? '繼續執行程式' : '暫停程式');
@@ -333,17 +333,18 @@ function initBlockly() {
                 toolbox: document.getElementById('toolbox'),
                 scrollbars: true, 
                 trashcan: true,
-                grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
+                grid: { spacing: 24, length: 1, colour: '#bcc8be', snap: true },
                 theme: { 
                     'base': 'classic', 
                     'componentStyles': { 
-                        'workspaceBackgroundColour': '#1e1e1e', 
-                        'toolboxBackgroundColour': '#2d2d2d' 
+                        'workspaceBackgroundColour': '#fffef9', 
+                        'toolboxBackgroundColour': '#e9eee5', 'toolboxForegroundColour': '#173b37', 'flyoutBackgroundColour': '#e9eee5', 'flyoutForegroundColour': '#173b37', 'flyoutOpacity': 1 
                     } 
                 }
             });
             console.log("Blockly workspace initialized");
             initBlocklyAutosave(workspace);
+            if (window.V2UI) V2UI.workspaceReady(workspace);
             
             // 初始化後立即調整大小
             setTimeout(() => {
@@ -571,7 +572,7 @@ function logToConsole(msg) {
     contentDiv.appendChild(entry);
     const summary = document.getElementById('console-summary');
     if (summary) summary.textContent = normalized.replace(/^[^\p{L}\p{N}]+/u, '').slice(0, 80);
-    if (type === 'error') toggleConsole(true);
+    // Errors are explained beside the flight; the detailed log stays opt-in.
     
     contentDiv.scrollTop = contentDiv.scrollHeight;
 }
@@ -620,7 +621,8 @@ function toggleCameraMode() {
 // --- 程式碼執行邏輯 ---
 
 function runBlocklyCode() {
-    window.__tutorialRunAttempted = true;
+    window.__tutorialRunAttempted = false;
+    window.__tutorialFlightCompleted = false;
     console.log("runBlocklyCode 被調用，state.isRunning:", state.isRunning);
     
     if (state.isRunning) {
@@ -744,8 +746,8 @@ function runBlocklyCode() {
         showAppMessage({
             variant: 'error',
             title: '程式產生錯誤',
-            body: String(e),
-            nextStep: '請檢查積木連接是否完整，或從主控台查看詳細訊息。',
+            body: '無法讀取這段程式。請檢查積木是否完整連接。',
+            nextStep: '檢查目前的積木和參數，修正後再按執行。',
             focusClose: true
         });
         console.error("Code generation error:", e);
@@ -766,7 +768,17 @@ function runBlocklyCode() {
     console.log(`命令隊列長度: ${cmdQueue.length}, 映射關係: ${commandToBlockMap.size}`);
     console.log("準備調用 executeQueue，state.isRunning:", state.isRunning);
     
-    executeQueue();
+    executeQueue().catch(error => {
+        console.error('Flight execution failed:', error);
+        emergencyStop();
+        state.isRunning = false;
+        if (currentExecutingBlockId) highlightBlock(currentExecutingBlockId, false);
+        updateProgress(0, 0);
+        showAppMessage({ variant: 'error', title: '這次飛行未能完成',
+            body: '無人機已停止。請檢查積木次序及數值。',
+            nextStep: '保留目前積木，按重設後再試一次。', focusClose: true });
+        if (window.V2UI) V2UI.programEnded();
+    });
     
     console.log("executeQueue 調用完成（異步函數已啟動）");
 }
@@ -1291,7 +1303,7 @@ let telemetryLastSample = { time: 0, x: 0, y: 0, z: 0 };
 let telemetryVelocity = { horizontal: 0, vertical: 0 };
 function setTelemetryText(id, text) {
     const el = document.getElementById(id);
-    if (el) el.textContent = text;
+    if (el && el.textContent !== text) el.textContent = text;
 }
 function updateFlightTelemetry() {
     const hud = document.getElementById('hud-display');
@@ -1313,7 +1325,7 @@ function updateFlightTelemetry() {
     const targetDist = hasNavigationTarget && typeof targetPosition !== 'undefined' ? Math.hypot(state.x - targetPosition.x, state.z - targetPosition.z) : NaN;
     const flightState = document.getElementById('hud-flight-state');
     if (flightState) {
-        flightState.innerHTML = `<i></i> ${state.isFlying ? 'FLYING' : 'LANDED'}`;
+        setTelemetryText('hud-flight-state', state.collisionDetected ? '碰到障礙物' : state.isFlying ? '飛行中' : '已降落');
         flightState.className = state.collisionDetected ? 'status-danger' : (state.isFlying ? 'status-warn' : 'status-safe');
     }
     let batteryLabel = '訓練模式';
@@ -1349,6 +1361,7 @@ function updateFlightTelemetry() {
     setTelemetryText('hud-mission-progress', missionProgress);
     setTelemetryText('active-mission-title', missionTitle);
     setTelemetryText('top-mission-progress', missionProgress);
+    if (window.V2UI) V2UI.sync();
 }
 window.updateFlightTelemetry = updateFlightTelemetry;
 function updateHUD() { updateFlightTelemetry(); }
@@ -1469,7 +1482,8 @@ function resetSimulator() {
         droneLedLight.intensity = 0;
     }
     
-    logToConsole("System Reset Complete.");
+    if (window.V2UI) V2UI.resetFeedback();
+    logToConsole("已回到起點，積木已保留。");
     console.log(`System Reset to (${state.x.toFixed(1)}, ${state.y.toFixed(1)}, ${state.z.toFixed(1)})`);
 }
 function emergencyStop() { 
@@ -1876,6 +1890,7 @@ async function executeQueue() {
             }
 
             updateProgress(index + 1, total);
+            if (window.V2UI) V2UI.command(command, index, total);
             if (blockId) highlightBlock(blockId, true);
             command._blockId = blockId;
 
@@ -1888,11 +1903,16 @@ async function executeQueue() {
             return true;
         },
         executeCommand: command => dispatchCommand(command),
-        onComplete: () => {
+        onComplete: result => {
             if (currentExecutingBlockId) highlightBlock(currentExecutingBlockId, false);
             updateProgress(0, 0);
             state.isRunning = false;
             executionDebug.currentIndex = -1;
+            window.__tutorialFlightCompleted = !result.stopped && result.completed === result.total
+                && !state.isFlying && cmdQueue.some(command => command.type === 'takeoff')
+                && cmdQueue.some(command => command.type.startsWith('move_'))
+                && cmdQueue.at(-1)?.type === 'land';
+            if (window.V2UI) V2UI.programEnded();
         }
     });
 
@@ -2396,6 +2416,9 @@ function initBlocklyResizer() {
 
 // 返回任務選擇畫面
 function returnToMissionSelect() {
+    emergencyStop();
+    stopInteractiveTutorial();
+    flushBlocklyAutosave();
     closeResultModal();
     if (currentGameMode === 'freeplay') {
         showMainMenu();
@@ -2657,6 +2680,7 @@ function showMissionBriefing(missionId) {
         `;
     }
     
+    if (window.V2UI) V2UI.briefing(targetMissionId, content);
     briefingModal.style.display = 'flex';
     // 添加 active class 以觸發動畫，並將焦點移至主要按鈕（模態無障礙）
     setTimeout(() => {
@@ -2723,6 +2747,9 @@ async function startMission(missionId) {
         return;
     }
 
+    const loading = document.getElementById('v2-scene-loading');
+    loading.hidden = false;
+    try {
     currentGameMode = 'mission';
     updateModeSpecificUi();
     
@@ -2846,6 +2873,11 @@ async function startMission(missionId) {
     }
 
     onBlocklyContextChanged();
+    if (window.V2UI) V2UI.enter();
+    } catch (error) {
+        console.error('Scene preparation failed:', error);
+        showAppMessage({ variant:'error', title:'場景暫時未能載入', body:'請確認瀏覽器支援 3D 圖像並重新整理。', nextStep:'若仍未能載入，嘗試更新瀏覽器或重新連線。', focusClose:true });
+    } finally { loading.hidden = true; }
 }
 
 function shouldAutoShowMissionBriefing(missionId) {
@@ -2858,6 +2890,9 @@ async function startFreePlay() {
         console.warn('Drone Simulator：請用本機 HTTP 開啟（勿雙擊 index.html）。畫面上方應有說明。');
         return;
     }
+    const loading = document.getElementById('v2-scene-loading');
+    loading.hidden = false;
+    try {
     currentGameMode = 'freeplay';
     updateModeSpecificUi();
     // 先顯示遊戲界面
@@ -2947,6 +2982,11 @@ async function startFreePlay() {
     }
 
     onBlocklyContextChanged();
+    if (window.V2UI) V2UI.enter();
+    } catch (error) {
+        console.error('Scene preparation failed:', error);
+        showAppMessage({ variant:'error', title:'場景暫時未能載入', body:'請確認瀏覽器支援 3D 圖像並重新整理。', nextStep:'若仍未能載入，嘗試更新瀏覽器或重新連線。', focusClose:true });
+    } finally { loading.hidden = true; }
 }
 
 // 顯示基地營
@@ -3739,11 +3779,11 @@ window.enableRoadMaskDebug = function () {
 // 互動式新手教學與行動裝置提示
 // ==========================================
 const tutorialSteps = [
-    { title: '開啟積木區', text: '按上方「顯示積木區」，準備編寫第一個飛行程式。', check: () => !!document.querySelector('#blocklyDiv.visible') },
-    { title: '加入起飛', text: '從「Basic Flight」拖入起飛積木，並接在程式開始下方。', type: 'drone_takeoff' },
+    { title: '開啟積木區', text: '開啟程式積木，準備編寫第一個飛行程式。', check: () => !!document.querySelector('#blocklyDiv.visible') },
+    { title: '加入起飛', text: '從「飛行指令」拖入起飛積木，並接在程式開始下方。', type: 'drone_takeoff' },
     { title: '加入短距離移動', text: '拖入「go forward … cm」積木，距離先設為 50 cm。', type: 'drone_move_cm' },
     { title: '安全降落', text: '在最後接上降落積木，形成完整的起飛、移動、降落程序。', type: 'drone_land' },
-    { title: '執行小任務', text: '按右下角 ▶ 執行。觀察高亮積木、座標和飛行結果。', check: () => !!window.__tutorialRunAttempted }
+    { title: '執行小任務', text: '按執行，觀察高亮積木與無人機，直到它安全降落。', check: () => !!window.__tutorialFlightCompleted }
 ];
 let tutorialStepIndex = 0;
 let tutorialTimer = null;
@@ -3784,6 +3824,7 @@ function startInteractiveTutorial() {
     if (!coach) return;
     tutorialStepIndex = 0;
     window.__tutorialRunAttempted = false;
+    window.__tutorialFlightCompleted = false;
     coach.hidden = false;
     renderTutorialStep();
     if (tutorialTimer) clearInterval(tutorialTimer);
@@ -3796,15 +3837,8 @@ function stopInteractiveTutorial() {
     tutorialTimer = null;
 }
 function applyTutorialHelper() {
-    if (!document.querySelector('#blocklyDiv.visible')) toggleBlocklyPanel();
-    const ws = ensureBlocklyWorkspaceReady();
-    if (!ws) return;
-    const xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_start" x="30" y="30"><next><block type="drone_takeoff"><next><block type="drone_move_cm"><field name="DIR">FORWARD</field><value name="DIST"><block type="math_number"><field name="NUM">50</field></block></value><next><block type="drone_land"></block></next></block></next></block></next></block></xml>';
-    ws.clear();
-    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xmlText), ws);
-    if (typeof ws.zoomToFit === 'function') ws.zoomToFit();
-    flushBlocklyAutosave();
-    document.getElementById('tutorial-check').textContent = '✅ 已放入示範程式；你可以修改後執行。';
+    V2UI.setView('split');
+    V2UI.starter();
 }
 
 function updateDebugPosition() {

@@ -1910,7 +1910,7 @@ function createMazeMap() {
 
     // Starter City Builder 的清晰俯視城市語言；保留霧霾以呼應震後情境。
     scene.background = new THREE.Color(0x9aa9ad);
-    scene.fog = new THREE.Fog(0x9aa9ad, 2100, 5200);
+    scene.fog = new THREE.Fog(0x9aa9ad, 4000, 7000);
     
     // 實體道路已提供清楚路線；任務一不疊加 GridHelper，避免深度衝突（Z-fighting）。
     const mazeRoadY = 0.38;
@@ -2126,9 +2126,15 @@ function createFixedTunnelMap() {
 }
 
 function createFreeFlightMap() {
-    createHolodeckRoom(); // 自由飛行也加入 Holodeck
     resetDefaultSimulatorAtmosphere();
-    const gridHelper = new THREE.GridHelper(5000, 100, 0x00adb5, 0x242832);
+    scene.background = new THREE.Color(0xdde8df);
+    scene.fog = new THREE.Fog(0xdde8df, 900, 4000);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0xd6dfcf }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.2;
+    ground.receiveShadow = true;
+    environmentGroup.add(ground);
+    const gridHelper = new THREE.GridHelper(5000, 100, 0x56877d, 0xb3c5b4);
     environmentGroup.add(gridHelper);
     
     startPosition = { x: 0, y: 0, z: 0, heading: 180 };
@@ -3895,7 +3901,9 @@ function finishTunnelMission() {
     state.stopSignal = true;
     state.isRunning = false;
 
+    const completedAt = state.endTime;
     setTimeout(() => {
+        if (!state.missionCompleted || state.endTime !== completedAt) return;
         if (typeof window.showResultModal === 'function') {
             window.showResultModal({
                 mission: activeMissionConfig.id,
@@ -4095,7 +4103,9 @@ function finishCityMission() {
     state.stopSignal = true;
     state.isRunning = false;
 
+    const completedAt = state.endTime;
     setTimeout(() => {
+        if (!state.missionCompleted || state.endTime !== completedAt) return;
         if (typeof window.showResultModal === 'function') {
             window.showResultModal({
                 mission: activeMissionConfig.id,
@@ -4460,43 +4470,12 @@ function animateLoop() {
     if (isCityMissionScene()) checkCityLogic();
     else if (state.isFlying) checkCityLogic();
     
-    // 更新 HUD 內容 (加入實時分數與時間)
-    let hudHTML = `<div style="margin-bottom:5px; font-weight:bold; color:#00adb5; border-bottom:1px solid rgba(0,173,181,0.3); padding-bottom:5px;">MODE: ${followDrone?"FOLLOW":"FREE LOOK"}</div>`;
-    
-    if (isTunnelMissionScene()) {
-        const currentTime = state.missionCompleted ? (state.endTime || Date.now()) : Date.now();
-        const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((currentTime - takeoffTime) / 1000);
-        hudHTML += `<div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">SCORE: ${Math.floor(currentScore)}</div>`;
-        hudHTML += `<div style="color:#ffffff;">TIME: ${timeElapsed}s ${state.missionCompleted ? '🏁' : ''}</div>`;
-        hudHTML += `<div style="color:#00ff00;">巡檢回報: ${beaconsTriggered}/${getRequiredBeacons()}</div>`;
-        hudHTML += `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;"></div>`;
-    }
-
-    if (isCityMissionScene()) {
-        const currentTime = state.missionCompleted ? (state.endTime || Date.now()) : Date.now();
-        const timeElapsed = takeoffTime === 0 ? 0 : Math.floor((currentTime - takeoffTime) / 1000);
-        const batteryLeft = getCityBatteryRemainingLines();
-        const waterStatus = state.hasWater ? 'FULL' : 'EMPTY';
-        const charged = forestChargeData.filter(s => s.triggered).length;
-        const chargeTotal = forestChargeData.length;
-        hudHTML += `<div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">SCORE: ${Math.floor(currentScore)}</div>`;
-        hudHTML += `<div style="color:#ffffff;">TIME: ${timeElapsed}s ${state.missionCompleted ? '🏁' : ''}</div>`;
-        hudHTML += `<div style="color:#ff4400; font-size:1.05rem; font-weight:bold;">BATTERY: ${batteryLeft} 行 (移動)</div>`;
-        hudHTML += `<div style="color:#ff6b35;">火點: ${firesExtinguished}/${getRequiredFires()}</div>`;
-        hudHTML += `<div style="color:${state.hasWater ? '#00adb5' : '#aaa'};">WATER: ${waterStatus}</div>`;
-        hudHTML += `<div style="color:#ffd54f;">充電站: ${charged}/${chargeTotal}</div>`;
-        hudHTML += `<div style="color:#4dabf7;">起點藍箭嘴 → 終點綠箭嘴</div>`;
-        hudHTML += `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;"></div>`;
-    }
-
-
-    const displayAlt = isCityMissionScene() ? state.y - getForestHeight(state.x, state.z) : state.y;
-    hudHTML += `Status: ${state.isFlying?'FLYING':'LANDED'}<br>Alt: ${Math.round(displayAlt)} cm`;
-    // 結構化 Flight／NAV HUD 由 main.js 統一更新，避免每幀重建 DOM。
-    if (typeof window.updateFlightTelemetry === 'function') window.updateFlightTelemetry();
-
     updateCameraPosition();
-    renderer.render(scene, camera);
+    const deck = document.getElementById('game-interface');
+    if (deck?.style.display !== 'none' && deck?.dataset.view !== 'code') {
+        renderer.render(scene, camera);
+        if (window.V2UI) V2UI.projectLabels(camera, state, targetPosition);
+    }
 }
 
 if (typeof window !== 'undefined') {

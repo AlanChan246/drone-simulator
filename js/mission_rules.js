@@ -12,7 +12,7 @@
             requiredInspectionCheckpoints: 3,
             requiredFireSites: 0,
             pending(progress) {
-                return `尚需完成 ${Math.max(0, this.requiredInspectionCheckpoints - progress.inspectionCheckpoints)} 個巡檢點並在終點降落。`;
+                return `請沿道路抵達疏散區並降落。巡檢已完成 ${progress.inspectionCheckpoints}/3，可選擇繼續巡檢加分。`;
             }
         }),
         city: Object.freeze({
@@ -23,7 +23,7 @@
             initialBatteryLines: 20,
             chargeStationLines: 15,
             pending(progress) {
-                return `尚需撲滅 ${Math.max(0, this.requiredFireSites - progress.fireSites)} 個火點並到達終點。`;
+                return `請在受災區降落結算。已撲滅 ${progress.fireSites}/4 個火點，可繼續滅火爭取更高分數。`;
             }
         }),
         free: Object.freeze({

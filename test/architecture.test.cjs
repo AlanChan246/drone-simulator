@@ -27,8 +27,8 @@ test('Flight Command execution stops through its interface', async () => {
 });
 
 test('Mission adapters own pending progress language', () => {
-    assert.match(missions.forScene('tunnel').pending({ inspectionCheckpoints: 1 }), /2 個巡檢點/);
-    assert.match(missions.forScene('city').pending({ fireSites: 3 }), /1 個火點/);
+    assert.match(missions.forScene('tunnel').pending({ inspectionCheckpoints: 1 }), /1\/3，可選擇/);
+    assert.match(missions.forScene('city').pending({ fireSites: 3 }), /3\/4 個火點/);
     assert.equal(missions.forScene('free').pending({}), '');
 });
 
