@@ -2577,6 +2577,7 @@ function renderBriefMission1Legend() {
 }
 
 function renderBriefMission2Legend() {
+    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);
     return renderBriefMapLegend([
         { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--start', image: 'assets/images/mission2-legend/start-base.png', badge: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木地板、帳篷、木箱與路牌' },
         { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--end', image: 'assets/images/mission2-legend/rescue-goal.png', badge: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；金屬救援平台與物資棚' },

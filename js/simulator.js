@@ -1542,7 +1542,13 @@ const simulatorSceneAdapters = SceneLifecycle.createRegistry({
     }),
     city: Object.freeze({
         prepare: function () {},
-        build: createCityMap
+        build: function () {
+            if (window.Mission2V2 && Mission2V2.selected(window.location.search)) {
+                buildMission2V2Scene();
+            } else {
+                createCityMap();
+            }
+        }
     }),
     free: Object.freeze({
         prepare: restoreDefaultSceneLighting,
@@ -1592,6 +1598,12 @@ function loadScene(type) {
         return;
     }
 
+    if (environmentGroup.userData.disposeMission2V2) {
+        environmentGroup.userData.disposeMission2V2();
+        delete environmentGroup.userData.disposeMission2V2;
+        delete environmentGroup.userData.sceneVariant;
+        delete environmentGroup.userData.mission2V2;
+    }
     applyMissionConfigForScene(type);
 
     clearRoadPieceRegistry();
@@ -3016,6 +3028,53 @@ function buildForestGridScene(forestGrid, logLabel) {
         }
     }
     console.log(logLabel || '🌲 Kenney 山火場已載入');
+}
+
+// Visual variant bridge only. Mission identity, rules and Legacy builders stay intact.
+function buildMission2V2Scene() {
+    const config = Mission2V2Config;
+    currentMazeGrid = config.grid.map(row => [...row]);
+    currentCellSize = config.cellSize;
+    mazeOffsetX = config.offsetX;
+    mazeOffsetZ = config.offsetZ;
+    forestHeightGrid = buildForestHeightGrid(currentMazeGrid);
+    forestChargeData = [];
+    startPosition = { ...config.spawn };
+    spawnPosition = { ...config.spawn };
+    targetPosition = { ...config.goal };
+    lastSafePos = { x: startPosition.x, y: startPosition.y, z: startPosition.z };
+
+    // Retain the exact old sensor shapes, including charge machinery. The new
+    // artwork has no isWall flags and cannot silently change distance readings.
+    const visualRoot = environmentGroup;
+    const sensors = new THREE.Group();
+    sensors.name = 'mission2-v2-legacy-sensors';
+    try {
+        environmentGroup = sensors;
+        currentMazeGrid.forEach((row, i) => row.forEach((value, j) => {
+            if (value !== 1 && value !== 6) return;
+            renderKenneyForestCell(currentMazeGrid, i, j,
+                mazeOffsetX + j * currentCellSize + currentCellSize / 2,
+                mazeOffsetZ + i * currentCellSize + currentCellSize / 2,
+                0, currentCellSize, value);
+        }));
+    } finally {
+        environmentGroup = visualRoot;
+    }
+    sensors.traverse(object => {
+        if (!object.isMesh) return;
+        object.geometry = object.geometry.clone();
+        // Raycaster in Three r128 still intersects invisible objects. Keep the
+        // material side unchanged because that also controls sensor intersections.
+        object.visible = false;
+        object.castShadow = false;
+        if (Array.isArray(object.material)) object.material = object.material.map(m => m.clone());
+        else object.material = object.material.clone();
+    });
+    visualRoot.add(sensors);
+    Mission2V2.build({ THREE, scene, parent: visualRoot, templates: assets.kenneyForest,
+        stations: forestChargeData, createFireEffects: createForestFireEffects,
+        createFireLabel: createFireSiteLabel, animations: window.mazeAnimations });
 }
 
 function createCityMap() {
