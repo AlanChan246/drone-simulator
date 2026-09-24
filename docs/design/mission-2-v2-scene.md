@@ -11,3 +11,5 @@ Implementation: independent configuration and builder under `js/scenes/mission2-
 Entry: open the app with `?scene=mission2-v2`, then choose Mission 2 normally. No parameter (or `?scene=mission2-legacy`) selects Legacy. Other missions ignore the parameter. This is a development URL, not a new student menu.
 
 QA evidence and measured budgets are recorded in `audit/mission-2-v2/README.md`. All files and checkpoints are local only.
+
+Visual QA found that the added outside context needs overview radius 3800, selected by one v2-only line in `v2_ui.js`. A one-line v2-only branch in `main.js` also selects a scene-specific legend so the briefing no longer promises Legacy arrows or campfires. Both are presentation adapters; all gameplay statements remain byte-identical.

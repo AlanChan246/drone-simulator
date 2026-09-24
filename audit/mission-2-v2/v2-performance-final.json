@@ -1,0 +1,18 @@
+{
+  "variant": "mission2-v2",
+  "draw": {
+    "frame": 1523,
+    "calls": 160,
+    "triangles": 111639,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 119,
+    "textures": 25
+  },
+  "medianMs": 16.700000000000728,
+  "p95Ms": 17.69999999999709,
+  "width": 1408,
+  "height": 638
+}

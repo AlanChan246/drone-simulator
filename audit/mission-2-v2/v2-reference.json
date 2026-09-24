@@ -1,0 +1,47 @@
+{
+  "variant": "mission2-v2",
+  "position": {
+    "x": 825.0000000000006,
+    "y": 14.999999999999984,
+    "z": -825.0000000000005,
+    "heading": 2.9309887850104133e-13
+  },
+  "running": false,
+  "flying": false,
+  "complete": true,
+  "collision": false,
+  "water": false,
+  "battery": 36,
+  "fires": 3,
+  "firePoints": 475,
+  "score": 925,
+  "stations": [
+    {
+      "i": 3,
+      "j": 5,
+      "triggered": true
+    },
+    {
+      "i": 6,
+      "j": 8,
+      "triggered": true
+    },
+    {
+      "i": 10,
+      "j": 7,
+      "triggered": true
+    }
+  ],
+  "commands": 68,
+  "draw": {
+    "frame": 7749,
+    "calls": 142,
+    "triangles": 110283,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 119,
+    "textures": 25
+  }
+}

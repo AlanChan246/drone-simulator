@@ -1,0 +1,25 @@
+{
+  "passed": [
+    "full grid identical",
+    "spawn + heading identical",
+    "goal identical",
+    "6360 sensor readings identical",
+    "841 collision probes identical",
+    "reset state",
+    "four registered fire sites",
+    "extinguish presentation",
+    "fire reset presentation",
+    "charge +15",
+    "charge once",
+    "charge reset",
+    "partial completion allowed",
+    "hover cannot complete",
+    "high landing rejected",
+    "fire score 575",
+    "fire score deduplicated",
+    "global lights restored exactly",
+    "legacy restored"
+  ],
+  "final": "v2 reset",
+  "sensorCount": 6360
+}

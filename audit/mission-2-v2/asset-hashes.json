@@ -1,0 +1,72 @@
+[
+  {
+    "path": "assets/models/kenney/nature/tree_default.glb",
+    "bytes": 9428,
+    "sha256": "562d29638c902de3c7bee465d3a53bb77117efbc392ae04ed894faf6b5dc691d"
+  },
+  {
+    "path": "assets/models/kenney/nature/tree_detailed.glb",
+    "bytes": 31412,
+    "sha256": "c041daf2f0fb1d49e4325227cbcd58667adbe51e9b55e8c1f0a94b74cc521b3b"
+  },
+  {
+    "path": "assets/models/kenney/nature/tree_tall.glb",
+    "bytes": 7000,
+    "sha256": "3515a8826044d91e84e011186c86878f62024a487a079b4e32c9ac2e71994411"
+  },
+  {
+    "path": "assets/models/kenney/nature/tree_oak_dark.glb",
+    "bytes": 14648,
+    "sha256": "f2c455bb433fe98522d1b9391d5b587e7324176ecaee29ceefe55350a7e3fd47"
+  },
+  {
+    "path": "assets/models/kenney/nature/rock_largeA.glb",
+    "bytes": 7552,
+    "sha256": "6dd15390fd96501dcd1454765a17ba61dbbd8d47705dfe5149c8dd92b353ce25"
+  },
+  {
+    "path": "assets/models/kenney/nature/rock_largeB.glb",
+    "bytes": 8560,
+    "sha256": "caa8b025833d4dabf6d98fe2e96cf2fbd886693ac990df0db75f9d827194374b"
+  },
+  {
+    "path": "assets/models/kenney/nature/stump_old.glb",
+    "bytes": 9564,
+    "sha256": "4c2d2da34804c1662c6a776a9d60fe4449e6f6fdd50914bfec7d5cca3e9ceddb"
+  },
+  {
+    "path": "assets/models/kenney/nature/campfire_logs.glb",
+    "bytes": 9284,
+    "sha256": "98d87cdcf9095b94fd348d0946e911dd4ca6c0956bac3318cfd2b0030b86055a"
+  },
+  {
+    "path": "assets/models/kenney/factory/machine.glb",
+    "bytes": 25620,
+    "sha256": "a39e3042bcb7789274428357383317d70e1c31906e5301c99e7d9e90ac584863"
+  },
+  {
+    "path": "assets/models/kenney/factory/indicator-special-area.glb",
+    "bytes": 3036,
+    "sha256": "e25844c88fbda7565f672021540a98506ec66e63d7091b446c0b6e5a70953d00"
+  },
+  {
+    "path": "assets/models/kenney/factory/screen-panel-small.glb",
+    "bytes": 13956,
+    "sha256": "e3b43cfb99a49382de983f476bc19c0c76b79c199008f663d19b7faf9b8543a3"
+  },
+  {
+    "path": "assets/models/kenney/factory/button-floor-round.glb",
+    "bytes": 14628,
+    "sha256": "154e93fa4613e5fcec4c0c4804ff3d0e4422b638385e1b9e08a6c39b9cd5fd5f"
+  },
+  {
+    "path": "assets/models/kenney/factory/warning-orange.glb",
+    "bytes": 16136,
+    "sha256": "07974e9e78c2b2d2ed8198461a7fbac86d1744490ab687817543a07f163aa7d0"
+  },
+  {
+    "path": "assets/models/kenney/factory/Textures/colormap.png",
+    "bytes": 11813,
+    "sha256": "35d7bd6900dde0208429eeaec87fa17fbf024ed59f3f4eab54bc92802eba9dd7"
+  }
+]

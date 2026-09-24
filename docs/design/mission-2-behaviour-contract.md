@@ -30,8 +30,10 @@ Wildfire Response: launch → collect water → extinguish fires / recharge → 
 
 ## Preservation boundaries
 
-No changes to `main.js`, `mission_rules.js`, `blockly_def.js`, flight execution, drone model/physics, reference answer, or Mission 1 builders. Preserve legacy builder functions and asset bytes. V2 owns its rendering configuration, geometry/materials, animations and temporary atmosphere. Decorative meshes never acquire `isWall`.
+No changes to `main.js` gameplay/execution, `mission_rules.js`, `blockly_def.js`, flight execution, drone model/physics, reference answer, or Mission 1 builders. Preserve legacy builder functions and asset bytes. V2 owns its rendering configuration, geometry/materials, animations and temporary atmosphere. Decorative meshes never acquire `isWall`.
 
 ## Existing limitations, not fixes in this scene task
 
 The reference fixture previously completed 3/4 fires (925 points within the first time tier), because its fourth water action misses the source. Release increments the fire count even for an already extinguished site, while score is deduplicated. High flight can bypass the forest grid. Do not silently change any of these behaviors.
+
+Presentation-only integration exceptions: one guarded line in `main.js` selects the independent v2 map legend; one guarded line in `v2_ui.js` selects v2 overview radius 3800 (Legacy stays 3200; follow stays 220). Hash tests strip only these exact additions before comparing the original whole files.

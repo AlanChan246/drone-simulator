@@ -1,0 +1,47 @@
+{
+  "variant": "legacy",
+  "position": {
+    "x": 825.0000000000041,
+    "y": 14.999999999999986,
+    "z": -825.0000000000026,
+    "heading": 6.816769371198461e-14
+  },
+  "running": false,
+  "flying": false,
+  "complete": true,
+  "collision": false,
+  "water": false,
+  "battery": 36,
+  "fires": 3,
+  "firePoints": 475,
+  "score": 925,
+  "stations": [
+    {
+      "i": 3,
+      "j": 5,
+      "triggered": true
+    },
+    {
+      "i": 6,
+      "j": 8,
+      "triggered": true
+    },
+    {
+      "i": 10,
+      "j": 7,
+      "triggered": true
+    }
+  ],
+  "commands": 68,
+  "draw": {
+    "frame": 10386,
+    "calls": 774,
+    "triangles": 44000,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 254,
+    "textures": 29
+  }
+}

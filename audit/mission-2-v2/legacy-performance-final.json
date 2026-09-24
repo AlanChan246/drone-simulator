@@ -1,0 +1,18 @@
+{
+  "variant": "legacy",
+  "draw": {
+    "frame": 11723,
+    "calls": 1223,
+    "triangles": 67157,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 254,
+    "textures": 29
+  },
+  "medianMs": 16.699999999982538,
+  "p95Ms": 17.60000000000582,
+  "width": 1408,
+  "height": 638
+}

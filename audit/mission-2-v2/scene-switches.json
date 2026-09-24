@@ -1,0 +1,555 @@
+{
+  "checks": [
+    {
+      "type": "tunnel",
+      "variant": "legacy",
+      "grid": 12,
+      "start": {
+        "x": -675,
+        "y": 0,
+        "z": -675,
+        "heading": 180
+      },
+      "lights": [
+        {
+          "color": 14678015,
+          "intensity": 1.1
+        },
+        {
+          "color": 16777215,
+          "intensity": 1.65
+        },
+        {
+          "color": 2284031,
+          "intensity": 0.42
+        },
+        {
+          "color": 16740952,
+          "intensity": 1.4
+        }
+      ]
+    },
+    {
+      "type": "free",
+      "variant": "legacy",
+      "grid": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "heading": 180
+      },
+      "lights": [
+        {
+          "color": 14678015,
+          "intensity": 1.1
+        },
+        {
+          "color": 16777215,
+          "intensity": 1.65
+        },
+        {
+          "color": 2284031,
+          "intensity": 0.42
+        },
+        {
+          "color": 16740952,
+          "intensity": 1.4
+        }
+      ]
+    },
+    {
+      "type": "city",
+      "variant": "mission2-v2",
+      "grid": 14,
+      "start": {
+        "x": -825,
+        "y": 14,
+        "z": -825,
+        "heading": 180
+      },
+      "lights": [
+        {
+          "color": 15265764,
+          "intensity": 0.65
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.9
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.1
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.1
+        }
+      ]
+    },
+    {
+      "type": "tunnel",
+      "variant": "legacy",
+      "grid": 12,
+      "start": {
+        "x": -675,
+        "y": 0,
+        "z": -675,
+        "heading": 180
+      },
+      "lights": [
+        {
+          "color": 14678015,
+          "intensity": 1.1
+        },
+        {
+          "color": 16777215,
+          "intensity": 1.65
+        },
+        {
+          "color": 2284031,
+          "intensity": 0.42
+        },
+        {
+          "color": 16740952,
+          "intensity": 1.4
+        }
+      ]
+    },
+    {
+      "type": "city",
+      "variant": "mission2-v2",
+      "grid": 14,
+      "start": {
+        "x": -825,
+        "y": 14,
+        "z": -825,
+        "heading": 180
+      },
+      "lights": [
+        {
+          "color": 15265764,
+          "intensity": 0.65
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.9
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.1
+        },
+        {
+          "color": 16774364,
+          "intensity": 0.1
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "http://127.0.0.1:8080/assets/images/mission-preview-1.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/images/mission-preview-2.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/corridor.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/drone.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/tree_pineTallA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/tree_pineSmallA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/tree_oak.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/rock_smallA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/plant_bushLarge.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/grass.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/stump_old.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/log.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/lily_large.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/campfire_logs.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/nature/GLTF%20format/rock_smallFlatA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_grass.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathStraight.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathBend.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathEnd.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathSplit.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathCross.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_riverTile.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/ground_pathTile.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/tree_detailed.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/tree_default.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/tree_tall.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/tree_oak_dark.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/rock_largeA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/rock_largeB.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/rock_smallFlatA.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/stump_old.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/nature/campfire_logs.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/floor.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/tent.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/structure-canvas.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/structure-metal-floor.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/box.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/box-large.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/barrel.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/signpost.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/signpost-single.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/campfire-pit.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/machine.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/screen-panel-small.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/indicator-special-area.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/button-floor-round.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/warning-orange.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/survival/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/factory/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/building-small-a.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/building-small-b.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/building-small-c.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/building-small-d.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/building-garage.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/grass-trees.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/grass-trees-tall.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/pavement-fountain.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/building-c.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/building-g.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/building-skyscraper-a.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/building-skyscraper-b.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney/starter-city/models/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-commercial_2.1/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-straight.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-bend.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-crossroad.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-split.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-end.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/road-square.glb",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/models/kenney_city-kit-roads/Models/GLB%20format/Textures/colormap.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/assets/images/mission-preview-2.png",
+      "bytes": 0
+    },
+    {
+      "name": "http://127.0.0.1:8080/node_modules/blockly/media/sprites.png",
+      "bytes": 0
+    }
+  ]
+}
