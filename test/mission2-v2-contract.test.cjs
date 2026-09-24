@@ -19,9 +19,9 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
      .replace("${tunnel?1:'2-v2'}.png",'${tunnel?1:2}.png')
      .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'')
      .replace("    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);\n",'');
-   // Pin the approved manual tutorial update; flight execution remains unchanged.
+   // Pin the approved manual tutorial and Blockly theme integration; flight execution remains unchanged.
    // Pre-existing user change in 460e863: protect the new airframe paint baseline.
-   const currentExpected=file==='js/main.js'?'01d247c61f3ba58e58f94ad31c1f1267da5e5eb975c7d56ba7eb49367456abd8':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
+   const currentExpected=file==='js/main.js'?'5088950368c8cc626b04a8ddb0fcb8219531b0b183c1aa88324fc80da19d484a':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
    assert.equal(hash(original),currentExpected,file);
  }
 });

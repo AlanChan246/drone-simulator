@@ -345,21 +345,9 @@ function initBlockly() {
                 scrollbars: true, 
                 trashcan: true,
                 grid: { spacing: 24, length: 1, colour: '#bcc8be', snap: true },
-                theme: { 
-                    'base': 'classic',
-                    'blockStyles': {
-                        colour_blocks:{colourPrimary:'#96630c'}, list_blocks:{colourPrimary:'#75518e'},
-                        logic_blocks:{colourPrimary:'#356b8b'}, loop_blocks:{colourPrimary:'#3c7045'},
-                        math_blocks:{colourPrimary:'#46689e'}, procedure_blocks:{colourPrimary:'#86528d'},
-                        text_blocks:{colourPrimary:'#21776c'}, variable_blocks:{colourPrimary:'#915278'},
-                        variable_dynamic_blocks:{colourPrimary:'#915278'}
-                    },
-                    'componentStyles': { 
-                        'workspaceBackgroundColour': '#fffef9', 
-                        'toolboxBackgroundColour': '#e9eee5', 'toolboxForegroundColour': '#173b37', 'flyoutBackgroundColour': '#e9eee5', 'flyoutForegroundColour': '#173b37', 'flyoutOpacity': 1 
-                    } 
-                }
+                theme: DroneTheme.blocklyTheme()
             });
+            DroneTheme.attachWorkspace(workspace);
             console.log("Blockly workspace initialized");
             initBlocklyAutosave(workspace);
             if (window.V2UI) V2UI.workspaceReady(workspace);

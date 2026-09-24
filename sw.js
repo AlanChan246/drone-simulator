@@ -1,9 +1,10 @@
-const CACHE_VERSION = 'drone-simulator-pan-20260924b';
+const CACHE_VERSION = 'drone-simulator-theme-20260924b';
 const APP_SHELL = [
   "./",
   "index.html",
   "style.css",
   "js/v2_ui.js",
+  "js/theme.js",
   "js/medical_drone_model.js",
   "js/main.js",
   "js/blockly_workspace_io.js",

@@ -78,7 +78,7 @@ components:
 
 Rescue field school: daylight-readable surfaces, real mission-world imagery and a small set of clear controls. The home invites a student to begin a rescue; the flight deck helps them connect a highlighted block with visible drone movement and a mission result. Operate is the deck's mode, with the 3D world carrying the experience.
 
-This replaces the previous dark marketing/console visual world. It preserves the simulator, mission data, scores, models and program formats. Product truth is in PRODUCT.md; implementation tokens in assets/styles/tokens.css are authoritative.
+This replaces the previous marketing/console visual world. The optional dark theme retains the rescue field school identity. It preserves the simulator, mission data, scores, models and program formats. Product truth is in PRODUCT.md; implementation tokens in assets/styles/tokens.css are authoritative.
 
 ## Colors
 
@@ -122,3 +122,9 @@ The current-command panel, Blockly highlight and projected drone/action label fo
 Review evidence and limitations: docs/design/v2-qa.md. Independent finish review ended **ship** for the two scored findings: tablet controls were a confirmed false positive; practice feedback was strengthened and visually verified. This is a scoped visual verdict, not hardware certification.
 
 Provenance: images/GLBs are pre-existing local assets, original notices retained; interface SVG paths are authored code. No new external image/model package. The first concept script call emitted nothing because of a symlink entry-point issue; key `9c3e13b0` was corroborated late on 2026-09-24. No approved raster comp or quality-bar board existed, and no retroactive pre-build design approval is claimed.
+
+## Appearance themes
+
+Default appearance follows the device, with explicit light/dark choices saved under `drone-simulator-theme`. The home and mission headers expose a single sun/moon icon button; the flight deck keeps it under More tools. Clicking toggles directly between light and dark, with a dynamic accessible label describing the next action. All buttons stay synchronized. There is no visible system/light/dark dropdown. System changes apply only in system mode. Storage failures leave switching available for the current session.
+
+Dark mode uses a pure black page (`#000000`), neutral near-black surfaces (`#111111`, `#1c1c1c`), pale text (`#f2f2f2`), rescue orange (`#f39870`) and teal (`#8dccc0`). `--v2-on-color` separates filled-button text from surface backgrounds. Status text, focus, borders, grid and elevation adapt through tokens. The 3D world, imagery, videos and block category colours retain their existing meaning. Blockly changes theme in place without replacing the Flight Program. The head-loaded theme module applies appearance before render dependencies; it is included in the offline app shell.

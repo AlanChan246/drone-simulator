@@ -41,3 +41,38 @@
   --v2-display: 'IBM Plex Sans', 'Noto Sans TC', sans-serif;
   --v2-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
+
+:root {
+  color-scheme: light;
+  --v2-on-color: #fffef9;
+  --v2-toolbox: #e9eee5;
+  --v2-grid: #bcc8be;
+  --v2-shadow-small: 0 4px 16px #183e3812;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --v2-bg: #000000;
+  --v2-surface: #111111;
+  --v2-elevated: #1c1c1c;
+  --v2-canvas: #151515;
+  --v2-backdrop: #000000cc;
+  --v2-primary: #f39870;
+  --v2-primary-hover: #ffb08c;
+  --v2-secondary: #8dccc0;
+  --v2-accent: #f0c57d;
+  --v2-success: #92d4ab;
+  --v2-warning: #efc47d;
+  --v2-danger: #ffa0aa;
+  --v2-info: #91cde4;
+  --v2-text: #f2f2f2;
+  --v2-text-secondary: #cccccc;
+  --v2-text-muted: #aaaaaa;
+  --v2-border: #666666;
+  --v2-divider: #333333;
+  --v2-focus: #8ed5ee;
+  --v2-on-color: #000000;
+  --v2-toolbox: #191919;
+  --v2-grid: #666666;
+  --v2-shadow: 0 12px 36px #00000059;
+  --v2-shadow-small: 0 4px 16px #00000033;
+}

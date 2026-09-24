@@ -12,7 +12,7 @@
 .v2-home-copy h1 { font:700 clamp(36px,4vw,60px)/1.25 var(--v2-display); letter-spacing:-.03em; color:var(--v2-text); margin:0 0 24px; }
 .v2-home-copy>p { color:var(--v2-text-secondary); font-size:16px; line-height:1.9; margin:0 0 32px; max-width:35ch; }
 .v2-primary,.v2-secondary,.v2-back { min-height:48px; border-radius:var(--v2-radius-small); padding:12px 20px; font:600 var(--v2-body-size)/1.5 var(--v2-font); cursor:pointer; transition:background .15s,transform .15s; }
-.v2-primary { background:var(--v2-primary); color:var(--v2-surface); border:1px solid transparent; }
+.v2-primary { background:var(--v2-primary); color:var(--v2-on-color); border:1px solid transparent; }
 .v2-primary:hover { background:var(--v2-primary-hover); }
 .v2-primary:active,.v2-secondary:active { transform:translateY(1px); }
 .v2-primary span { margin-left:20px; }
@@ -40,7 +40,7 @@
 .v2-mission-copy>div { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--v2-divider); padding-top:20px; font-size:var(--v2-caption-size); }
 .v2-mission-copy strong { color:var(--v2-primary); }
 .v2-hub :focus-visible,.v2-missions :focus-visible { outline:3px solid var(--v2-focus); outline-offset:4px; }
-.v2-hub ::selection,.v2-missions ::selection { color:var(--v2-surface); background:var(--v2-secondary); }
+.v2-hub ::selection,.v2-missions ::selection { color:var(--v2-on-color); background:var(--v2-secondary); }
 @media(max-width:1100px) { .v2-header{min-height:72px;padding:12px 24px} .v2-home{grid-template-columns:1fr 1fr;min-height:0}.v2-home-copy{padding:32px}.v2-home-copy h1{font-size:40px}.v2-mission-image{height:210px}.v2-mission-copy>div{flex-direction:column} }
 @media(max-width:700px) { .v2-home{display:flex;flex-direction:column}.v2-home-world{min-height:240px}.v2-home-copy{padding:28px 24px}.v2-home-copy h1{font-size:36px}.v2-edition{display:none}.v2-home-footer{gap:20px}.v2-mission-grid{grid-template-columns:1fr}.v2-mission-main{padding:28px 0}.v2-brand{font-size:18px} }
 @media(prefers-reduced-motion:reduce) { .v2-primary,.v2-secondary,.v2-mission-card{transition:none}.v2-mission-card:hover{transform:none} }
