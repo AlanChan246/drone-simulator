@@ -1,0 +1,71 @@
+{
+  "viewport": "1280x800",
+  "metrics": [
+    {
+      "background": "rgb(244, 242, 235)",
+      "color": "rgb(23, 59, 55)",
+      "font": "15px",
+      "height": 800,
+      "lineHeight": "22.5px",
+      "selector": "#game-interface",
+      "width": 1280
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(23, 59, 55)",
+      "font": "15px",
+      "height": 40,
+      "lineHeight": "22px",
+      "selector": ".blocklyTreeRow",
+      "width": 94
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(23, 59, 55)",
+      "font": "13px",
+      "height": 53,
+      "lineHeight": "19.5px",
+      "selector": ".v2-editor-footer",
+      "width": 472.234375
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(23, 59, 55)",
+      "font": "13px",
+      "height": 0,
+      "lineHeight": "19.5px",
+      "selector": "#hud-camera",
+      "width": 0
+    },
+    {
+      "background": "rgb(191, 70, 30)",
+      "color": "rgb(255, 254, 249)",
+      "font": "14px",
+      "height": 48,
+      "lineHeight": "21px",
+      "selector": ".program-btn",
+      "width": 140
+    },
+    {
+      "background": "rgb(255, 254, 249)",
+      "color": "rgb(23, 59, 55)",
+      "font": "15px",
+      "height": 46.5,
+      "lineHeight": "22.5px",
+      "selector": ".skip-link",
+      "width": 99
+    }
+  ],
+  "keyboard": {
+    "skipLinkTarget": "game-interface",
+    "orientationTabTarget": "仍然繼續",
+    "backgroundInert": true
+  },
+  "export": {
+    "file": "drone-blockly-mission-1.xml",
+    "validXml": true,
+    "elements": 48,
+    "blocks": 10
+  },
+  "persistence": "Reload then freeplay restored takeoff/move50/land, visible in after-laptop-split.jpg"
+}

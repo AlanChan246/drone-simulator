@@ -1,0 +1,610 @@
+{
+  "source": "https://impeccable.style/slop/",
+  "retrievedAt": "2026-09-24T00:23:59.916577+00:00",
+  "sha256": "3c28b8dd3532124b1dc7c24ac6698ef2620f3e71850846367d53a846bf98318d",
+  "items": [
+    {
+      "id": "design-system-font",
+      "method": "cli",
+      "name": "Font outside DESIGN.md",
+      "status": "已修正",
+      "evidence": "核對 CSS font-family 與 DESIGN.md；移除未使用 Inter 請求，記錄原有 Noto Sans TC／IBM Plex Sans／Mono 的用途。",
+      "evidencePath": "../../../DESIGN.md",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "design-system-color",
+      "method": "cli",
+      "name": "Color outside DESIGN.md",
+      "status": "已修正；保留誤報",
+      "evidence": "canvas/backdrop 改用 tokens；source-after 尚有 skip-link 黑色 advisory，實際 computed 為 rgb(23,59,55)，是靜態解析 CSS imports 的限制。",
+      "evidencePath": "evidence/manual-runtime.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "design-system-radius",
+      "method": "cli",
+      "name": "Radius outside DESIGN.md",
+      "status": "已核對",
+      "evidence": "6/12px 為按鈕／面板；2px 僅窄拖曳把手端點，補記既有用途，沒有新增大圓角。",
+      "evidencePath": "../../../DESIGN.md",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "design-system-font-size",
+      "method": "cli",
+      "name": "Font size outside DESIGN.md",
+      "status": "已修正",
+      "evidence": "11/12px 次要文字升至13；HUD small 從9.1667升至13；17/23/25/38 收斂至18/24/24/36。層級寫入 DESIGN，不以全部新增豁免處理。",
+      "evidencePath": "evidence/manual-runtime.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "codex-grid-background",
+      "method": "cli",
+      "name": "Decorative grid-line background",
+      "status": "有意保留功能網格",
+      "evidence": "首頁無裝飾網格；Blockly 點陣用於積木定位，3D 地面格線提供飛行空間參考。",
+      "evidencePath": "evidence/after-laptop-split.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "border-accent-on-rounded",
+      "method": "cli",
+      "name": "Border accent on rounded element",
+      "status": "未發現該模式",
+      "evidence": "面板以完整邊框組織；分類條屬於 Blockly 行，不是在圓角營銷卡上加單邊裝飾。",
+      "evidencePath": "evidence/after-laptop-split.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "glassmorphism",
+      "method": "llm",
+      "name": "Glassmorphism everywhere",
+      "status": "未發現該模式",
+      "evidence": "獨立評審與 CSS 核對：面板實色、無 backdrop-filter；半透明 modal backdrop 用於遮罩而非玻璃卡。",
+      "evidencePath": "report.md",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "side-tab",
+      "method": "cli",
+      "name": "Side-tab accent border",
+      "status": "有意保留",
+      "evidence": "browser 命中 Blockly 分類左色條，顏色對應積木語義且同時有文字；保留第三方工具的識別方式。",
+      "evidencePath": "evidence/after-tablet-advanced.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "gpt-thin-border-wide-shadow",
+      "method": "cli",
+      "name": "Hairline border with wide shadow",
+      "status": "未發現重復濫用",
+      "evidence": "陰影局限 modal／浮動提示；主面板及任務卡以邊框和留白組織，無連續陰影卡堆疊。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "repeating-stripes-gradient",
+      "method": "cli",
+      "name": "Repeating-gradient stripes",
+      "status": "未發現該模式",
+      "evidence": "active CSS 搜索無 repeating-gradient；飛行場景道路標記是實際地圖。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "over-round",
+      "method": "llm",
+      "name": "Extreme border-radius on cards",
+      "status": "未發現該模式",
+      "evidence": "獨立評審：按鈕6px、面板12px；沒有統一 pill 或誇張圓角。",
+      "evidencePath": "evidence/after-desktop-missions.jpg",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "sketchy-svg",
+      "method": "llm",
+      "name": "Rough SVG illustrations",
+      "status": "未發現該模式",
+      "evidence": "圖標為一致1.8 stroke幾何 SVG；無手繪塗鴉下划線。",
+      "evidencePath": "../../../js/v2_ui.js",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "kicker-above-heading",
+      "method": "cli",
+      "name": "Label above a heading",
+      "status": "未發現重復模式",
+      "evidence": "首頁直接主標題；任務類別為圖片下角的路線規劃／資源管理，提供比較維度。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "undersized-ui-text",
+      "method": "cli",
+      "name": "Tiny interface text",
+      "status": "已修正",
+      "evidence": "caption／日誌／說明統一至少13px；可見 HUD 及保存狀態已復核。",
+      "evidencePath": "evidence/after-mobile-world-debug.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "flat-type-hierarchy",
+      "method": "cli",
+      "name": "Flat type hierarchy",
+      "status": "已核對",
+      "evidence": "首頁36–60、任務24、工作區14–20、輔助13；重點由字號、位置、字重共同區分。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "icon-tile-stack",
+      "method": "cli",
+      "name": "Icon tile stacked above heading",
+      "status": "未發現該模式",
+      "evidence": "入口用真實任務場景圖；圖例 SVG／模型縮圖服務地標辨識，不是重復特性三件套。",
+      "evidencePath": "evidence/after-desktop-rules.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "italic-serif-display",
+      "method": "cli",
+      "name": "Italic serif display headline",
+      "status": "未發現該模式",
+      "evidence": "active 字體皆 sans／mono，無斜體襯線展示字。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "hero-eyebrow-chip",
+      "method": "cli",
+      "name": "Badge above the main headline",
+      "status": "未發現該模式",
+      "evidence": "主標題上方無廣告膠囊；場景說明僅貼近圖片，手機隱藏非必要說明。",
+      "evidencePath": "evidence/after-mobile-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "oversized-h1",
+      "method": "cli",
+      "name": "Oversized hero headline",
+      "status": "已核對",
+      "evidence": "桌面 clamp36–60、手機36；1440/1024/390 首屏及滾動入口檢查，無標題擠走所有操作。",
+      "evidencePath": "evidence/after-mobile-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "extreme-negative-tracking",
+      "method": "cli",
+      "name": "Crushed letter spacing",
+      "status": "未發現該模式",
+      "evidence": "標題僅-.03em；中文正文無負字距。",
+      "evidencePath": "../../../assets/styles/hub.css",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "overused-font",
+      "method": "cli",
+      "name": "Overused font",
+      "status": "已修正",
+      "evidence": "移除未實際採用的 Inter 網絡請求；保留中文閱讀、拉丁標題、等寬數值分工。",
+      "evidencePath": "../../../index.html",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "single-font",
+      "method": "llm",
+      "name": "Single font for everything",
+      "status": "未發現該模式",
+      "evidence": "獨立評審與 tokens：Noto中文、IBM Plex Sans標題、IBM Plex Mono數據，區別有用途。",
+      "evidencePath": "../../../DESIGN.md",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "all-caps-body",
+      "method": "cli",
+      "name": "All-caps body text",
+      "status": "未發現該模式",
+      "evidence": "正文為繁體中文；技術名詞 cm／Blockly／3D 不是大寫段落。",
+      "evidencePath": "evidence/after-desktop-briefing.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "radial-halo",
+      "method": "cli",
+      "name": "Radial-gradient background halo",
+      "status": "未發現該模式",
+      "evidence": "active CSS 無 radial-gradient 光暈；場景燈光不是網頁裝飾暈。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "radial-spotlight-glow",
+      "method": "cli",
+      "name": "Soft spotlight behind content",
+      "status": "未發現該模式",
+      "evidence": "首頁真實場景圖，背景實色，無 CSS 聚光暈。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "ai-color-palette",
+      "method": "cli",
+      "name": "AI color palette",
+      "status": "已核對",
+      "evidence": "暖紙／深綠／救援橙有場地教學語境；未使用紫藍漸變套裝。",
+      "evidencePath": "../../../DESIGN.md",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "dark-glow",
+      "method": "cli",
+      "name": "Dark mode with glowing accents",
+      "status": "未發現該模式",
+      "evidence": "淺色背景，焦點有實線outline，無暗色霓虹發光。",
+      "evidencePath": "evidence/after-laptop-split.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "gradient-text",
+      "method": "cli",
+      "name": "Gradient text",
+      "status": "未發現該模式",
+      "evidence": "標題直接 text color，無 background-clip:text 或漸變文字。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "gray-on-color",
+      "method": "cli",
+      "name": "Gray text on colored background",
+      "status": "已核對",
+      "evidence": "實色表面用深綠文字，主按鈕米白／救援橙；contrast與渲染 detector 交叉核對。",
+      "evidencePath": "evidence/manual-runtime.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "cream-palette",
+      "method": "cli",
+      "name": "Cream / beige palette",
+      "status": "有意保留",
+      "evidence": "官方 URL 三尺寸均報告；獨立設計評審認為暖紙色契合救援現場教學。未為了清零改色或忽略規則。",
+      "evidencePath": "evidence/url-desktop-after.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "numbered-section-labels",
+      "method": "cli",
+      "name": "Tiny numbered section labels",
+      "status": "未發現該模式",
+      "evidence": "無01/02裝飾章節；任務一／二和教學步數有實際流程含義。",
+      "evidencePath": "evidence/after-desktop-tutorial.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "edge-flush-cards",
+      "method": "browser",
+      "name": "Cards flush against the scroller edge",
+      "status": "已核對",
+      "evidence": "卡片內部24px、mobile20px，手機modal12px外距；場景圖允許滿幅。",
+      "evidencePath": "evidence/after-mobile-result.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "text-occlusion",
+      "method": "browser",
+      "name": "Text covered by another element",
+      "status": "已修正",
+      "evidence": "詳細HUD以真實log高度上移並可滾動，ResizeObserver處理日誌增長；前後截圖確認不再被記錄遮蓋。",
+      "evidencePath": "evidence/after-tablet-telemetry-log.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "first-viewport-column-overflow",
+      "method": "browser",
+      "name": "Unbalanced opening columns",
+      "status": "已核對",
+      "evidence": "1024入口兩欄，390縱排並可滾動；工作區顯式切換code/world，無意外水平頁面滾動。",
+      "evidencePath": "evidence/after-tablet-home.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "heading-rhythm",
+      "method": "browser",
+      "name": "Heading closer to the previous section",
+      "status": "已核對",
+      "evidence": "首頁h1至正文24px、任務標題至描述12px、規則24/12px；沒有機械統一間距。",
+      "evidencePath": "../../../assets/styles/hub.css",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "hero-metric-layout",
+      "method": "llm",
+      "name": "Hero metric layout",
+      "status": "未發現該模式",
+      "evidence": "獨立評審：首頁不含虛構數字；結果頁分數是真實執行輸出。",
+      "evidencePath": "evidence/after-desktop-result.jpg",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "identical-card-grids",
+      "method": "llm",
+      "name": "Identical card grids",
+      "status": "有意保留比較結構",
+      "evidence": "獨立評審：只兩項實際任務，統一圖片/目標/學習點便於比較；非不同內容全塞卡。",
+      "evidencePath": "evidence/after-desktop-missions.jpg",
+      "inspection": "獨立設計評審＋主代理核對"
+    },
+    {
+      "id": "monotonous-spacing",
+      "method": "cli",
+      "name": "Monotonous spacing",
+      "status": "已核對",
+      "evidence": "主頁48px區塊、任務28px間距、工作區8/16px密度，適應不同信息層級。",
+      "evidencePath": "../../../assets/styles/hub.css",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "nested-cards",
+      "method": "cli",
+      "name": "Nested cards",
+      "status": "未發現重復容器問題",
+      "evidence": "workspace/world為功能分區；HUD、日誌有獨立用途，非裝飾卡套卡。",
+      "evidencePath": "evidence/after-laptop-split.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "line-length",
+      "method": "browser",
+      "name": "Line length too long",
+      "status": "已核對",
+      "evidence": "首頁段落max35ch；簡報兩欄轉單欄；390px中文說明保持可讀換行。",
+      "evidencePath": "evidence/after-mobile-city-briefing.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "text-overflow",
+      "method": "browser",
+      "name": "Content overflowing its container",
+      "status": "有意保留單行摘要",
+      "evidence": "collapsed console-summary用ellipsis，點擊即可看完整記錄；展開後隱藏摘要，正文可換行。其餘可見標題及按鈕無截斷。",
+      "evidencePath": "evidence/after-mobile-world-debug.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "clipped-overflow-container",
+      "method": "browser",
+      "name": "Clipped menus and popovers",
+      "status": "保留狀態誤報",
+      "evidence": "code-only視圖故意收起且inert world，detector仍報1px容器；切world後完整顯示。詳細HUD和modal使用可滾動內容。",
+      "evidencePath": "evidence/after-mobile-code.json",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "pulsing-dot",
+      "method": "cli",
+      "name": "Pulsing status dot",
+      "status": "未發現該模式",
+      "evidence": "無裝飾閃動狀態點；狀態使用中文標籤。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "blinking-cursor",
+      "method": "browser",
+      "name": "Decorative blinking cursor",
+      "status": "未發現該模式",
+      "evidence": "無打字機標題/閃爍游標；編輯器原生光標屬輸入功能。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "marquee",
+      "method": "cli",
+      "name": "Auto-scrolling marquee",
+      "status": "未發現該模式",
+      "evidence": "入口及任務頁無自動橫向滾動內容。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "bounce-easing",
+      "method": "cli",
+      "name": "Bounce or elastic easing",
+      "status": "未發現該模式",
+      "evidence": "交互僅150ms顏色/位移，未用彈跳曲線。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "layout-transition",
+      "method": "cli",
+      "name": "Animation that changes layout",
+      "status": "未發現該模式",
+      "evidence": "active transition只background/border-color/transform；無width/height動畫。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "image-hover-transform",
+      "method": "cli",
+      "name": "Images that move on hover",
+      "status": "已核對",
+      "evidence": "任務卡整體上移3px，圖片自身不縮放；reduce-motion禁用位移。",
+      "evidencePath": "../../../assets/styles/hub.css",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "repeated-container-text",
+      "method": "cli",
+      "name": "Same text repeated inside one container",
+      "status": "已核對",
+      "evidence": "不同行為狀態有獨立文案；重復的任務名屬於導航/簡報的上下文；無空卡樣板。",
+      "evidencePath": "evidence/after-desktop-rules.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "em-dash-overuse",
+      "method": "cli",
+      "name": "Em-dash overuse",
+      "status": "未發現該模式",
+      "evidence": "無宣傳段落破折號串聯；目標—代表無目標數據。",
+      "evidencePath": "evidence/after-tablet-tools.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "marketing-buzzword",
+      "method": "cli",
+      "name": "Generic marketing claims",
+      "status": "未發現該模式",
+      "evidence": "文案描述連接積木、起飛、巡檢、取水等具體動作，無泛化AI營銷承諾。",
+      "evidencePath": "evidence/after-mobile-city-rules.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "aphoristic-cadence",
+      "method": "cli",
+      "name": "Forced contrast",
+      "status": "有意保留學習提示",
+      "evidence": "「觀察。修正。再試一次。」是實際迭代學習流程；未在正文堆疊空泛對偶。",
+      "evidencePath": "evidence/after-desktop-home.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "theater-slop-phrase",
+      "method": "cli",
+      "name": "Calling things “theater”",
+      "status": "未發現該模式",
+      "evidence": "未見production-ready／seamless類自證質量話術；界面圍繞下一步操作。",
+      "evidencePath": "evidence/after-desktop-home.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "shape-assembled-illustration",
+      "method": "cli",
+      "name": "Placeholder-style illustrations",
+      "status": "未發現該模式",
+      "evidence": "實際Three.js任務截圖和模型預覽提供地圖上下文；無CSS形狀拼湊營銷插圖。",
+      "evidencePath": "evidence/after-desktop-missions.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "organic-clip-path",
+      "method": "cli",
+      "name": "Jagged image masks",
+      "status": "未發現該模式",
+      "evidence": "4.1.0 source規則＋人工搜索；唯一clip-path是sr-only inset，未用blob/有機裁剪。3.6.1運行時不含本項，未虛報覆蓋。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "buried-raster",
+      "method": "cli",
+      "name": "Images hidden under overlays",
+      "status": "未發現該模式",
+      "evidence": "4.1.0 source規則＋手動查img/SVG；場景PNG直接img，沒有base64柵格隱藏在SVG中。",
+      "evidencePath": "../../../index.html",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "broken-image",
+      "method": "cli",
+      "name": "Broken or placeholder image",
+      "status": "已核對",
+      "evidence": "三尺寸主頁、兩任務簡報、圖例實圖均加載；靜態封裝161路徑通過。",
+      "evidencePath": "evidence/after-desktop-rules.jpg",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "script-error",
+      "method": "browser",
+      "name": "JavaScript errors on load",
+      "status": "已核對",
+      "evidence": "官方URL三尺寸及每個狀態dev.logs均無error；17項測試通過，非只憑detector判定。",
+      "evidencePath": "evidence/after-desktop-result.json",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "content-hidden-at-rest",
+      "method": "browser",
+      "name": "Content stuck waiting to appear",
+      "status": "已修正",
+      "evidence": "1100px以下保存狀態原被display:none，現可見；高級工具/非當前視圖有明確入口，預期隱藏另行判讀。",
+      "evidencePath": "evidence/after-tablet-code.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "cramped-padding",
+      "method": "browser",
+      "name": "Cramped padding",
+      "status": "已修正",
+      "evidence": "日誌篩選、手機debug控制改wrap；empty提示限制寬度，工具菜單可滾動。",
+      "evidencePath": "evidence/after-mobile-world-debug.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "body-text-viewport-edge",
+      "method": "browser",
+      "name": "Body text touching the page edge",
+      "status": "已核對",
+      "evidence": "手機文案24px、modal20px內距；full-bleed場景不等於正文貼邊。",
+      "evidencePath": "evidence/after-mobile-home.jpg",
+      "inspection": "browser detector＋互動/視覺核對"
+    },
+    {
+      "id": "justified-text",
+      "method": "cli",
+      "name": "Justified text",
+      "status": "未發現該模式",
+      "evidence": "active CSS無text-align:justify，中文左對齊。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "low-contrast",
+      "method": "cli",
+      "name": "Low-contrast text",
+      "status": "已核對",
+      "evidence": "URL/state detector結合computed tokens核對；disabled淡化不是可操作正文；未將canvas識別當作文字contrast保證。",
+      "evidencePath": "evidence/manual-runtime.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "skipped-heading",
+      "method": "cli",
+      "name": "Skipped heading level",
+      "status": "已修正",
+      "evidence": "簡報動態h4改h3，dialog h2→說明/規則h3；不同隱藏頁面不並作一個可見層級。",
+      "evidencePath": "../../../js/v2_ui.js",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "tight-leading",
+      "method": "cli",
+      "name": "Tight line height",
+      "status": "已核對",
+      "evidence": "中文說明1.7–1.9，正文1.5，展示標題1.25；無長段落擠成標題行高。",
+      "evidencePath": "../../../assets/styles/overlays.css",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "tiny-text",
+      "method": "cli",
+      "name": "Tiny body text",
+      "status": "已修正",
+      "evidence": "HUD camera舊9.1667px明確改13px，13px輔助、14px控制；before/after原始報告可追溯。",
+      "evidencePath": "evidence/manual-runtime.json",
+      "inspection": "source detector＋人工源碼/用途核對"
+    },
+    {
+      "id": "wide-tracking",
+      "method": "cli",
+      "name": "Wide letter spacing on body text",
+      "status": "未發現該模式",
+      "evidence": "active樣式僅標題-.03em，未對中文正文或大寫標籤加寬字距。",
+      "evidencePath": "evidence/manual-source-patterns.txt",
+      "inspection": "source detector＋人工源碼/用途核對"
+    }
+  ]
+}

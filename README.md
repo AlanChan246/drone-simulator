@@ -59,5 +59,6 @@ GitHub Pages 沿用靜態部署方式。完成一次線上載入並安裝快取�
 - [操作架構](docs/design/v2-ux-architecture.md)
 - [前後比較](docs/design/v2-before-after.md)
 - [測試與限制](docs/design/v2-qa.md)
+- [完整 Slop Catalog 核對表](docs/design/slop-audit/checklist.md) · [修正與回歸報告](docs/design/slop-audit/report.md)
 
 既有模型與媒體授權文件保留於 assets。沒有加入新的第三方模型、圖片或圖示套件。

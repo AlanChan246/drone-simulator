@@ -1,0 +1,422 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "findings": [
+    {
+      "selector": "#blockly-d",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 182,
+        "width": 94,
+        "height": 40,
+        "top": 182,
+        "right": 103,
+        "bottom": 222,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-e",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 225,
+        "width": 94,
+        "height": 40,
+        "top": 225,
+        "right": 103,
+        "bottom": 265,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-f",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 268,
+        "width": 94,
+        "height": 40,
+        "top": 268,
+        "right": 103,
+        "bottom": 308,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-g",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 311,
+        "width": 94,
+        "height": 40,
+        "top": 311,
+        "right": 103,
+        "bottom": 351,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-h",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 354,
+        "width": 94,
+        "height": 40,
+        "top": 354,
+        "right": 103,
+        "bottom": 394,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-j",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 408,
+        "width": 94,
+        "height": 40,
+        "top": 408,
+        "right": 103,
+        "bottom": 448,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-k",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 451,
+        "width": 94,
+        "height": 40,
+        "top": 451,
+        "right": 103,
+        "bottom": 491,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-l",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 494,
+        "width": 94,
+        "height": 40,
+        "top": 494,
+        "right": 103,
+        "bottom": 534,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-m",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 537,
+        "width": 94,
+        "height": 40,
+        "top": 537,
+        "right": 103,
+        "bottom": 577,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-n",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 580,
+        "width": 94,
+        "height": 40,
+        "top": 580,
+        "right": 103,
+        "bottom": 620,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-o",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 623,
+        "width": 94,
+        "height": 40,
+        "top": 623,
+        "right": 103,
+        "bottom": 663,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#canvas-container",
+      "tagName": "div",
+      "rect": {
+        "x": 389,
+        "y": 843,
+        "width": 1,
+        "height": 1,
+        "top": 843,
+        "right": 390,
+        "bottom": 844,
+        "left": 389
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "clipped-overflow-container",
+          "category": "quality",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "div.canvas-panel clips a positioned child",
+          "ignoreValue": "",
+          "name": "Positioned child clipped by overflow container",
+          "description": "A clipping container (overflow hidden or clip) wrapping an absolutely-positioned child cuts off tooltips, menus, and popovers that need to escape. Let the overflow be visible, or move the positioned layer out of the clip."
+        }
+      ]
+    },
+    {
+      "selector": "#hud-camera",
+      "tagName": "small",
+      "rect": {
+        "x": 102,
+        "y": 718.2578125,
+        "width": 36.6640625,
+        "height": 13.7421875,
+        "top": 718.2578125,
+        "right": 138.6640625,
+        "bottom": 732,
+        "left": 102
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "undersized-ui-text",
+          "category": "quality",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "9.16667px functional text \"自由視角\" (below 10px floor)",
+          "ignoreValue": "",
+          "name": "Undersized functional text",
+          "description": "Interactive and content-bearing UI text (links, buttons, nav items, labels, table cells, meta rows, timecodes) below 11px is a legibility failure, not a style choice. WCAG sets no absolute pixel floor, but functional text under 11px is a defensible quality bar: it fails on high-DPI and small viewports and it degrades tap and read targets. The 11px floor holds even inside a footer; only non-interactive legal smallprint gets the softer 10px floor. Being ON the DESIGN.md size ramp does not exempt a value here: adding 8px to the ramp launders the token but not the legibility problem, and that is exactly the escape hatch this rule closes. Exempts sup/sub, visually-hidden (sr-only) text, and code/terminal contexts. Decorative letterspaced micro-labels are still functional and stay in scope."
+        }
+      ]
+    },
+    {
+      "selector": "div.blocklyTooltipDiv",
+      "tagName": "div",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "isPageLevel": false,
+      "isHidden": true,
+      "findings": [
+        {
+          "type": "gpt-thin-border-wide-shadow",
+          "category": "slop",
+          "severity": "advisory",
+          "advisory": false,
+          "detail": "1px border + 20px shadow blur",
+          "ignoreValue": "",
+          "name": "Hairline border with wide shadow",
+          "description": "A hairline border paired with a wide, diffuse shadow is a recurring generated-UI signature. Commit to one — a defined edge or a soft elevation — rather than both at once."
+        }
+      ]
+    },
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "before-mobile-code-visible",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- button \"返回\":\n  - generic: 返回\n- strong: 任務一 · 廢墟搜救\n- button \"更多工具\":\n  - generic: 更多工具\n- button \"執行\":\n  - generic: 執行\n- button \"暫停程式\" [disabled]:\n  - generic: 暫停\n- button \"停止\" [disabled]:\n  - generic: 停止\n- button \"重置\":\n  - generic: 重置\n- navigation \"工作區顯示方式\":\n  - button \"並排觀察\"\n  - button \"專心編程\" [pressed]\n  - button \"觀察飛行\"\n- banner \"積木區工具列\":\n  - group \"匯入與匯出\":\n    - button \"匯入積木程式\":\n    - button \"匯出積木程式\":\n  - group \"縮放\":\n    - button \"積木區縮小\":\n    - button \"積木區放大\":\n    - button \"積木區縮放重設\":\n- generic \"Blockly工作區\":\n  - tree:\n    - treeitem \"事件\":\n      - generic: 事件\n    - treeitem \"飛行指令\":\n      - generic: 飛行指令\n    - treeitem \"燈光\":\n      - generic: 燈光\n    - treeitem \"感測器\":\n      - generic: 感測器\n    - treeitem \"輸出\":\n      - generic: 輸出\n    - treeitem \"邏輯\":\n      - generic: 邏輯\n    - treeitem \"流程控制\":\n      - generic: 流程控制\n    - treeitem \"數學\":\n      - generic: 數學\n    - treeitem \"變數\":\n      - generic: 變數\n    - treeitem \"清單\":\n      - generic: 清單\n    - treeitem \"函式\":\n      - generic: 函式\n- strong: 讓第一塊積木起飛。\n- paragraph: 從「飛行指令」拖入起飛積木，或先試一段短程式。\n- button \"加入起飛・移動・降落\"\n- button \"復原積木變更\": 復原\n- button \"重做積木變更\": 重做\n- status:\n  - generic: 準備飛行\n  - strong: 把想法連成積木，再按執行。\n- generic: 無人機\n- generic: 降落終點\n- generic \"觀察視角\":\n  - button \"跟隨\"\n  - button \"全景\" [pressed]\n  - button \"俯視\"\n- region \"飛行遙測\":\n  - strong: 已降落\n  - generic: 電量\n  - strong: 訓練模式\n  - generic: 航向\n  - strong: 180°\n  - generic: 高度\n  - strong: 0 cm\n  - generic: 水平速度\n  - strong: 0 cm/s\n  - generic: 垂直速度\n  - strong: +0 cm/s\n  - generic: 水箱\n  - strong: 空\n  - generic: 自由視角\n  - generic: X -675 · Z -675\n  - strong: 目標 2018 cm\n  - generic: 得分 0\n  - generic: 巡檢 0/3\n- button \"飛行紀錄 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\" [expanded]:\n  - strong: 飛行紀錄\n  - generic: 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\n- group \"紀錄篩選\":\n  - button \"全部\"\n  - button \"錯誤\"\n  - button \"任務\"\n  - button \"系統\"\n  - button \"清除飛行紀錄\": 清除\n- generic: 08:31:10\n- generic: 已回到起點，積木已保留。\n- generic: 08:31:10\n- generic: 📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。\n- generic: 08:31:10\n- generic: 💡 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\n- img \"無人機 3D 場景。方向鍵旋轉視角，加減鍵縮放；也可使用跟隨、全景與俯視按鈕。\"\n- button \"Scan complete\" [active]",
+  "errors": []
+}

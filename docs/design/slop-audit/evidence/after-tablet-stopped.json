@@ -1,0 +1,58 @@
+{
+  "viewport": [
+    1024,
+    768
+  ],
+  "findings": [
+    {
+      "selector": "div.blocklyTooltipDiv",
+      "tagName": "div",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "isPageLevel": false,
+      "isHidden": true,
+      "findings": [
+        {
+          "type": "gpt-thin-border-wide-shadow",
+          "category": "slop",
+          "severity": "advisory",
+          "advisory": false,
+          "detail": "1px border + 20px shadow blur",
+          "ignoreValue": "",
+          "name": "Hairline border with wide shadow",
+          "description": "A hairline border paired with a wide, diffuse shadow is a recurring generated-UI signature. Commit to one — a defined edge or a soft elevation — rather than both at once."
+        }
+      ]
+    },
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "after-tablet-stopped",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- main \"飛行工作區\":\n  - button \"返回\":\n    - generic: 返回\n  - strong: 自由練習\n  - generic: 自由試飛：起飛、移動，再安全降落。\n  - button \"更多工具\":\n    - generic: 更多工具\n  - button \"執行\":\n    - generic: 執行\n  - button \"暫停程式\" [disabled]:\n    - generic: 暫停\n  - button \"單步執行下一個積木\":\n    - generic: 單步\n  - button \"停止\" [disabled]:\n    - generic: 停止\n  - button \"重置\":\n    - generic: 重置\n  - button \"為所選積木切換斷點\":\n    - generic: 斷點\n  - status: X -0 · Y 0 · Z 50 · 航向 180°\n  - navigation \"工作區顯示方式\":\n    - button \"並排觀察\"\n    - button \"專心編程\"\n    - button \"觀察飛行\" [pressed]\n  - status:\n    - generic: 已停止\n    - strong: 調整積木後，可以重設再試。\n    - progressbar \"程式執行進度\"\n  - generic: 無人機\n  - generic \"觀察視角\":\n    - button \"跟隨\" [pressed]\n    - button \"全景\"\n    - button \"俯視\"\n  - region \"飛行遙測\":\n    - strong: 已降落\n    - generic: 電量\n    - strong: 訓練模式\n    - generic: 航向\n    - strong: 180°\n    - generic: 高度\n    - strong: 0 cm\n    - generic: 水平速度\n    - strong: 0 cm/s\n    - generic: 垂直速度\n    - strong: +0 cm/s\n    - generic: 水箱\n    - strong: 空\n    - generic: 跟隨視角\n    - generic: X 0 · Z 50\n    - strong: 目標 —\n    - generic: 得分 0\n    - generic: 自由飛行\n  - button \"飛行紀錄\" [expanded]:\n    - strong: 飛行紀錄\n  - group \"紀錄篩選\":\n    - button \"全部\"\n    - button \"錯誤\"\n    - button \"任務\"\n    - button \"系統\"\n    - button \"清除飛行紀錄\": 清除\n  - generic: 08:44:02\n  - generic: 已回到起點，積木已保留。\n  - generic: 08:44:52\n  - generic: ⏸️ 程式會在下一個積木前暫停。\n  - img \"無人機 3D 場景。方向鍵旋轉視角，加減鍵縮放；也可使用跟隨、全景與俯視按鈕。\"\n- button \"Scan complete\" [active]",
+  "errors": []
+}

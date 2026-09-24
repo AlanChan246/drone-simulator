@@ -1,0 +1,30 @@
+{
+  "viewport": [
+    1024,
+    768
+  ],
+  "findings": [
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "after-tablet-home",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- banner:\n  - link \"Drone Simulator 救災無人機訓練\":\n    - /url: \"#\"\n    - text: Drone Simulator\n    - generic: 救災無人機訓練\n  - generic: 用程式，讓救援起飛。\n- main \"下一次救援， 由你編程。\":\n  - img \"在街區道路之間規劃無人機的搜救路線\"\n  - generic: 你的程式，真實的行動。\n  - generic: 編程 → 飛行 → 救援\n  - heading \"下一次救援， 由你編程。\" [level=1]:\n    - text: 下一次救援，\n    - text: 由你編程。\n  - paragraph: 連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。\n  - button \"開始救援任務\":\n    - text: 開始救援任務\n  - button \"自由練習\"\n  - strong: 第一次操控無人機？\n  - button \"從第一次飛行開始\"\n  - generic: 起飛、移動、降落。邊做邊學。\n- contentinfo:\n  - generic: 觀察。修正。再試一次。\n  - generic: Blockly × 3D 飛行模擬\n- button \"Scan complete\" [active]",
+  "errors": []
+}

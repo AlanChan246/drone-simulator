@@ -1,0 +1,170 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "findings": [
+    {
+      "selector": "#blockly-r",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 182,
+        "width": 94,
+        "height": 40,
+        "top": 182,
+        "right": 103,
+        "bottom": 222,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-s",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 225,
+        "width": 94,
+        "height": 40,
+        "top": 225,
+        "right": 103,
+        "bottom": 265,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#blockly-t",
+      "tagName": "div",
+      "rect": {
+        "x": 9,
+        "y": 268,
+        "width": 94,
+        "height": 40,
+        "top": 268,
+        "right": 103,
+        "bottom": 308,
+        "left": 9
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "side-tab",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "border-left: 8px",
+          "ignoreValue": "",
+          "name": "Side-tab accent border",
+          "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely."
+        }
+      ]
+    },
+    {
+      "selector": "#canvas-container",
+      "tagName": "div",
+      "rect": {
+        "x": 389,
+        "y": 843,
+        "width": 1,
+        "height": 1,
+        "top": 843,
+        "right": 390,
+        "bottom": 844,
+        "left": 389
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "clipped-overflow-container",
+          "category": "quality",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "div.canvas-panel clips a positioned child",
+          "ignoreValue": "",
+          "name": "Positioned child clipped by overflow container",
+          "description": "A clipping container (overflow hidden or clip) wrapping an absolutely-positioned child cuts off tooltips, menus, and popovers that need to escape. Let the overflow be visible, or move the positioned layer out of the clip."
+        }
+      ]
+    },
+    {
+      "selector": "div.blocklyTooltipDiv",
+      "tagName": "div",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "isPageLevel": false,
+      "isHidden": true,
+      "findings": [
+        {
+          "type": "gpt-thin-border-wide-shadow",
+          "category": "slop",
+          "severity": "advisory",
+          "advisory": false,
+          "detail": "1px border + 20px shadow blur",
+          "ignoreValue": "",
+          "name": "Hairline border with wide shadow",
+          "description": "A hairline border paired with a wide, diffuse shadow is a recurring generated-UI signature. Commit to one — a defined edge or a soft elevation — rather than both at once."
+        }
+      ]
+    },
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "after-mobile-city-rules",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- main \"飛行工作區\":\n  - button \"返回\":\n    - generic: 返回\n  - strong: 任務二 · 山火應對\n  - button \"更多工具\":\n    - generic: 更多工具\n  - button \"執行\":\n    - generic: 執行\n  - button \"暫停程式\" [disabled]:\n    - generic: 暫停\n  - button \"單步執行下一個積木\":\n    - generic: 單步\n  - button \"停止\" [disabled]:\n    - generic: 停止\n  - button \"重置\":\n    - generic: 重置\n  - button \"為所選積木切換斷點\":\n    - generic: 斷點\n  - navigation \"工作區顯示方式\":\n    - button \"並排觀察\"\n    - button \"專心編程\" [pressed]\n    - button \"觀察飛行\"\n  - generic \"積木區工具列\":\n    - group \"匯入與匯出\":\n      - button \"匯入積木程式\":\n      - button \"匯出積木程式\":\n    - group \"縮放\":\n      - button \"積木區縮小\":\n      - button \"積木區放大\":\n      - button \"積木區縮放重設\":\n  - generic \"Blockly工作區\":\n    - tree:\n      - treeitem \"事件\":\n        - generic: 事件\n      - treeitem \"飛行指令\":\n        - generic: 飛行指令\n      - treeitem \"進階積木\":\n        - generic: 進階積木\n  - strong: 讓第一塊積木起飛。\n  - paragraph: 從「飛行指令」拖入起飛積木，或先試一段短程式。\n  - button \"加入起飛・移動・降落\"\n  - button \"復原積木變更\": 復原\n  - button \"重做積木變更\": 重做\n  - status: 已儲存此任務的積木\n  - status:\n    - generic: 準備飛行\n    - strong: 把想法連成積木，再按執行。\n  - generic: 無人機\n  - generic \"觀察視角\":\n    - button \"跟隨\"\n    - button \"全景\" [pressed]\n    - button \"俯視\"\n  - region \"飛行遙測\":\n    - strong: 已降落\n    - generic: 電量\n    - strong: 20 行\n    - generic: 航向\n    - strong: 180°\n    - generic: 高度\n    - strong: 14 cm\n    - generic: 水平速度\n    - strong: 0 cm/s\n    - generic: 垂直速度\n    - strong: +0 cm/s\n    - generic: 水箱\n    - strong: 空\n    - generic: 自由視角\n    - generic: X -825 · Z -825\n    - strong: 目標 1650 cm\n    - generic: 得分 0\n    - generic: 火點 0/4\n  - button \"飛行紀錄 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。\":\n    - strong: 飛行紀錄\n    - generic: 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。\n  - img \"無人機 3D 場景。方向鍵旋轉視角，加減鍵縮放；也可使用跟隨、全景與俯視按鈕。\"\n- dialog \"任務二：山火智能應對\":\n  - heading \"任務二：山火智能應對\" [level=2]\n  - img \"任務場景\"\n  - heading \"把每一趟飛行用在救援上。\" [level=3]\n  - paragraph: 在水源取水、飛到火點噴水，最後在綠色救援平台降落結算。\n  - list:\n    - listitem: 水箱只能裝一份水，用完要重新取水。\n    - listitem: 留意電量；充電站懸停 3 秒可補充。\n    - listitem: 撲滅愈多火點分數愈高，全滅額外加分。\n  - generic \"地圖圖例、計分與進階提示\"\n  - heading \"地圖圖示 Map Legend\" [level=4]\n  - list:\n    - strong: 起點（基地）\n    - generic: 藍色懸浮箭嘴；木地板、帳篷、木箱與路牌\n    - strong: 終點（受災區）\n    - generic: 綠色懸浮箭嘴；金屬救援平台與物資棚\n    - generic: A\n    - strong: 火點 A/B/C/D\n    - generic: Kenney 營火與浮動標籤；A 最優先（+200）\n    - strong: 水源\n    - generic: 河流地形格與岸邊岩石；Collect Water 裝水\n    - strong: 充電站\n    - generic: 工業機器、操作螢幕與警示燈；hover ≥3 秒 +15 行\n    - strong: 樹林／岩石\n    - generic: 不可穿越；須繞路規劃\n  - heading \"電池規則 Battery\" [level=4]\n  - strong: 20 行\n  - generic: 起飛電量\n  - strong: 1 行\n  - generic: 每次 move cm\n  - strong: +15 行\n  - generic: 每充電站一次\n  - heading \"計分方式 Scoring\" [level=4]\n  - table:\n    - rowgroup:\n      - row \"火點 加分\":\n        - columnheader \"火點\"\n        - columnheader \"加分\"\n    - rowgroup:\n      - row \"火點 A（最優先） +200\":\n        - cell \"火點 A（最優先）\"\n        - cell \"+200\"\n      - row \"火點 B +150\":\n        - cell \"火點 B\"\n        - cell \"+150\"\n      - row \"火點 C +125\":\n        - cell \"火點 C\"\n        - cell \"+125\"\n      - row \"火點 D +100\":\n        - cell \"火點 D\"\n        - cell \"+100\"\n      - row \"全數撲滅 4/4 +200\":\n        - cell \"全數撲滅 4/4\"\n        - cell \"+200\"\n  - heading \"時間獎 Time Bonus\" [level=4]\n  - table:\n    - rowgroup:\n      - row \"完成時間 加分\":\n        - columnheader \"完成時間\"\n        - columnheader \"加分\"\n    - rowgroup:\n      - row \"≤ 4 分鐘 +450\":\n        - cell \"≤ 4 分鐘\"\n        - cell \"+450\"\n      - row \"≤ 6 分鐘 +300\":\n        - cell \"≤ 6 分鐘\"\n        - cell \"+300\"\n      - row \"≤ 8 分鐘 +150\":\n        - cell \"≤ 8 分鐘\"\n        - cell \"+150\"\n      - row \"≤ 10 分鐘 +50\":\n        - cell \"≤ 10 分鐘\"\n        - cell \"+50\"\n      - row \"超過 10 分鐘 +0\":\n        - cell \"超過 10 分鐘\"\n        - cell \"+0\"\n  - heading \"等級門檻 Grades\" [level=4]\n  - generic: 一等 ≥950 分\n  - generic: 二等 750–949 分\n  - generic: 三等 550–749 分\n  - paragraph: 須飛至金屬救援平台降落結算；撲滅火點愈多分數愈高，全數撲滅額外 +200。\n  - paragraph: 轉向／取水／滅火／起降不計行。連續同方向可合併距離以省電。\n  - heading \"地圖座標 Map\" [level=4]\n  - list:\n    - listitem: 火點 A (2,12) 最優先 → B (4,10) → C (11,5) → D (12,10)\n    - listitem: 水源 (1,4)、(4,8)、(9,7)、(12,3) — 最近的不一定最省路。\n    - listitem: 充電站 (3,5)、(6,8)、(10,7) — 每站 hover ≥3 秒補一次。\n    - listitem: 格線每格 150 cm；在水源格 Collect、火點格 Release。\n  - button \"開始編程\"\n- button \"Scan complete\" [active]",
+  "errors": []
+}

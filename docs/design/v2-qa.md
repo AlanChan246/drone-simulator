@@ -52,3 +52,7 @@ First capture check requested recapture of an incorrectly sized home image; full
 ## Local checkpoints
 
 `b810c85` original snapshot → `1863bf6` audit/architecture → `0874f57` redesigned shell/learning workflow → `2d32818` persistence, responsive feedback and offline hardening. Final documentation/screenshots are committed separately. No remote is configured.
+
+## 2026-09-24 Complete Slop Catalog follow-up
+
+[67-item checklist](slop-audit/checklist.md) and [audit/fix report](slop-audit/report.md) record source, multi-viewport browser and independent design evidence. The follow-up confirmed the exported XML file in Downloads, superseding the earlier unverified download-delivery boundary above. Physical device and assistive-technology limits remain.

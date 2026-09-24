@@ -1,0 +1,58 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "findings": [
+    {
+      "selector": "div.blocklyTooltipDiv",
+      "tagName": "div",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "isPageLevel": false,
+      "isHidden": true,
+      "findings": [
+        {
+          "type": "gpt-thin-border-wide-shadow",
+          "category": "slop",
+          "severity": "advisory",
+          "advisory": false,
+          "detail": "1px border + 20px shadow blur",
+          "ignoreValue": "",
+          "name": "Hairline border with wide shadow",
+          "description": "A hairline border paired with a wide, diffuse shadow is a recurring generated-UI signature. Commit to one — a defined edge or a soft elevation — rather than both at once."
+        }
+      ]
+    },
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "after-desktop-missions",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- banner:\n  - button \"返回主選單\": 返回首頁\n  - generic: Drone Simulator\n  - button \"自由練習\"\n- main \"選擇你的救援任務\":\n  - heading \"選擇你的救援任務\" [level=1]\n  - paragraph: 先理解目標，再用你的程式找到路線。\n  - button \"震後街區搜救場景 路線規劃 坍塌廢墟搜救 沿街道把情報送到疏散區。途中巡檢，為救援提供更多線索。 學習：順序・距離・轉向 查看任務\":\n    - img \"震後街區搜救場景\"\n    - generic: 路線規劃\n    - heading \"坍塌廢墟搜救\" [level=2]\n    - paragraph: 沿街道把情報送到疏散區。途中巡檢，為救援提供更多線索。\n    - generic: 學習：順序・距離・轉向\n    - strong:\n      - text: 查看任務\n  - button \"森林山火救援場景 資源管理 山火智能應對 取水、滅火、補充電量。規劃救援次序，在受災區安全降落。 學習：規劃・取捨・效率 查看任務\":\n    - img \"森林山火救援場景\"\n    - generic: 資源管理\n    - heading \"山火智能應對\" [level=2]\n    - paragraph: 取水、滅火、補充電量。規劃救援次序，在受災區安全降落。\n    - generic: 學習：規劃・取捨・效率\n    - strong:\n      - text: 查看任務\n- button \"Scan complete\" [active]",
+  "errors": []
+}

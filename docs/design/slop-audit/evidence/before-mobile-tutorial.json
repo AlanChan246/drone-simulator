@@ -1,0 +1,114 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "findings": [
+    {
+      "selector": "#hud-camera",
+      "tagName": "small",
+      "rect": {
+        "x": 94,
+        "y": 645.2578125,
+        "width": 36.6640625,
+        "height": 13.7421875,
+        "top": 645.2578125,
+        "right": 130.6640625,
+        "bottom": 659,
+        "left": 94
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "undersized-ui-text",
+          "category": "quality",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "9.16667px functional text \"自由視角\" (below 10px floor)",
+          "ignoreValue": "",
+          "name": "Undersized functional text",
+          "description": "Interactive and content-bearing UI text (links, buttons, nav items, labels, table cells, meta rows, timecodes) below 11px is a legibility failure, not a style choice. WCAG sets no absolute pixel floor, but functional text under 11px is a defensible quality bar: it fails on high-DPI and small viewports and it degrades tap and read targets. The 11px floor holds even inside a footer; only non-interactive legal smallprint gets the softer 10px floor. Being ON the DESIGN.md size ramp does not exempt a value here: adding 8px to the ramp launders the token but not the legibility problem, and that is exactly the escape hatch this rule closes. Exempts sup/sub, visually-hidden (sr-only) text, and code/terminal contexts. Decorative letterspaced micro-labels are still functional and stay in scope."
+        }
+      ]
+    },
+    {
+      "selector": "#console-summary",
+      "tagName": "span",
+      "rect": {
+        "x": 116,
+        "y": 607.28125,
+        "width": 26,
+        "height": 16.5,
+        "top": 607.28125,
+        "right": 142,
+        "bottom": 623.78125,
+        "left": 116
+      },
+      "isPageLevel": false,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "text-overflow",
+          "category": "quality",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "span overflows its box by 337px",
+          "ignoreValue": "",
+          "name": "Content overflowing its container",
+          "description": "Content renders wider than its container, spilling out or forcing a horizontal scrollbar. Let text wrap, constrain widths, or give the region a deliberate scroll affordance."
+        }
+      ]
+    },
+    {
+      "selector": "div.blocklyTooltipDiv",
+      "tagName": "div",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "isPageLevel": false,
+      "isHidden": true,
+      "findings": [
+        {
+          "type": "gpt-thin-border-wide-shadow",
+          "category": "slop",
+          "severity": "advisory",
+          "advisory": false,
+          "detail": "1px border + 20px shadow blur",
+          "ignoreValue": "",
+          "name": "Hairline border with wide shadow",
+          "description": "A hairline border paired with a wide, diffuse shadow is a recurring generated-UI signature. Commit to one — a defined edge or a soft elevation — rather than both at once."
+        }
+      ]
+    },
+    {
+      "selector": "body",
+      "tagName": "body",
+      "rect": null,
+      "isPageLevel": true,
+      "isHidden": false,
+      "findings": [
+        {
+          "type": "cream-palette",
+          "category": "slop",
+          "severity": "warning",
+          "advisory": false,
+          "detail": "cream/beige page background rgb(244, 242, 235)",
+          "ignoreValue": "",
+          "name": "Cream / beige palette",
+          "description": "A warm cream or beige page background has become the default \"tasteful\" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white."
+        }
+      ]
+    }
+  ],
+  "state": "before-mobile-tutorial",
+  "dom": "- link \"跳到主內容\":\n  - /url: \"#main-menu-content\"\n- button \"返回\":\n  - generic: 返回\n- strong: 任務一 · 廢墟搜救\n- button \"更多工具\":\n  - generic: 更多工具\n- button \"執行\":\n  - generic: 執行\n- button \"暫停程式\" [disabled]:\n  - generic: 暫停\n- button \"停止\" [disabled]:\n  - generic: 停止\n- button \"重置\":\n  - generic: 重置\n- navigation \"工作區顯示方式\":\n  - button \"並排觀察\"\n  - button \"專心編程\"\n  - button \"觀察飛行\" [pressed]\n- status:\n  - generic: 準備飛行\n  - strong: 把想法連成積木，再按執行。\n- generic: 無人機\n- generic: 降落終點\n- generic \"觀察視角\":\n  - button \"跟隨\"\n  - button \"全景\" [pressed]\n  - button \"俯視\"\n- region \"飛行遙測\":\n  - strong: 已降落\n  - generic: 電量\n  - strong: 訓練模式\n  - generic: 航向\n  - strong: 180°\n  - generic: 高度\n  - strong: 0 cm\n  - generic: 水平速度\n  - strong: 0 cm/s\n  - generic: 垂直速度\n  - strong: +0 cm/s\n  - generic: 水箱\n  - strong: 空\n  - generic: 自由視角\n  - generic: X -675 · Z -675\n  - strong: 目標 2018 cm\n  - generic: 得分 0\n  - generic: 巡檢 0/3\n- button \"飛行紀錄 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\" [expanded]:\n  - strong: 飛行紀錄\n  - generic: 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\n- group \"紀錄篩選\":\n  - button \"全部\"\n  - button \"錯誤\"\n  - button \"任務\"\n  - button \"系統\"\n  - button \"清除飛行紀錄\": 清除\n- generic: 08:31:10\n- generic: 已回到起點，積木已保留。\n- generic: 08:31:10\n- generic: 📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。\n- generic: 08:31:10\n- generic: 💡 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。\n- img \"無人機 3D 場景。方向鍵旋轉視角，加減鍵縮放；也可使用跟隨、全景與俯視按鈕。\"\n- complementary \"開啟積木區\":\n  - paragraph: 互動教學 1 / 5\n  - heading \"開啟積木區\" [level=2]\n  - paragraph: 開啟程式積木，準備編寫第一個飛行程式。\n  - paragraph: 完成。準備下一步。\n  - button \"離開教學\"\n- button \"Scan complete\" [active]",
+  "errors": []
+}
