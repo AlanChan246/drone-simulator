@@ -24,10 +24,10 @@ colors:
 typography:
   caption:
     fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
-    fontSize: "13px"
+    fontSize: "14px"
   label:
     fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
-    fontSize: "14px"
+    fontSize: "16px"
   reading:
     fontSize: "16px"
   title:
@@ -53,7 +53,7 @@ typography:
     fontSize: "20px"
   body:
     fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
-    fontSize: "15px"
+    fontSize: "16px"
     lineHeight: 1.5
 rounded:
   detail: "2px"
@@ -86,7 +86,7 @@ Warm paper `#f4f2eb` is the page field; `#fffef9` is the working surface. Deep t
 
 ## Typography
 
-Functional secondary labels use a 13 px floor, controls 14–15 px and reading paragraphs 14–16 px. The documented display steps follow the existing responsive title hierarchy; 2 px radius belongs only to the narrow resize grip, never cards.
+Functional secondary labels use a 14 px floor; controls and reading paragraphs use 16 px. `--v2-body-size` and `--v2-caption-size` keep the same roles consistent at every breakpoint. The documented display steps follow the existing responsive title hierarchy; 2 px radius belongs only to the narrow resize grip, never cards.
 
 Traditional Chinese body text uses Noto Sans TC with local CJK fallbacks. Display uses IBM Plex Sans/Noto Sans TC; measurements use IBM Plex Mono. Existing Google Fonts delivery is retained, with offline fallbacks. No self-hosted font is claimed. Headers, plain-language instructions and numeric telemetry have distinct scale and weight; monospace is for measurements and logs.
 

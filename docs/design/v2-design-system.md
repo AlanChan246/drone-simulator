@@ -8,7 +8,7 @@ A rescue field school: warm paper, deep teal and rescue orange. Students connect
 
 `assets/styles/tokens.css` is authoritative. Background `#f4f2eb`, surface `#fffef9`, primary `#bf461e`, secondary `#164d48`, text `#173b37`. Success, warning, danger, information, mission and flight states have semantic aliases. Colour accompanies text, never replaces it.
 
-Typography uses Traditional Chinese first: Noto Sans TC with PingFang TC/Microsoft JhengHei fallbacks; IBM Plex Sans display; IBM Plex Mono telemetry. Display 36–60 px, H1 28–42, H2 23–28, H3 20, body 15–16, UI 13–15, caption 11–12. Body line height 1.5–1.9. Web fonts retain the existing Google Fonts source and fall back offline; no font download is required for operation.
+Typography uses Traditional Chinese first: Noto Sans TC with PingFang TC/Microsoft JhengHei fallbacks; IBM Plex Sans display; IBM Plex Mono telemetry. Display 36–60 px, H1 28–42, H2 24–28, H3 20, body/UI 16, caption 14. Body line height 1.5–1.9. Web fonts retain the existing Google Fonts source and fall back offline; no font download is required for operation.
 
 Spacing tokens: 4, 8, 12, 16, 24, 32, 48, 64 px. Radius: 6 px controls, 12 px surfaces. Borders separate permanent regions; shadow is reserved for floating hints/dialogs. Layers: world labels 4; HUD 5; flight log 8; navigation 30; utilities 40; loading 95; dialogs 100; messages 150; orientation/file-origin support 9000.
 

@@ -1,6 +1,6 @@
 * { box-sizing:border-box; }
 html,body { margin:0; width:100%; height:100%; overflow:hidden; }
-body { font:15px/1.5 var(--v2-font); background:var(--v2-bg); color:var(--v2-text); }
+body { font:var(--v2-body-size)/1.5 var(--v2-font); background:var(--v2-bg); color:var(--v2-text); }
 button,input,select { font:inherit; }
 button { cursor:pointer; }
 button:disabled { opacity:.45; cursor:not-allowed; }
@@ -24,3 +24,5 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible,summary:focus-visi
 .ui-icon { width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
 .v2-icon { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+.orientation-hint small{font-size:var(--v2-caption-size);line-height:1.7}

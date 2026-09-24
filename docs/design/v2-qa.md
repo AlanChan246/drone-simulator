@@ -56,3 +56,9 @@ First capture check requested recapture of an incorrectly sized home image; full
 ## 2026-09-24 Complete Slop Catalog follow-up
 
 [67-item checklist](slop-audit/checklist.md) and [audit/fix report](slop-audit/report.md) record source, multi-viewport browser and independent design evidence. The follow-up confirmed the exported XML file in Downloads, superseding the earlier unverified download-delivery boundary above. Physical device and assistive-technology limits remain.
+
+## Typography follow-up: 16px primary / 14px secondary
+
+User requested larger text for desktop use. Body, main controls, Blockly category labels, mission objectives/briefing prose, tutorial instructions and error messages now use 16px; secondary metadata, save status and logs use 14px. Shared CSS tokens preserve these roles across breakpoints. Blockly category rows grow to 44px; the editor footer wraps and empty-state guidance clears the wider category column. Display headings and fonts are retained.
+
+Rendered checks at 1440×900 (home/workspace), 1024×768 (mission briefing), and 390×844 (code/empty/error) found no new clipping in those states. Computed values confirmed 16px for body/run/objective/category/briefing/error and 14px for save/log text. Console error capture was empty; static package verification passed all 161 entries, and git diff --check passed. The bundled type scan returned no findings but explicitly degraded without parser modules, so it was not used as evidence of computed-style correctness. No simulation logic changed; the full mission suite was not rerun for this CSS-only adjustment. Prior 13px figures in the dated Slop report describe that earlier audit, not the current type scale.

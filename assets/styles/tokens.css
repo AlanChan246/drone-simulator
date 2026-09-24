@@ -35,6 +35,8 @@
   --v2-radius-small: 6px;
   --v2-radius: 12px;
   --v2-shadow: 0 12px 36px #183e3826;
+  --v2-body-size: 16px;
+  --v2-caption-size: 14px;
   --v2-font: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
   --v2-display: 'IBM Plex Sans', 'Noto Sans TC', sans-serif;
   --v2-mono: 'IBM Plex Mono', ui-monospace, monospace;
