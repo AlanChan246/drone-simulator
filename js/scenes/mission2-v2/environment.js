@@ -8,7 +8,7 @@ FINISH: Behaviour parity, multi-camera evidence, measured rendering and recorded
 */
 (function(root) {
     const C=root.Mission2V2Config;
-    function selected(search) { return new URLSearchParams(search).get('scene')===C.id; }
+    function selected(search) { return new URLSearchParams(search).get('scene')!=='mission2-legacy'; }
     function build({THREE,scene,parent,templates,stations,createFireEffects,createFireLabel,animations}) {
         const P=C.palette, grid=C.grid;
         const kit=root.Mission2V2Assets.createKit(THREE,parent,templates,P);

@@ -8,7 +8,7 @@ Daylight palette: sage/olive vegetation, warm sand trails, pale concrete, dark e
 
 Implementation: independent configuration and builder under `js/scenes/mission2-v2/`. A narrow simulator bridge initializes existing mission globals. Sensor-only geometry uses unchanged legacy wall/charge builders with local invisible material clones; new rendering is built independently. Stateful fire/charge visuals attach to the existing reset/interaction protocol. Atmosphere is restored on scene exit.
 
-Entry: open the app with `?scene=mission2-v2`, then choose Mission 2 normally. No parameter (or `?scene=mission2-legacy`) selects Legacy. Other missions ignore the parameter. This is a development URL, not a new student menu.
+Default promotion approved 2026-09-24: choosing Mission 2 now loads v2 without any query parameter. `?scene=mission2-v2` remains valid; `?scene=mission2-legacy` explicitly selects the preserved Legacy scene for comparison/rollback. Other missions ignore this selection. No student-facing switch is added.
 
 QA evidence and measured budgets are recorded in `audit/mission-2-v2/README.md`. All files and checkpoints are local only.
 

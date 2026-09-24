@@ -21,10 +21,10 @@ test('independent v2 grid exactly matches the actual Legacy builder',()=>{
  assert.deepEqual(config.spawn,{x:-825,y:14,z:-825,heading:180});assert.deepEqual(config.goal,{x:825,z:-825});
  assert.ok(Object.isFrozen(config.grid)&&config.grid.every(Object.isFrozen));
 });
-test('v2 is explicitly opt-in; absent, unknown and Legacy query values keep Legacy',()=>{
+test('v2 is the default; explicit Legacy query preserves rollback',()=>{
  const context={Mission2V2Config:config,URLSearchParams};vm.runInNewContext(read('js/scenes/mission2-v2/environment.js'),context);
- for(const query of ['','?scene=city','?scene=mission2-legacy','?scene=mission1-v2'])assert.equal(context.Mission2V2.selected(query),false);
- assert.equal(context.Mission2V2.selected('?scene=mission2-v2'),true);
+ for(const query of ['','?scene=city','?scene=mission2-v2','?scene=mission1-v2'])assert.equal(context.Mission2V2.selected(query),true);
+ assert.equal(context.Mission2V2.selected('?scene=mission2-legacy'),false);
 });
 test('four-fire fixture uses actual Blockly commands and stays in the preserved corridor',()=>{
  const Blockly=require('blockly/node'),{javascriptGenerator}=require('blockly/javascript');Blockly.JavaScript=javascriptGenerator;

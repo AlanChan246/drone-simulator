@@ -1,10 +1,10 @@
 # Mission 2 v2 — comparison and QA
 
-Verified 2026-09-24 on `codex/mission2-v2-scene`, against Legacy baseline `e3f656d`. No push or deployment. Legacy remains the default; original scene builders, mission rules, scoring, physics, coordinates and asset bytes are preserved.
+Verified 2026-09-24 on `codex/mission2-v2-scene`, against Legacy baseline `e3f656d`. No push or deployment. V2 was promoted to the default with user approval after this comparison; original scene builders, mission rules, scoring, physics, coordinates and asset bytes are preserved.
 
 ## Run and rollback
 
-Use the existing local server, open `http://localhost:8080/?scene=mission2-v2`, then select Mission 2. Remove the query or use `?scene=mission2-legacy` for Legacy. The query only affects Mission 2; there is no student-facing variant control. Returning to Legacy requires no data migration or file replacement.
+Use the existing local server, open `http://localhost:8080/`, then select Mission 2 to load v2. `?scene=mission2-v2` remains supported. Use `?scene=mission2-legacy` for Legacy. The query only affects Mission 2; there is no student-facing variant control. Returning to Legacy requires no data migration or file replacement.
 
 Local reproduction harness: `http://localhost:8080/audit/mission-2-v2/harness.html?scene=mission2-v2`. Its buttons run actual Blockly fixtures, compare contracts, and collect measurements. F8 hides/shows its panel. The audit folder is excluded from the existing Pages package.
 
@@ -24,7 +24,7 @@ Full asset provenance, CC0 evidence, file formats, modifications and scale: [ass
 
 ## Gameplay evidence
 
-- `npm test`: **21/21 passed**, including immutable baseline declaration hashes, exact grid/spawn parity, opt-in selection, actual Blockly generation and route validation.
+- `npm test`: **21/21 passed**, including immutable baseline declaration hashes, exact grid/spawn parity, default/Legacy selection, actual Blockly generation and route validation.
 - `node scripts/verify-static-site.cjs`: **164 offline entries verified**, no deployment. `git diff --check` passed.
 - `contract-parity.json`: **19 checks**, including 6,360 sensor geometry readings, 841 collision probes, charge once/reset, fire visibility/reset, partial mission completion, scoring deduplication and exact light restoration.
 - `v2-four-fires.json`: actual **42-command** Blockly execution, all four fires, three charging stations, successful landing, **1,225 points**, battery 36, no collision. Completion screenshot records 79 seconds.

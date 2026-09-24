@@ -1,6 +1,6 @@
 # Mission 2 Behaviour Contract
 
-Baseline: `e3f656d` on `main`, inspected 2026-09-24. Legacy remains the default. The v2 scene is a visual variant of `city`, not a new mission identity.
+Baseline: `e3f656d` on `main`, inspected 2026-09-24. V2 is now the default following user approval; Legacy remains available via `?scene=mission2-legacy`. The v2 scene is a visual variant of `city`, not a new mission identity.
 
 ## World and player flow
 
