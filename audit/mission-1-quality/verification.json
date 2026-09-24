@@ -1,0 +1,20 @@
+{
+  "baseline": "460e863",
+  "checkpoint": "mission1-quality-checkpoint-460e863",
+  "sensorReadingsIdentical": 2880,
+  "collisionProbesIdentical": 625,
+  "mission2StateIdentical": true,
+  "browserErrors": 0,
+  "unchangedPaths": [
+    "js/scenes/mission2-v2",
+    "assets/models",
+    "js/main.js",
+    "js/blockly_def.js",
+    "js/mission_rules.js",
+    "js/medical_drone_model.js"
+  ],
+  "fullFlightComplete": true,
+  "directFlightComplete": true,
+  "automatedTests": "25/25",
+  "staticPackage": "165 entries, verified without deployment"
+}

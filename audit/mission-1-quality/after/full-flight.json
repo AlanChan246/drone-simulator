@@ -1,0 +1,107 @@
+{
+  "position": {
+    "x": 824.9999999999999,
+    "y": 2.886579864025407e-15,
+    "z": 674.9999999999982
+  },
+  "running": false,
+  "flying": false,
+  "complete": true,
+  "beacons": 3,
+  "score": 300,
+  "collision": false,
+  "draw": {
+    "frame": 5555,
+    "calls": 266,
+    "triangles": 75405,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 183,
+    "textures": 22
+  },
+  "camera": {
+    "position": [
+      622.8553205524443,
+      2671.2865417247735,
+      622.8553205524445
+    ],
+    "target": {
+      "x": -675,
+      "y": 0,
+      "z": -675
+    },
+    "radius": 3200,
+    "theta": 45,
+    "phi": 35
+  },
+  "objects": {
+    "meshes": 379,
+    "casters": 84,
+    "materials": 61,
+    "geometries": 123,
+    "lights": [
+      {
+        "type": "HemisphereLight",
+        "intensity": 0.62,
+        "shadow": false
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 1.05,
+        "shadow": true
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 0.08,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 0.08,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1.4,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 2,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1.4,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 0,
+        "shadow": false
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 0.32,
+        "shadow": true
+      }
+    ]
+  }
+}

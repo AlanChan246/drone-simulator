@@ -1,0 +1,117 @@
+{
+  "buildMs": [
+    8.900000005960464,
+    7,
+    8.099999994039536,
+    6.5,
+    6.0999999940395355
+  ],
+  "medianMs": 7,
+  "snapshot": {
+    "position": {
+      "x": -675,
+      "y": 0,
+      "z": -675
+    },
+    "running": false,
+    "flying": false,
+    "complete": false,
+    "beacons": 0,
+    "score": 0,
+    "collision": false,
+    "draw": {
+      "frame": 1859,
+      "calls": 333,
+      "triangles": 94781,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 154,
+      "textures": 19
+    },
+    "camera": {
+      "position": [
+        622.8553205524443,
+        2671.2865417247735,
+        622.8553205524445
+      ],
+      "target": {
+        "x": -675,
+        "y": 0,
+        "z": -675
+      },
+      "radius": 3200,
+      "theta": 45,
+      "phi": 35
+    },
+    "objects": {
+      "meshes": 353,
+      "casters": 84,
+      "materials": 178,
+      "geometries": 106,
+      "lights": [
+        {
+          "type": "HemisphereLight",
+          "intensity": 1.1,
+          "shadow": false
+        },
+        {
+          "type": "DirectionalLight",
+          "intensity": 1.65,
+          "shadow": true
+        },
+        {
+          "type": "DirectionalLight",
+          "intensity": 0.42,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1.4,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1.4,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 2,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 1.4,
+          "shadow": false
+        },
+        {
+          "type": "PointLight",
+          "intensity": 0,
+          "shadow": false
+        },
+        {
+          "type": "DirectionalLight",
+          "intensity": 0.32,
+          "shadow": true
+        }
+      ]
+    }
+  }
+}

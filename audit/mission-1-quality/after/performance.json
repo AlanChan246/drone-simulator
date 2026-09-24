@@ -1,0 +1,17 @@
+{
+  "draw": {
+    "frame": 10003,
+    "calls": 435,
+    "triangles": 113715,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 183,
+    "textures": 22
+  },
+  "medianMs": 16.699999999982538,
+  "p95Ms": 17.60000000000582,
+  "width": 1408,
+  "height": 638
+}

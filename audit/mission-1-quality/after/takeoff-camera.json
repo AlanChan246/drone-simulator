@@ -1,0 +1,107 @@
+{
+  "position": {
+    "x": -675,
+    "y": 0,
+    "z": -675
+  },
+  "running": false,
+  "flying": false,
+  "complete": false,
+  "beacons": 0,
+  "score": 0,
+  "collision": false,
+  "draw": {
+    "frame": 9702,
+    "calls": 435,
+    "triangles": 113715,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 183,
+    "textures": 22
+  },
+  "camera": {
+    "position": [
+      -597.2182540694798,
+      202.52558883257652,
+      -597.2182540694798
+    ],
+    "target": {
+      "x": -675,
+      "y": 0,
+      "z": -675
+    },
+    "radius": 220,
+    "theta": 45,
+    "phi": 30
+  },
+  "objects": {
+    "meshes": 379,
+    "casters": 84,
+    "materials": 61,
+    "geometries": 123,
+    "lights": [
+      {
+        "type": "HemisphereLight",
+        "intensity": 0.62,
+        "shadow": false
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 1.05,
+        "shadow": true
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 0.08,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 0.08,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1.4,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 2,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 1.4,
+        "shadow": false
+      },
+      {
+        "type": "PointLight",
+        "intensity": 0,
+        "shadow": false
+      },
+      {
+        "type": "DirectionalLight",
+        "intensity": 0.32,
+        "shadow": true
+      }
+    ]
+  }
+}

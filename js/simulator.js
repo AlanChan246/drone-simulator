@@ -1598,6 +1598,11 @@ function loadScene(type) {
         return;
     }
 
+    if (environmentGroup.userData.disposeMission1Quality) {
+        environmentGroup.userData.disposeMission1Quality();
+        delete environmentGroup.userData.disposeMission1Quality;
+    }
+
     if (environmentGroup.userData.disposeMission2V2) {
         environmentGroup.userData.disposeMission2V2();
         delete environmentGroup.userData.disposeMission2V2;
@@ -2001,8 +2006,186 @@ function createMazeMap() {
         }
     });
     buildMission1Perimeter(cellSize, mazeGrid[0].length * cellSize / 2, mazeGrid.length * cellSize / 2);
+    polishMission1Environment();
     updateRoadEditorHighlight();
     updateRoadEditorPanel();
+}
+
+/** Mission 1 visual finish. The grid, sensor meshes and mission state remain owned by the existing builder. */
+function polishMission1Environment() {
+    const parent = environmentGroup;
+    const lights = scene.children.filter(o => o.isLight).map(light => ({
+        light, color: light.color.clone(), intensity: light.intensity,
+        position: light.position.clone(), ground: light.groundColor?.clone()
+    }));
+    const key = scene.userData.mainDirLight;
+    const shadowCamera = key.shadow.camera;
+    const shadowBefore = {};
+    ['left', 'right', 'top', 'bottom', 'near', 'far'].forEach(k => { shadowBefore[k] = shadowCamera[k]; });
+    const background = scene.background, fog = scene.fog;
+    parent.userData.disposeMission1Quality = () => {
+        scene.background = background; scene.fog = fog;
+        lights.forEach(({light, color, intensity, position, ground}) => {
+            light.color.copy(color); light.intensity = intensity; light.position.copy(position);
+            if (ground) light.groundColor.copy(ground);
+        });
+        Object.assign(shadowCamera, shadowBefore); shadowCamera.updateProjectionMatrix();
+    };
+    scene.background = new THREE.Color(0xb8c8c8);
+    scene.fog = new THREE.Fog(0xb8c8c8, 3800, 7000);
+    lights.forEach(({light}) => {
+        if (light.isHemisphereLight) {
+            light.color.setHex(0xe7f0f0); light.groundColor.setHex(0x666950); light.intensity = 0.62;
+        } else if (light === key) {
+            light.color.setHex(0xffefd5); light.intensity = 1.05; light.position.set(-900, 1800, -600);
+        } else light.intensity = 0.08;
+    });
+    Object.assign(shadowCamera, {left:-1550,right:1550,top:1550,bottom:-1550,near:10,far:5000});
+    shadowCamera.updateProjectionMatrix();
+
+    const color = hex => new THREE.Color(hex).convertSRGBToLinear();
+    const palette = {stone:0xb0ae9e, dark:0x34494a, sand:0xc3b799, grass:0x70866a,
+        paper:0xece8d7, orange:0xbb542d, teal:0x246e7c, green:0x397355, metal:0x697b79};
+    // Share identical plot/foundation materials. Never tint a shared GLB template.
+    const materialCache = new Map();
+    parent.traverse(o => {
+        if (!o.isMesh || o.material.map || Array.isArray(o.material)) return;
+        const m = o.material;
+        if (!m.isMeshPhongMaterial || m.transparent) return;
+        const signature = [m.color.getHex(),m.shininess,m.polygonOffset,m.polygonOffsetFactor,m.polygonOffsetUnits].join('/');
+        if (!materialCache.has(signature)) {
+            const copy = m.clone(); copy.color.convertSRGBToLinear(); materialCache.set(signature, copy);
+        }
+        o.material = materialCache.get(signature);
+    });
+    // The existing ground retains its footprint and elevation, with gentle earth variation.
+    const base = parent.children.find(o => o.isMesh && o.geometry.type === 'PlaneGeometry' && o.geometry.parameters.width === 3600);
+    if (base) {
+        base.geometry.dispose(); base.material.dispose();
+        base.geometry = new THREE.PlaneGeometry(3600, 3600, 24, 24);
+        const values = [], positions = base.geometry.attributes.position;
+        for (let n=0; n<positions.count; n++) {
+            const c = color(palette.grass).multiplyScalar(0.96 + 0.04*Math.sin(positions.getX(n)*0.009)*Math.cos(positions.getY(n)*0.007));
+            values.push(c.r,c.g,c.b);
+        }
+        base.geometry.setAttribute('color', new THREE.Float32BufferAttribute(values,3));
+        base.material = new THREE.MeshLambertMaterial({vertexColors:true});
+    }
+
+    // Keep the old raycast shapes: even non-wall intersections affect the legacy sensor fallback.
+    // Hide only their rendering, preserving mission registers and original animation transforms.
+    const oldMarkers = parent.children.filter(o => o.userData.waypointKind || o.isExit ||
+        (o.isMesh && o.geometry.type === 'PlaneGeometry' && o.geometry.parameters.width === 40));
+    oldMarkers.forEach(o => { o.visible = false; });
+    beaconData.forEach(b => b.mesh.children.forEach(child => { child.visible = false; }));
+
+    const decor = new THREE.Group(); decor.name = 'mission1-rescue-detail'; parent.add(decor);
+    // All solid details stay off the flight centreline and never carry isWall flags.
+    const batches = new Map();
+    function box(tint,x,y,z,w,h,d,angle=0) {
+        if (!batches.has(tint)) batches.set(tint,[]);
+        batches.get(tint).push({x,y,z,w,h,d,angle});
+    }
+    function surface(tint,x,z,w,d,y=0.05) { box(tint,x,2+y*8,z,w,0.2,d); }
+    function rail(x,z,angle=0) {
+        const dx=Math.cos(angle),dz=-Math.sin(angle);
+        box(palette.paper,x,25,z,62,9,5,angle);
+        box(palette.orange,x,26,z,18,10,5.4,angle);
+        [-23,23].forEach(t => {
+            box(palette.dark,x+dx*t,12,z+dz*t,4,24,5,angle);
+            box(palette.dark,x+dx*t,1,z+dz*t,13,2,17,angle);
+        });
+    }
+    function crate(x,z,tint=palette.orange) {
+        box(tint,x,17,z,21,25,19); box(palette.metal,x,30,z,23,3,21);
+        box(palette.paper,x,18,z-9.6,10,4,0.6);
+    }
+    function sign(x,z,label,tint) {
+        box(palette.metal,x,31,z,3,62,3);
+        const canvas=document.createElement('canvas');canvas.width=256;canvas.height=128;
+        const ctx=canvas.getContext('2d');ctx.fillStyle='#'+tint.toString(16).padStart(6,'0');ctx.fillRect(0,0,256,128);
+        ctx.strokeStyle='#ece8d7';ctx.lineWidth=5;ctx.strokeRect(8,8,240,112);
+        ctx.fillStyle='#ece8d7';ctx.font='bold 40px sans-serif';ctx.textAlign='center';ctx.fillText(label,128,79);
+        const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
+        const mesh=new THREE.Mesh(new THREE.PlaneGeometry(60,30),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+        mesh.position.set(x,60,z);decor.add(mesh);
+    }
+    function pad(x,z,label,tint) {
+        // Raised just above the actual GLB road surface; does not change getGroundHeight.
+        const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+        const ctx=canvas.getContext('2d');ctx.fillStyle='#'+tint.toString(16).padStart(6,'0');ctx.fillRect(0,0,256,256);
+        ctx.strokeStyle='#ece8d7';ctx.lineWidth=9;ctx.strokeRect(14,14,228,228);
+        ctx.beginPath();ctx.arc(128,119,69,0,Math.PI*2);ctx.stroke();
+        ctx.fillStyle='#ece8d7';ctx.font='bold 94px sans-serif';ctx.textAlign='center';ctx.fillText('H',128,152);
+        ctx.font='bold 26px sans-serif';ctx.fillText(label,128,230);
+        const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
+        const mesh=new THREE.Mesh(new THREE.PlaneGeometry(108,108),new THREE.MeshStandardMaterial({map:texture,roughness:0.95,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,8,z);decor.add(mesh);
+    }
+
+    // Urban edge: continuous verges and civic planting connect the existing perimeter buildings.
+    surface(palette.stone,0,-1050,2700,240);surface(palette.stone,0,1050,2700,240);
+    surface(palette.stone,-1050,0,240,1860);surface(palette.stone,1050,0,240,1860);
+    for (let side=0;side<4;side++) for(let n=-4;n<=4;n++) {
+        const p=n*187.5;const x=side<2?p:(side===2?-1160:1160),z=side<2?(side===0?-1160:1160):p;
+        surface(palette.sand,x,z,160,155,0.2);
+        // Low planted strips give scale without a second forest or new sensor geometry.
+        const px=side<2?x:x+(side===2?120:-120),pz=side<2?z+(side===0?120:-120):z;
+        box(palette.stone,px,4,pz,side<2?85:18,8,side<2?18:85);
+        box(palette.grass,px,11,pz,side<2?78:13,8,side<2?13:78);
+    }
+    // Faint sidewalk expansion joints, confined to the perimeter.
+    for(let n=-8;n<=8;n++){
+        surface(0x939b8b,n*150,-1000,2,120,0.3);surface(0x939b8b,n*150,1000,2,120,0.3);
+        surface(0x939b8b,-1000,n*100,120,2,0.3);surface(0x939b8b,1000,n*100,120,2,0.3);
+    }
+    pad(-675,-675,'ALPHA',palette.teal); pad(825,675,'BRAVO',palette.green);
+    // Base radio mast and supply cases fit the reserved edge of the original launch cell.
+    crate(-735,-722);crate(-735,-691,palette.teal);
+    box(palette.metal,-725,57,-735,3,104,3);
+    box(palette.paper,-725,91,-735,25,3,3);box(palette.paper,-725,78,-735,17,3,3);
+    sign(-725,-625,'ALPHA',palette.teal);
+
+    // Bravo's original edge exit opens onto a small, non-interactive evacuation staging apron.
+    surface(palette.sand,1020,675,240,240,0.6);
+    surface(palette.stone,938,675,85,112,0.8);
+    [-1,1].forEach(dx=>[-1,1].forEach(dz=>box(palette.metal,1030+dx*46,40,675+dz*49,3,80,3)));
+    box(palette.paper,1030,82,675,108,5,116);box(palette.green,1030,87,675,108,5,25);
+    crate(1110,725);crate(1110,695,palette.green);rail(1035,793);rail(1035,557);
+    sign(934,605,'BRAVO',palette.green);
+    // Two restrained street repair areas explain why the urban district is cordoned off.
+    [[-980,-360],[360,980]].forEach(([x,z])=>{
+        surface(palette.sand,x,z,80,105,0.6);rail(x,z-58);
+        for(let k=0;k<5;k++)box(k%2?palette.stone:palette.metal,x-23+k*10,5+k%3,z+k%2*18,19,8,14,k*0.7);
+    });
+    // Retain the three original beacon registers; feedback follows their existing triggered state.
+    beaconData.forEach((b,index) => {
+        const ring = new THREE.Mesh(new THREE.RingGeometry(29,34,32),new THREE.MeshBasicMaterial({color:0x00adb5,side:THREE.DoubleSide}));
+        ring.rotation.x=-Math.PI/2;ring.position.y=-41.5;ring.raycast=()=>{};b.mesh.add(ring);
+        const indicator = new THREE.Mesh(new THREE.OctahedronGeometry(6),new THREE.MeshBasicMaterial({color:0x00adb5}));
+        indicator.position.set(0,2,0);indicator.raycast=()=>{};b.mesh.add(indicator);
+        const x=b.x+59,z=b.z+53;
+        crate(x,z,palette.teal);box(palette.metal,x,42,z,2,36,2);
+        if(index===0){box(palette.paper,x,60,z,22,3,3);box(palette.paper,x,50,z,14,3,3);}
+        if(index===1){box(palette.dark,x,53,z,14,9,10);box(palette.paper,x,53,z-6,7,6,2);}
+        if(index===2){box(palette.paper,x,60,z,17,4,17);box(palette.metal,x,66,z,3,12,3);}
+        const check = new THREE.Group();
+        [[-6,0,10,-0.65],[4,5,21,0.65]].forEach(([x,y,length,angle])=>{
+            const stroke=new THREE.Mesh(new THREE.BoxGeometry(length,3,2),new THREE.MeshBasicMaterial({color:0xece8d7}));
+            stroke.position.set(x,y,0);stroke.rotation.z=angle;check.add(stroke);
+        });
+        check.position.set(b.x,62,b.z);decor.add(check);
+        window.mazeAnimations.push(()=>{check.visible=b.triggered;check.quaternion.copy(camera.quaternion);indicator.visible=!b.triggered;});
+    });
+
+    const geometry=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
+    batches.forEach((items,tint)=>{
+        const material=new THREE.MeshStandardMaterial({color:color(tint),roughness:0.92,metalness:0.03});
+        const mesh=new THREE.InstancedMesh(geometry,material,items.length);
+        items.forEach((v,i)=>{dummy.position.set(v.x,v.y,v.z);dummy.rotation.set(0,v.angle,0);dummy.scale.set(v.w,v.h,v.d);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+        mesh.receiveShadow=true;mesh.castShadow=false;decor.add(mesh);
+    });
+    decor.traverse(o => { if (o.isMesh) o.raycast = () => {}; });
 }
 
 function createBeacon(i, j, x, z) {

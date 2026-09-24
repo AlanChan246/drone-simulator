@@ -1,0 +1,20 @@
+[
+  {
+    "level": "warn",
+    "message": "💥 Collision detected!",
+    "timestamp": "2026-09-24T04:35:01.288Z",
+    "url": "http://localhost:8080/js/simulator.js?v=mission1-quality-2"
+  },
+  {
+    "level": "warn",
+    "message": "💥 Collision detected!",
+    "timestamp": "2026-09-24T04:36:47.504Z",
+    "url": "http://localhost:8080/js/simulator.js?v=mission1-quality-2"
+  },
+  {
+    "level": "warn",
+    "message": "💥 Collision detected!",
+    "timestamp": "2026-09-24T04:38:04.521Z",
+    "url": "http://localhost:8080/js/simulator.js?v=mission1-quality-2"
+  }
+]
