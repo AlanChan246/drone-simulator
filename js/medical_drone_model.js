@@ -8,8 +8,10 @@
         root.name = 'medical_rescue_drone';
 
         const materials = {
+            // Saturated rescue paint separates the airframe from the pale daylight terrain.
+            rescueOrange: new THREE.MeshStandardMaterial({ color: 0xf04408, roughness: 0.58, metalness: 0.02 }),
             white: new THREE.MeshStandardMaterial({ color: 0xd8dcdd, roughness: 0.42, metalness: 0.04 }),
-            red: new THREE.MeshStandardMaterial({ color: 0xd32f2f, roughness: 0.5 }),
+            red: new THREE.MeshStandardMaterial({ color: 0xc91020, roughness: 0.58 }),
             graphite: new THREE.MeshStandardMaterial({ color: 0x1e2022, roughness: 0.65, metalness: 0.15 }),
             dark: new THREE.MeshStandardMaterial({ color: 0x0d1012, roughness: 0.48, metalness: 0.28 }),
             cyan: new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 2, roughness: 0.2, transparent: true, opacity: 0.76 }),
@@ -17,6 +19,11 @@
             glass: new THREE.MeshPhysicalMaterial({ color: 0x050505, roughness: 0.05, metalness: 0.9, clearcoat: 1, clearcoatRoughness: 0.02 }),
             lens: new THREE.MeshPhysicalMaterial({ color: 0x16262d, emissive: 0x0b1f2c, emissiveIntensity: 0.8, roughness: 0.04, metalness: 0.75, clearcoat: 1 })
         };
+        // Three r128 interprets hex colors as linear. Decode the authored sRGB
+        // paint before lighting and sRGB output, otherwise darks and hues wash out.
+        Object.keys(materials).forEach(function (key) {
+            materials[key].color.convertSRGBToLinear();
+        });
         const rotors = [];
         const ledMeshes = [];
         const parts = [];
@@ -71,7 +78,7 @@
         const hull = register(new THREE.Group());
         hull.name = 'center_fuselage';
         root.add(hull);
-        rounded('main_chassis', [3.15, 1.32, 4.05], 0.34, materials.white, hull, [0, 0.25, 0]);
+        rounded('main_chassis', [3.15, 1.32, 4.05], 0.34, materials.rescueOrange, hull, [0, 0.25, 0]);
         rounded('underside_pan', [2.55, 0.38, 3.25], 0.16, materials.graphite, hull, [0, -0.48, 0.08]);
         markRelief(rounded('top_red_lid', [2.18, 0.16, 2.82], 0.24, materials.red, hull, [0, 1.02, -0.05]), 'center_fuselage');
         markRelief(rounded('top_lid_beveled_seam', [2.34, 0.07, 2.98], 0.26, materials.dark, hull, [0, 0.93, -0.05]), 'center_fuselage');
@@ -113,7 +120,7 @@
             motor.name = 'motor_pod_' + motorInfo.id;
             motor.position.set(motorInfo.x, 0.52, motorInfo.z);
             propulsion.add(motor);
-            addMesh('motor_housing_' + motorInfo.id, new THREE.CylinderGeometry(0.46, 0.52, 0.82, 12), materials.white, motor, [0, 0.1, 0]);
+            addMesh('motor_housing_' + motorInfo.id, new THREE.CylinderGeometry(0.46, 0.52, 0.82, 12), materials.rescueOrange, motor, [0, 0.1, 0]);
             const ring = addMesh('cyan_led_ring_' + motorInfo.id, new THREE.CylinderGeometry(0.515, 0.515, 0.22, 32), materials.cyan, motor, [0, -0.38, 0]);
             ledMeshes.push(ring);
             addMesh('motor_core_' + motorInfo.id, new THREE.CylinderGeometry(0.3, 0.34, 0.55, 16), materials.dark, motor, [0, 0.74, 0]);
