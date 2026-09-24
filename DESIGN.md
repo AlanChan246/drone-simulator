@@ -10,12 +10,53 @@ colors:
   muted: "#64736b"
   border: "#cdd4c8"
   focus: "#146b88"
+  elevated: "#ffffff"
+  primary-hover: "#9b3414"
+  text-secondary: "#4f625c"
+  divider: "#e1e5dc"
+  success: "#286c4b"
+  warning: "#825713"
+  danger: "#b12c36"
+  info: "#276780"
+  accent: "#f0b95d"
+  canvas: "#cbdad4"
+  backdrop: "#143b37a8"
 typography:
+  caption:
+    fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
+    fontSize: "13px"
+  label:
+    fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
+    fontSize: "14px"
+  reading:
+    fontSize: "16px"
+  title:
+    fontSize: "18px"
+  section:
+    fontSize: "20px"
+  brand:
+    fontFamily: "IBM Plex Sans, Noto Sans TC, sans-serif"
+    fontSize: "22px"
+  dialog:
+    fontSize: "24px"
+  headline:
+    fontSize: "28px"
+  display:
+    fontFamily: "IBM Plex Sans, Noto Sans TC, sans-serif"
+    fontSize: "clamp(36px, 4vw, 60px)"
+  mission-heading:
+    fontSize: "clamp(28px, 3vw, 42px)"
+  tablet-display:
+    fontSize: "40px"
+  telemetry:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "20px"
   body:
     fontFamily: "Noto Sans TC, PingFang TC, Microsoft JhengHei, sans-serif"
     fontSize: "15px"
     lineHeight: 1.5
 rounded:
+  detail: "2px"
   control: "6px"
   panel: "12px"
 spacing:
@@ -45,6 +86,8 @@ Warm paper `#f4f2eb` is the page field; `#fffef9` is the working surface. Deep t
 
 ## Typography
 
+Functional secondary labels use a 13 px floor, controls 14–15 px and reading paragraphs 14–16 px. The documented display steps follow the existing responsive title hierarchy; 2 px radius belongs only to the narrow resize grip, never cards.
+
 Traditional Chinese body text uses Noto Sans TC with local CJK fallbacks. Display uses IBM Plex Sans/Noto Sans TC; measurements use IBM Plex Mono. Existing Google Fonts delivery is retained, with offline fallbacks. No self-hosted font is claimed. Headers, plain-language instructions and numeric telemetry have distinct scale and weight; monospace is for measurements and logs.
 
 ## Layout
@@ -63,7 +106,7 @@ Permanent regions use thin borders. Floating dialogs/hints use `0 12px 36px #183
 
 ## Components
 
-Run is orange; reset/retry are quiet bordered controls. Pause/stop become enabled with execution state. Beginner telemetry shows flight state and height; the fire mission adds water and battery. Detailed data, debugging and road editing stay in secondary tools; logs begin collapsed.
+Run is orange; reset/retry are quiet bordered controls. Pause/stop become enabled with execution state. The toolbox initially exposes event, flight, and an expandable advanced group. All existing block types remain available. Save status remains readable at narrow widths. Beginner telemetry shows flight state and height; the fire mission adds water and battery. Detailed data and debugging stay in secondary tools; logs begin collapsed. The existing developer road editor is disabled by ROAD_EDITOR_UI_ENABLED, not a shipped management workflow. Expanded logs reserve space above them for a scrollable telemetry region.
 
 The current-command panel, Blockly highlight and projected drone/action label form one feedback system. Practice uses a visible 25 cm ground grid. Loading, empty, invalid-program, collision and water errors explain the next useful action. Result keeps score breakdown and offers retry/next mission. XML replacement is validated transactionally; old save keys remain unchanged.
 

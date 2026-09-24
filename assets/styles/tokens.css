@@ -1,6 +1,8 @@
 :root {
   --v2-bg: #f4f2eb;
   --v2-surface: #fffef9;
+  --v2-canvas: #cbdad4;
+  --v2-backdrop: #143b37a8;
   --v2-elevated: #ffffff;
   --v2-primary: #bf461e;
   --v2-primary-hover: #9b3414;
@@ -29,6 +31,7 @@
   --v2-space-8: 32px;
   --v2-space-12: 48px;
   --v2-space-16: 64px;
+  --v2-radius-detail: 2px;
   --v2-radius-small: 6px;
   --v2-radius: 12px;
   --v2-shadow: 0 12px 36px #183e3826;

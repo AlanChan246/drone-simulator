@@ -11,14 +11,14 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%23000000'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23ffffff'/%3E%3Cpath stroke='%23ffffff' stroke-width='1.5' d='M6 10l6 4M26 10l-6 4M6 22l6-4M26 22l-6-4'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="node_modules/three/build/three.min.js?v=v2-20260924f"></script>
-    <script src="node_modules/three/examples/js/loaders/GLTFLoader.js?v=v2-20260924f"></script>
-    <script src="node_modules/blockly/blockly_compressed.js?v=v2-20260924f"></script>
-    <script src="node_modules/blockly/blocks_compressed.js?v=v2-20260924f"></script>
-    <script src="node_modules/blockly/javascript_compressed.js?v=v2-20260924f"></script>
-    <script src="node_modules/blockly/msg/zh-hant.js?v=v2-20260924f"></script>
-    <link rel="stylesheet" href="assets/styles/v2.css?v=v2-20260924f">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="node_modules/three/build/three.min.js?v=slop-20260924e"></script>
+    <script src="node_modules/three/examples/js/loaders/GLTFLoader.js?v=slop-20260924e"></script>
+    <script src="node_modules/blockly/blockly_compressed.js?v=slop-20260924e"></script>
+    <script src="node_modules/blockly/blocks_compressed.js?v=slop-20260924e"></script>
+    <script src="node_modules/blockly/javascript_compressed.js?v=slop-20260924e"></script>
+    <script src="node_modules/blockly/msg/zh-hant.js?v=slop-20260924e"></script>
+    <link rel="stylesheet" href="assets/styles/v2.css?v=slop-20260924e">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -47,9 +47,9 @@
         <span id="app-loading-status">載入本機程式庫與 3D 資源</span>
         <div class="app-loading__bar"><span></span></div>
     </div>
-    <div id="orientation-hint" class="orientation-hint" hidden role="status">
-        <strong>請將手機轉為橫向</strong>
-        <small>橫向畫面能同時顯示 3D 場景和積木工具。</small>
+    <div id="orientation-hint" class="orientation-hint" hidden role="dialog" aria-modal="true" aria-labelledby="orientation-title">
+        <strong id="orientation-title">請將手機轉為橫向</strong>
+        <small>橫向可並排看積木和飛行；直向可用上方按鈕切換，執行時會自動顯示飛行。</small>
         <button type="button" onclick="dismissOrientationHint()">仍然繼續</button>
     </div>
     <div id="v2-scene-loading" class="v2-scene-loading" hidden role="status">正在準備飛行場景…</div>
@@ -74,7 +74,7 @@
     </script>
     <div id="main-menu" class="menu-screen menu-screen--hub v2-hub">
         <header class="v2-header"><a class="v2-brand" href="#" onclick="showMainMenu(); return false"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M8 24L24 8"/><circle cx="8" cy="8" r="5"/><circle cx="24" cy="8" r="5"/><circle cx="8" cy="24" r="5"/><circle cx="24" cy="24" r="5"/></svg><span>Drone Simulator<small>救災無人機訓練</small></span></a><span class="v2-edition">用程式，讓救援起飛。</span></header>
-        <main id="main-menu-content" class="v2-home" aria-labelledby="hub-brand-heading">
+        <main id="main-menu-content" tabindex="-1" class="v2-home" aria-labelledby="hub-brand-heading">
             <div class="v2-home-world" id="main-menu-preview"><img src="assets/images/mission-preview-1.png" alt="在街區道路之間規劃無人機的搜救路線"><div class="v2-world-caption"><span>你的程式，真實的行動。</span><span>編程 → 飛行 → 救援</span></div></div>
             <div class="v2-home-copy"><h1 id="hub-brand-heading">下一次救援，<br>由你編程。</h1><p>連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。</p><button class="v2-primary" onclick="showMissionSelect()">開始救援任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button><button class="v2-secondary" onclick="startFreePlay()">自由練習</button><div class="v2-first-flight"><strong>第一次操控無人機？</strong><button class="v2-text" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">從第一次飛行開始</button><span>起飛、移動、降落。邊做邊學。</span></div></div>
         </main>
@@ -91,7 +91,7 @@
     </div>
 
     <!-- 遊戲界面（預設隱藏） -->
-    <div id="game-interface" class="v2-deck" style="display: none;" data-view="split">
+    <div id="game-interface" role="main" aria-label="飛行工作區" tabindex="-1" class="v2-deck" style="display: none;" data-view="split">
         <div class="top-bar">
             <div class="top-bar__primary">
                 <button class="back-btn-game icon-text-btn" onclick="returnToMissionSelect()" title="返回任務選擇"><span aria-hidden="true">←</span><span>返回</span></button>
@@ -286,6 +286,7 @@
             </block>
             <block type="drone_move_complex_infinite"></block>
         </category>
+        <category name="進階積木" colour="#164d48">
         <category name="燈光" colour="260">
             <block type="drone_set_led_color">
                 <value name="COLOR"><shadow type="colour_picker"><field name="COLOUR">#ff0000</field></shadow></value>
@@ -349,6 +350,7 @@
         <category name="變數" colour="#a5c73d" custom="VARIABLE"></category>
         <category name="清單" colour="#745ba5" custom="LIST"></category>
         <category name="函式" colour="#d65cd6" custom="PROCEDURE"></category>
+        </category>
     </xml>
     <!-- 任務結算彈窗 -->
     <div id="result-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
@@ -443,18 +445,18 @@
         </div>
     </aside>
 
-    <script src="node_modules/three/examples/js/geometries/RoundedBoxGeometry.js?v=v2-20260924f"></script>
-    <script src="js/medical_drone_model.js?v=v2-20260924f"></script>
-    <script src="js/flight_command_execution.js?v=v2-20260924f"></script>
-    <script src="js/mission_rules.js?v=v2-20260924f"></script>
-    <script src="js/scene_lifecycle.js?v=v2-20260924f"></script>
-    <script src="js/flight_deck_view.js?v=v2-20260924f"></script>
-    <script src="js/simulator.js?v=v2-20260924f"></script>
-    <script src="js/blockly_def.js?v=v2-20260924f"></script>
-    <script src="js/mission2_answer.js?v=v2-20260924f"></script>
-    <script src="js/blockly_workspace_io.js?v=v2-20260924f"></script>
-    <script src="js/main.js?v=v2-20260924f"></script>
-    <script src="js/v2_ui.js?v=v2-20260924f"></script>
+    <script src="node_modules/three/examples/js/geometries/RoundedBoxGeometry.js?v=slop-20260924e"></script>
+    <script src="js/medical_drone_model.js?v=slop-20260924e"></script>
+    <script src="js/flight_command_execution.js?v=slop-20260924e"></script>
+    <script src="js/mission_rules.js?v=slop-20260924e"></script>
+    <script src="js/scene_lifecycle.js?v=slop-20260924e"></script>
+    <script src="js/flight_deck_view.js?v=slop-20260924e"></script>
+    <script src="js/simulator.js?v=slop-20260924e"></script>
+    <script src="js/blockly_def.js?v=slop-20260924e"></script>
+    <script src="js/mission2_answer.js?v=slop-20260924e"></script>
+    <script src="js/blockly_workspace_io.js?v=slop-20260924e"></script>
+    <script src="js/main.js?v=slop-20260924e"></script>
+    <script src="js/v2_ui.js?v=slop-20260924e"></script>
     <script>
         window.addEventListener('load', function () {
             var loader = document.getElementById('app-loading');

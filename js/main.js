@@ -3877,7 +3877,7 @@ function stopInteractiveTutorial() {
     tutorialTimer = null;
 }
 function applyTutorialHelper() {
-    V2UI.setView('split');
+    V2UI.setView(window.innerWidth<1100?'code':'split');
     V2UI.starter();
 }
 
@@ -3895,9 +3895,11 @@ function updateOrientationHint() {
     if (!hint || !game) return;
     const gameVisible = getComputedStyle(game).display !== 'none';
     const portraitPhone = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const wasHidden = hint.hidden;
     hint.hidden = orientationHintDismissed || !gameVisible || !portraitPhone;
+    if (wasHidden && !hint.hidden) hint.querySelector('button').focus();
 }
-function dismissOrientationHint() { orientationHintDismissed = true; updateOrientationHint(); }
+function dismissOrientationHint() { orientationHintDismissed = true; updateOrientationHint(); requestAnimationFrame(()=>document.querySelector('.v2-view-switch button[aria-pressed=true]')?.focus()); }
 window.addEventListener('resize', updateOrientationHint);
 window.addEventListener('orientationchange', updateOrientationHint);
 setInterval(updateOrientationHint, 700);

@@ -1356,7 +1356,8 @@ async function init3D() {
         } else {
             // 如果 onWindowResize 還未定義，手動計算
             const consolePanel = document.getElementById('console-panel');
-            const consoleHeight = consolePanel ? (consolePanel.offsetHeight || 150) : 150;
+            const consoleHeight = consolePanel ? (consolePanel.offsetHeight || 44) : 44;
+            container.style.setProperty('--flight-log-height', `${consoleHeight}px`);
             const containerHeight = container.clientHeight || container.offsetHeight || height;
             const canvasHeight = Math.max(containerHeight - consoleHeight, 100);
             
@@ -4418,7 +4419,8 @@ function onWindowResize() {
     
     // 計算 console-panel 的實際高度
     const consolePanel = document.getElementById('console-panel');
-    const consoleHeight = consolePanel ? (consolePanel.offsetHeight || 150) : 150;
+    const consoleHeight = consolePanel ? (consolePanel.offsetHeight || 44) : 44;
+    container.style.setProperty('--flight-log-height', `${consoleHeight}px`);
     
     // canvas 的可用高度 = 容器高度 - console 高度
     const canvasHeight = Math.max(containerHeight - consoleHeight, 100);

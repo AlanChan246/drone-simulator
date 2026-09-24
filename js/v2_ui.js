@@ -123,9 +123,12 @@ window.V2UI = (() => {
         if(el('v2-empty')&&workspace)el('v2-empty').hidden=workspace.getAllBlocks(false).length>0;
     }
     function briefing(id,content) {
-        const details=content.innerHTML;
+        const details=content.innerHTML.replace(/<h4>/g,'<h3>').replace(/<\/h4>/g,'</h3>');
         const tunnel=Number(id)===1;
         content.innerHTML=`<div class="v2-brief-intro"><img src="assets/images/mission-preview-${tunnel?1:2}.png" alt="任務場景"><div><h3>${tunnel?'讓情報安全送達。':'把每一趟飛行用在救援上。'}</h3><p>${tunnel?'從基地起飛，沿道路抵達綠色疏散區，使用降落積木完成交班。':'在水源取水、飛到火點噴水，最後在綠色救援平台降落結算。'}</p><ul>${tunnel?'<li>不可飛越建築，也不能直接飛至座標。</li><li>巡檢是加分目標：懸停 3 秒，每處 +100。</li>':'<li>水箱只能裝一份水，用完要重新取水。</li><li>留意電量；充電站懸停 3 秒可補充。</li><li>撲滅愈多火點分數愈高，全滅額外加分。</li>'}</ul></div></div><details class="v2-brief-rules"><summary>地圖圖例、計分與進階提示</summary>${details}</details>`;
+        content.querySelectorAll('.brief-legend-badge').forEach(node=>{
+            if(['↓','⚡'].includes(node.textContent.trim())){node.innerHTML=icon(node.textContent.trim()==='↓'?'download':'point');node.setAttribute('aria-hidden','true');}
+        });
         content.querySelectorAll('.brief-step-icon').forEach(node=>node.remove());
         content.querySelectorAll('.brief-legend-swatch:not(.brief-legend-swatch--model)').forEach(node=>{node.innerHTML=icon(node.classList.contains('brief-legend-swatch--beacon')?'point':'download');});
     }
@@ -135,20 +138,28 @@ window.V2UI = (() => {
     document.addEventListener('keydown',event=>{
         if(event.key==='Escape'){toggleUtilityMenu(false);return;}
         if(event.key!=='Tab')return;
-        const modal=['app-confirm-modal','result-modal','mission-briefing'].map(el).find(node=>node&&!node.hidden&&getComputedStyle(node).display!=='none');
+        const modal=['orientation-hint','app-confirm-modal','result-modal','mission-briefing'].map(el).find(node=>node&&!node.hidden&&getComputedStyle(node).display!=='none');
         if(!modal)return;
         const focusable=[...modal.querySelectorAll('button:not(:disabled),[href],summary,input,select,[tabindex="0"]')].filter(node=>node.getClientRects().length);
         const first=focusable[0],last=focusable.at(-1);if(!first)return;
         if(event.shiftKey&&(document.activeElement===first||!modal.contains(document.activeElement))){event.preventDefault();last.focus();}
         else if(!event.shiftKey&&(document.activeElement===last||!modal.contains(document.activeElement))){event.preventDefault();first.focus();}
     });
-    const modalIds=['app-confirm-modal','result-modal','mission-briefing','v2-scene-loading'];
+    const modalIds=['orientation-hint','app-confirm-modal','result-modal','mission-briefing','v2-scene-loading'];
     const syncModal=()=>{
         const open=modalIds.some(id=>{const node=el(id);return node&&!node.hidden&&getComputedStyle(node).display!=='none';});
         ['game-interface','main-menu','mission-select-menu'].forEach(id=>{el(id).inert=open;});
     };
     const modalObserver=new MutationObserver(syncModal);
     modalIds.forEach(id=>modalObserver.observe(el(id),{attributes:true,attributeFilter:['hidden','style']}));
+    document.querySelector('.skip-link').addEventListener('click',event=>{
+        event.preventDefault();
+        const target=getComputedStyle(el('game-interface')).display!=='none'?el('game-interface'):
+            getComputedStyle(el('mission-select-menu')).display!=='none'?el('mission-select-menu').querySelector('main'):el('main-menu-content');
+        target.setAttribute('tabindex','-1');target.focus();
+    });
+    const consoleObserver=new ResizeObserver(()=>scheduleGameUILayoutRefresh());
+    consoleObserver.observe(el('console-panel'));
     icons();
     return {enter,setView,workspaceReady,starter,undo,camera,command,programEnded,sync,briefing,nextMission,toggleTelemetry,toggleDebug,icon,resetFeedback,projectLabels,prepareRun};
 })();
