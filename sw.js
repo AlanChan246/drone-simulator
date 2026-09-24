@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-interaction-20260924a';
+const CACHE_VERSION = 'drone-simulator-pan-20260924b';
 const APP_SHELL = [
   "./",
   "index.html",

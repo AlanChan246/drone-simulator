@@ -8,7 +8,7 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
  const found=new Map();for(const n of ast.body){if(n.type==='FunctionDeclaration')found.set(n.id.name,n);if(n.type==='VariableDeclaration')found.set(n.declarations.map(d=>d.id.name).join(','),n);}
  // Camera input intentionally changed for manual tutorial / iPad pinch fixes.
  // Keep mission and physics hashes unchanged; pin the revised input functions.
- const cameraInputHashes={"init3D":"681807302c0be64e31d9f7664ac9a7396ce1abcf52c1f19c0265701c8bd6a9db","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
+ const cameraInputHashes={"init3D":"20ba388bb675414d2c8cd9cfd35a2d87aba9187f77ccd44715b6cea156513603","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
  // Only the approved Mission 1 visual hook is excluded.
  for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
  for(const [file,expected] of Object.entries(baseline.files)){

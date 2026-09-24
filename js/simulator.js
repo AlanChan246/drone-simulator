@@ -1440,6 +1440,30 @@ async function init3D() {
     let lastTouchX = 0, lastTouchY = 0;
     let lastTouchDist = 0;
     let touchCount = 0;
+    const panRay = new THREE.Raycaster();
+    const panPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const panPointer = new THREE.Vector2();
+    const panFrom = new THREE.Vector3();
+    const panTo = new THREE.Vector3();
+
+    function panTouchCamera(fromX, fromY, toX, toY) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        updateCameraPosition();
+        camera.updateMatrixWorld();
+        panPlane.constant = -camTarget.y;
+        function groundPoint(x, y, result) {
+            panPointer.set((x - rect.left) / rect.width * 2 - 1,
+                1 - (y - rect.top) / rect.height * 2);
+            panRay.setFromCamera(panPointer, camera);
+            // 視線接近地平線時不使用不穩定的超遠交點。
+            if (panRay.ray.direction.y >= -0.05) return null;
+            return panRay.ray.intersectPlane(panPlane, result);
+        }
+        if (!groundPoint(fromX, fromY, panFrom) || !groundPoint(toX, toY, panTo)) return;
+        camTarget.x += panFrom.x - panTo.x;
+        camTarget.z += panFrom.z - panTo.z;
+    }
 
     // 每次手指數改變都重設基準，避免把雙指中心當作單指旋轉起點。
     function resetTouchBaseline(touches) {
@@ -1490,16 +1514,10 @@ async function init3D() {
 
             const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
             const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            const pdx = centerX - lastTouchX;
-            const pdy = centerY - lastTouchY;
+            // 用螢幕座標在地面上的交點平移，近景與遠景都跟著手指走。
+            if (!followDrone) panTouchCamera(lastTouchX, lastTouchY, centerX, centerY);
             lastTouchX = centerX;
             lastTouchY = centerY;
-            const rad = THREE.MathUtils.degToRad(camTheta);
-            // 跟隨模式保持無人機為中心，避免平移後被跟隨動畫拉回。
-            if (!followDrone) {
-                camTarget.x -= (pdx * Math.cos(rad) + pdy * Math.sin(rad)) * 2;
-                camTarget.z -= (pdy * Math.cos(rad) - pdx * Math.sin(rad)) * 2;
-            }
             updateCameraPosition();
         }
     }, { passive: false });
