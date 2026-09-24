@@ -61,3 +61,7 @@ Factory GLBs keep their existing sibling `Textures/colormap.png` dependencies. T
 World units remain centimeters. Active cells are 150 cm. Paths are 124 cm wide, pads approximately 126 cm, water basins approximately 139 cm. Foreground service road 330 cm, ranger hut 300×340×250 cm, staging canopies 190 cm high, outer trees roughly 280–450 cm subject to width caps. The existing enlarged drone display is unchanged.
 
 The v2-owned model/texture download payload is **0 bytes**, versus the proposed ≤5 MB ceiling. Four visible GLBs already in the shared preload total 54,524 bytes; only scene-local resources are added at runtime. GPU/render measurements and their device limitations are in `audit/mission-2-v2/README.md`. No 4K textures, reflection passes, expensive custom shaders or mesh physics colliders were introduced.
+
+## Mission preview image
+
+`assets/images/mission-preview-2-v2.png` is now an actual v2 renderer capture without UI overlays, shared by the mission selection card and mission briefing. Generated locally using the audit harness Export scene preview button; no external image or licence added. The previous PNG remains unchanged at `assets/images/mission-preview-2.png` (also archived under `audit/mission-2-v2/legacy-preview.png`). The service-worker cache version is advanced so installed clients refresh the shared image.

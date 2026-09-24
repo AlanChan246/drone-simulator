@@ -9,6 +9,7 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
  for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);assert.equal(hash(source.slice(n.start,n.end)),expected,name);}
  for(const [file,expected] of Object.entries(baseline.files)){
    const original=read(file)
+     .replace("${tunnel?1:'2-v2'}.png",'${tunnel?1:2}.png')
      .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'')
      .replace("    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);\n",'');
    assert.equal(hash(original),expected,file);

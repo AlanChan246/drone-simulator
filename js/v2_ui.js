@@ -126,7 +126,7 @@ window.V2UI = (() => {
     function briefing(id,content) {
         const details=content.innerHTML.replace(/<h4>/g,'<h3>').replace(/<\/h4>/g,'</h3>');
         const tunnel=Number(id)===1;
-        content.innerHTML=`<div class="v2-brief-intro"><img src="assets/images/mission-preview-${tunnel?1:2}.png" alt="任務場景"><div><h3>${tunnel?'讓情報安全送達。':'把每一趟飛行用在救援上。'}</h3><p>${tunnel?'從基地起飛，沿道路抵達綠色疏散區，使用降落積木完成交班。':'在水源取水、飛到火點噴水，最後在綠色救援平台降落結算。'}</p><ul>${tunnel?'<li>不可飛越建築，也不能直接飛至座標。</li><li>巡檢是加分目標：懸停 3 秒，每處 +100。</li>':'<li>水箱只能裝一份水，用完要重新取水。</li><li>留意電量；充電站懸停 3 秒可補充。</li><li>撲滅愈多火點分數愈高，全滅額外加分。</li>'}</ul></div></div><details class="v2-brief-rules"><summary>地圖圖例、計分與進階提示</summary>${details}</details>`;
+        content.innerHTML=`<div class="v2-brief-intro"><img src="assets/images/mission-preview-${tunnel?1:'2-v2'}.png" alt="任務場景"><div><h3>${tunnel?'讓情報安全送達。':'把每一趟飛行用在救援上。'}</h3><p>${tunnel?'從基地起飛，沿道路抵達綠色疏散區，使用降落積木完成交班。':'在水源取水、飛到火點噴水，最後在綠色救援平台降落結算。'}</p><ul>${tunnel?'<li>不可飛越建築，也不能直接飛至座標。</li><li>巡檢是加分目標：懸停 3 秒，每處 +100。</li>':'<li>水箱只能裝一份水，用完要重新取水。</li><li>留意電量；充電站懸停 3 秒可補充。</li><li>撲滅愈多火點分數愈高，全滅額外加分。</li>'}</ul></div></div><details class="v2-brief-rules"><summary>地圖圖例、計分與進階提示</summary>${details}</details>`;
         content.querySelectorAll('.brief-legend-badge').forEach(node=>{
             if(['↓','⚡'].includes(node.textContent.trim())){node.innerHTML=icon(node.textContent.trim()==='↓'?'download':'point');node.setAttribute('aria-hidden','true');}
         });

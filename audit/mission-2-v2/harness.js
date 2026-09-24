@@ -115,3 +115,6 @@ document.getElementById('switchcheck').onclick=()=>{
         return {checks,resources:assets.map(e=>({name:e.name,bytes:e.transferSize}))};
     })()`);show(result);
 };
+
+// Export only the rendered world, without flight-deck overlays.
+document.getElementById('preview').onclick=()=>show(run(`(()=>{renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png');})()`));

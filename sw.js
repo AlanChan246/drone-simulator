@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-mission2-v2-default-20260924';
+const CACHE_VERSION = 'drone-simulator-mission2-v2-preview-20260924';
 const APP_SHELL = [
   "./",
   "index.html",
@@ -21,6 +21,7 @@ const APP_SHELL = [
   "assets/video/hero-ai-first-three-poster.jpg",
   "assets/images/mission-preview-1.png",
   "assets/images/mission-preview-2.png",
+  "assets/images/mission-preview-2-v2.png",
   "assets/models/drone.glb",
   "assets/models/corridor.glb",
   "assets/styles/tokens.css",
