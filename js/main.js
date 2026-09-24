@@ -3845,20 +3845,34 @@ function renderTutorialStep() {
     document.getElementById('tutorial-progress-bar').style.width = `${((tutorialStepIndex + 1) / tutorialSteps.length) * 100}%`;
     document.getElementById('tutorial-check').textContent = '等待你完成這一步…';
     document.getElementById('tutorial-helper-btn').hidden = tutorialStepIndex === 0 || tutorialStepIndex === tutorialSteps.length - 1;
+    document.getElementById('tutorial-next-btn').hidden = false;
+    checkTutorialProgress();
 }
 function checkTutorialProgress() {
     const coach = document.getElementById('tutorial-coach');
     if (!coach || coach.hidden) return;
-    if (!tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
-    document.getElementById('tutorial-check').textContent = '完成。準備下一步。';
-    if (tutorialStepIndex >= tutorialSteps.length - 1) {
+    const complete = tutorialStepComplete(tutorialSteps[tutorialStepIndex]);
+    const lastStep = tutorialStepIndex === tutorialSteps.length - 1;
+    const next = document.getElementById('tutorial-next-btn');
+    next.disabled = !complete;
+    next.textContent = lastStep ? '完成教學' : '下一步';
+    document.getElementById('tutorial-check').textContent = complete
+        ? (lastStep ? '飛行完成，按「完成教學」查看總結。' : '已完成，準備好後按「下一步」。')
+        : '等待你完成這一步…';
+}
+function nextTutorialStep() {
+    const coach = document.getElementById('tutorial-coach');
+    if (!coach || coach.hidden || !tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
+    if (tutorialStepIndex === tutorialSteps.length - 1) {
         clearInterval(tutorialTimer); tutorialTimer = null;
         document.getElementById('tutorial-title').textContent = '第一次飛行完成';
         document.getElementById('tutorial-instruction').textContent = '你已掌握建立、執行和觀察程式的基本流程。現在可嘗試改變距離或加入轉向。';
+        document.getElementById('tutorial-check').textContent = '教學已完成。';
+        document.getElementById('tutorial-next-btn').hidden = true;
         return;
     }
     tutorialStepIndex += 1;
-    setTimeout(renderTutorialStep, 350);
+    renderTutorialStep();
 }
 function startInteractiveTutorial() {
     const coach = document.getElementById('tutorial-coach');

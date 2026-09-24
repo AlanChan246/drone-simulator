@@ -15,3 +15,6 @@
 .brief-legend-swatch{display:flex;align-items:center;justify-content:center}.brief-legend-swatch--start{color:var(--v2-info)}.brief-legend-swatch--end{color:var(--v2-success)}.brief-legend-swatch--beacon{color:var(--v2-secondary)}.brief-legend-swatch .v2-icon{width:32px;height:32px}
 
 .v2-result-next{font-size:var(--v2-body-size);line-height:1.8;padding:16px;background:var(--v2-divider);border-radius:var(--v2-radius-small)}
+
+.tutorial-coach #tutorial-next-btn:not(:disabled){background:var(--v2-primary);color:var(--v2-surface);border-color:var(--v2-primary)}
+.tutorial-coach button:disabled{opacity:.55;cursor:not-allowed}

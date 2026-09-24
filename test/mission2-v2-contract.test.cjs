@@ -6,8 +6,11 @@ const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const config=require('../js/scenes/mission2-v2/config.js');
 test('legacy builders, all mission logic and drone physics remain byte-identical',()=>{
  const found=new Map();for(const n of ast.body){if(n.type==='FunctionDeclaration')found.set(n.id.name,n);if(n.type==='VariableDeclaration')found.set(n.declarations.map(d=>d.id.name).join(','),n);}
- // Only the approved Mission 1 visual hook is excluded; every old statement remains protected.
- for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),expected,name);}
+ // Camera input intentionally changed for manual tutorial / iPad pinch fixes.
+ // Keep mission and physics hashes unchanged; pin the revised input functions.
+ const cameraInputHashes={"init3D":"681807302c0be64e31d9f7664ac9a7396ce1abcf52c1f19c0265701c8bd6a9db","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
+ // Only the approved Mission 1 visual hook is excluded.
+ for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
  for(const [file,expected] of Object.entries(baseline.files)){
    const original=read(file)
      // Presentation-only homepage film controls are outside the mission contract.
@@ -16,8 +19,9 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
      .replace("${tunnel?1:'2-v2'}.png",'${tunnel?1:2}.png')
      .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'')
      .replace("    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);\n",'');
+   // Pin the approved manual tutorial update; flight execution remains unchanged.
    // Pre-existing user change in 460e863: protect the new airframe paint baseline.
-   const currentExpected=file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
+   const currentExpected=file==='js/main.js'?'01d247c61f3ba58e58f94ad31c1f1267da5e5eb975c7d56ba7eb49367456abd8':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
    assert.equal(hash(original),currentExpected,file);
  }
 });

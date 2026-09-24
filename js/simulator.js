@@ -1341,8 +1341,8 @@ async function init3D() {
         if(event.key==='ArrowRight')camTheta+=10;
         if(event.key==='ArrowUp')camPhi=Math.max(10,camPhi-5);
         if(event.key==='ArrowDown')camPhi=Math.min(85,camPhi+5);
-        if(event.key==='+'||event.key==='=')camRadius=Math.max(60,camRadius*.9);
-        if(event.key==='-')camRadius=Math.min(4000,camRadius*1.1);
+        if(event.key==='+'||event.key==='=')camRadius=Math.max(60,camRadius*.8);
+        if(event.key==='-')camRadius=Math.min(4000,camRadius*1.25);
         updateCameraPosition();
     });
     container.appendChild(renderer.domElement);
@@ -1434,79 +1434,81 @@ async function init3D() {
     });
     window.addEventListener('mouseup', () => { isMouseDown = false; isRightMouseDown = false; });
     window.addEventListener('mousemove', onMouseMove);
-    renderer.domElement.addEventListener('wheel', onMouseWheel);
+    renderer.domElement.addEventListener('wheel', onMouseWheel, { passive: false });
 
     // 觸控事件 (支援 iPad)
     let lastTouchX = 0, lastTouchY = 0;
     let lastTouchDist = 0;
+    let touchCount = 0;
+
+    // 每次手指數改變都重設基準，避免把雙指中心當作單指旋轉起點。
+    function resetTouchBaseline(touches) {
+        isMouseDown = false;
+        isRightMouseDown = false;
+        touchCount = touches.length;
+        lastTouchDist = 0;
+        if (touchCount === 1) {
+            lastTouchX = touches[0].clientX;
+            lastTouchY = touches[0].clientY;
+        } else if (touchCount === 2) {
+            lastTouchX = (touches[0].clientX + touches[1].clientX) / 2;
+            lastTouchY = (touches[0].clientY + touches[1].clientY) / 2;
+            lastTouchDist = Math.hypot(touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY);
+        }
+    }
 
     renderer.domElement.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            isMouseDown = true;
-            lastTouchX = e.touches[0].clientX;
-            lastTouchY = e.touches[0].clientY;
-            mouseX = lastTouchX;
-            mouseY = lastTouchY;
-        } else if (e.touches.length === 2) {
-            isMouseDown = false;
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            lastTouchDist = Math.sqrt(dx * dx + dy * dy);
-            
-            // 雙指中心點作為移動起點
-            lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            mouseX = lastTouchX;
-            mouseY = lastTouchY;
-        }
+        e.preventDefault(); // 不讓相容性滑鼠事件重複處理同一手勢
+        resetTouchBaseline(e.touches);
     }, { passive: false });
 
     renderer.domElement.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // 防止頁面捲動
-        
-        if (e.touches.length === 1) {
-            // 單指旋轉
+        e.preventDefault();
+        if (e.touches.length !== touchCount) {
+            resetTouchBaseline(e.touches);
+            return;
+        }
+        if (touchCount === 1) {
             const touch = e.touches[0];
             const dx = touch.clientX - lastTouchX;
             const dy = touch.clientY - lastTouchY;
             lastTouchX = touch.clientX;
             lastTouchY = touch.clientY;
-            
             camTheta -= dx * 0.5;
-            camPhi -= dy * 0.5;
-            camPhi = Math.max(10, Math.min(85, camPhi));
+            camPhi = Math.max(10, Math.min(85, camPhi - dy * 0.5));
             updateCameraPosition();
-        } else if (e.touches.length === 2) {
-            // 雙指縮放與移動
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            // 縮放 (Zoom)
-            const zoomDelta = (lastTouchDist - dist) * 2;
-            camRadius += zoomDelta;
-            camRadius = Math.max(60, Math.min(4000, camRadius));
+        } else if (touchCount === 2) {
+            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY);
+            // 按手指距離比例縮放；遠景也能快速靠近，近景仍可細調。
+            if (lastTouchDist > 0 && dist > 0) {
+                camRadius = Math.max(60, Math.min(4000,
+                    camRadius * Math.pow(lastTouchDist / dist, 1.5)));
+            }
             lastTouchDist = dist;
 
-            // 雙指移動 (Pan)
             const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
             const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             const pdx = centerX - lastTouchX;
             const pdy = centerY - lastTouchY;
             lastTouchX = centerX;
             lastTouchY = centerY;
-
             const rad = THREE.MathUtils.degToRad(camTheta);
-            camTarget.x -= (pdx * Math.cos(rad) + pdy * Math.sin(rad)) * 2;
-            camTarget.z -= (pdy * Math.cos(rad) - pdx * Math.sin(rad)) * 2;
-            
+            // 跟隨模式保持無人機為中心，避免平移後被跟隨動畫拉回。
+            if (!followDrone) {
+                camTarget.x -= (pdx * Math.cos(rad) + pdy * Math.sin(rad)) * 2;
+                camTarget.z -= (pdy * Math.cos(rad) - pdx * Math.sin(rad)) * 2;
+            }
             updateCameraPosition();
         }
     }, { passive: false });
 
-    renderer.domElement.addEventListener('touchend', () => {
-        isMouseDown = false;
-        lastTouchDist = 0;
+    renderer.domElement.addEventListener('touchend', (e) => {
+        resetTouchBaseline(e.touches);
+    });
+    renderer.domElement.addEventListener('touchcancel', () => {
+        resetTouchBaseline([]);
     });
 
     window.addEventListener('keydown', (e) => {
@@ -4679,7 +4681,13 @@ function onWindowResize() {
         console.log(`Resized canvas: ${width}x${finalHeight} (container: ${containerHeight}px, console: ${consoleHeight}px)`);
     }
 }
-function onMouseWheel(e) { camRadius+=e.deltaY*0.5; camRadius=Math.max(60,Math.min(4000,camRadius)); updateCameraPosition(); e.preventDefault(); }
+function onMouseWheel(e) {
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? renderer.domElement.clientHeight : 1;
+    const delta = Math.max(-200, Math.min(200, e.deltaY * unit));
+    camRadius = Math.max(60, Math.min(4000, camRadius * Math.exp(delta * 0.0025)));
+    updateCameraPosition();
+    e.preventDefault();
+}
 function onMouseMove(e) {
     if (!isMouseDown && !isRightMouseDown) return;
     const dx = e.clientX - mouseX; const dy = e.clientY - mouseY; mouseX=e.clientX; mouseY=e.clientY;
