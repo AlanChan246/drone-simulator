@@ -1129,7 +1129,7 @@ function createKenneyBuildingInstance(templateScene, cellSize, rotSteps, heightC
 // 飛行狀態
 let flightState = { roll: 0, pitch: 0, yaw: 0, throttle: 0 };
 // 攝影機與操作
-const FOLLOW_CAMERA_RADIUS = 72;
+const FOLLOW_CAMERA_RADIUS = 100;
 const FREE_CAMERA_RADIUS = 800;
 let camRadius = FOLLOW_CAMERA_RADIUS;
 let camTheta = 45; let camPhi = 70;
@@ -3278,34 +3278,37 @@ function createDroneModel() {
         droneLedMesh = null;
 
         const medicalDrone = window.createMedicalDroneModel();
-        medicalDrone.scale.setScalar(1.55);
-        medicalDrone.position.y = 3.2;
+        // Enlarge only the visible airframe; state coordinates and collision
+        // dimensions remain in their original simulation units.
+        const airframeDisplayScale = 3;
+        medicalDrone.scale.setScalar(1.55 * airframeDisplayScale);
+        medicalDrone.position.y = 3.2 * airframeDisplayScale;
         droneGroup.add(medicalDrone);
 
         propellers = medicalDrone.userData.rotors || [];
         const ledMeshes = medicalDrone.userData.ledMeshes || [];
         droneLedMesh = ledMeshes[0] || null;
         droneLedLight = new THREE.PointLight(0xffffff, 0, 40);
-        droneLedLight.position.set(0, 3.2, -3.2);
+        droneLedLight.position.set(0, 3.2 * airframeDisplayScale, -3.2 * airframeDisplayScale);
         droneGroup.add(droneLedLight);
 
         // A tight shadow frustum follows the aircraft. The global light still
         // covers the mission map, while this local key preserves small airframe details.
         const droneKey = new THREE.DirectionalLight(0xffffff, 0.32);
         droneKey.name = 'medical_drone_detail_light';
-        droneKey.position.set(-42, 64, -58);
+        droneKey.position.set(-42, 64, -58).multiplyScalar(airframeDisplayScale);
         droneKey.castShadow = true;
         droneKey.shadow.mapSize.set(1024, 1024);
-        droneKey.shadow.camera.left = -28;
-        droneKey.shadow.camera.right = 28;
-        droneKey.shadow.camera.top = 28;
-        droneKey.shadow.camera.bottom = -28;
+        droneKey.shadow.camera.left = -28 * airframeDisplayScale;
+        droneKey.shadow.camera.right = 28 * airframeDisplayScale;
+        droneKey.shadow.camera.top = 28 * airframeDisplayScale;
+        droneKey.shadow.camera.bottom = -28 * airframeDisplayScale;
         droneKey.shadow.camera.near = 1;
-        droneKey.shadow.camera.far = 180;
+        droneKey.shadow.camera.far = 180 * airframeDisplayScale;
         droneKey.shadow.bias = -0.0002;
         droneKey.shadow.radius = 3;
         const detailTarget = new THREE.Object3D();
-        detailTarget.position.set(0, 1.5, 0);
+        detailTarget.position.set(0, 1.5 * airframeDisplayScale, 0);
         droneGroup.add(detailTarget);
         droneKey.target = detailTarget;
         droneGroup.add(droneKey);

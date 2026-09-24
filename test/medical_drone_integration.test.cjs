@@ -38,7 +38,7 @@ test('medical drone lighting preserves surface detail without clipping whites', 
 });
 
 test('follow view is close while free view retains the map overview', () => {
-    assert.match(simulatorSource, /const FOLLOW_CAMERA_RADIUS = 72/);
+    assert.match(simulatorSource, /const FOLLOW_CAMERA_RADIUS = 100/);
     assert.match(simulatorSource, /const FREE_CAMERA_RADIUS = 800/);
     assert.match(simulatorSource, /let camTheta = 45; let camPhi = 70/);
 });
