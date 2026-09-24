@@ -18,7 +18,7 @@
     <script src="node_modules/blockly/blocks_compressed.js?v=type-20260924a"></script>
     <script src="node_modules/blockly/javascript_compressed.js?v=type-20260924a"></script>
     <script src="node_modules/blockly/msg/zh-hant.js?v=type-20260924a"></script>
-    <link rel="stylesheet" href="assets/styles/v2.css?v=type-20260924a">
+    <link rel="stylesheet" href="assets/styles/v2.css?v=home-media-2">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -75,7 +75,7 @@
     <div id="main-menu" class="menu-screen menu-screen--hub v2-hub">
         <header class="v2-header"><a class="v2-brand" href="#" onclick="showMainMenu(); return false"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M8 24L24 8"/><circle cx="8" cy="8" r="5"/><circle cx="24" cy="8" r="5"/><circle cx="8" cy="24" r="5"/><circle cx="24" cy="24" r="5"/></svg><span>Drone Simulator<small>救災無人機訓練</small></span></a><span class="v2-edition">用程式，讓救援起飛。</span></header>
         <main id="main-menu-content" tabindex="-1" class="v2-home" aria-labelledby="hub-brand-heading">
-            <div class="v2-home-world" id="main-menu-preview"><img src="assets/images/mission-preview-1.png" alt="在街區道路之間規劃無人機的搜救路線"><div class="v2-world-caption"><span>你的程式，真實的行動。</span><span>編程 → 飛行 → 救援</span></div></div>
+            <figure class="v2-home-world" id="main-menu-preview"><video id="hero-loop-video" width="1280" height="720" muted loop playsinline preload="metadata" poster="assets/video/rescue-home-poster.jpg" aria-label="救援無人機概念短片"><source src="assets/video/rescue-home-720.mp4" type="video/mp4"></video></figure>
             <div class="v2-home-copy"><h1 id="hub-brand-heading">下一次救援，<br>由你編程。</h1><p>連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。</p><button class="v2-primary" onclick="showMissionSelect()">開始救援任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button><button class="v2-secondary" onclick="startFreePlay()">自由練習</button><div class="v2-first-flight"><strong>第一次操控無人機？</strong><button class="v2-text" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">從第一次飛行開始</button><span>起飛、移動、降落。邊做邊學。</span></div></div>
         </main>
         <footer class="v2-home-footer"><span>觀察。修正。再試一次。</span><span>Blockly × 3D 飛行模擬</span></footer>
@@ -84,7 +84,7 @@
         <header class="v2-header"><button class="v2-back" onclick="showMainMenu()" aria-label="返回主選單">返回首頁</button><span class="v2-brand">Drone Simulator</span><button class="v2-text" onclick="startFreePlay()">自由練習</button></header>
         <main class="v2-mission-main" aria-labelledby="mission-select-heading"><div class="v2-mission-heading"><h1 id="mission-select-heading">選擇你的救援任務</h1><p>先理解目標，再用你的程式找到路線。</p></div>
             <div class="v2-mission-grid">
-                <button class="v2-mission-card" onclick="startMission(1)"><div class="v2-mission-image"><img src="assets/images/mission-preview-1.png" alt="震後街區搜救場景"><span>路線規劃</span></div><div class="v2-mission-copy"><h2>坍塌廢墟搜救</h2><p>沿街道把情報送到疏散區。途中巡檢，為救援提供更多線索。</p><div><span>學習：順序・距離・轉向</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
+                <button class="v2-mission-card" onclick="startMission(1)"><div class="v2-mission-image"><img src="assets/images/mission-preview-1-final.png" alt="震後街區搜救場景"><span>路線規劃</span></div><div class="v2-mission-copy"><h2>坍塌廢墟搜救</h2><p>沿街道把情報送到疏散區。途中巡檢，為救援提供更多線索。</p><div><span>學習：順序・距離・轉向</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
                 <button class="v2-mission-card" onclick="startMission(2)"><div class="v2-mission-image"><img src="assets/images/mission-preview-2-v2.png" alt="森林山火救援場景"><span>資源管理</span></div><div class="v2-mission-copy"><h2>山火智能應對</h2><p>取水、滅火、補充電量。規劃救援次序，在受災區安全降落。</p><div><span>學習：規劃・取捨・效率</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
             </div>
         </main>
@@ -454,12 +454,12 @@
     <script src="js/scenes/mission2-v2/config.js?v=mission2-v2-1"></script>
     <script src="js/scenes/mission2-v2/assets.js?v=mission2-v2-1"></script>
     <script src="js/scenes/mission2-v2/environment.js?v=mission2-v2-default-2"></script>
-    <script src="js/simulator.js?v=mission1-quality-2"></script>
+    <script src="js/simulator.js?v=mission1-final-2"></script>
     <script src="js/blockly_def.js?v=type-20260924a"></script>
     <script src="js/mission2_answer.js?v=type-20260924a"></script>
     <script src="js/blockly_workspace_io.js?v=type-20260924a"></script>
     <script src="js/main.js?v=mission2-v2-1"></script>
-    <script src="js/v2_ui.js?v=mission2-preview-2"></script>
+    <script src="js/v2_ui.js?v=home-media-2"></script>
     <script>
         window.addEventListener('load', function () {
             var loader = document.getElementById('app-loading');

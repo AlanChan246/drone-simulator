@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-mission1-quality-20260924';
+const CACHE_VERSION = 'drone-simulator-home-media-20260924c';
 const APP_SHELL = [
   "./",
   "index.html",
@@ -19,7 +19,8 @@ const APP_SHELL = [
   "js/scenes/mission2-v2/environment.js",
   "assets/video/hero-loop-v2-poster.jpg",
   "assets/video/hero-ai-first-three-poster.jpg",
-  "assets/images/mission-preview-1.png",
+  "assets/images/mission-preview-1-final.png",
+  "assets/video/rescue-home-poster.jpg",
   "assets/images/mission-preview-2.png",
   "assets/images/mission-preview-2-v2.png",
   "assets/models/drone.glb",
@@ -175,6 +176,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  // Let the browser handle byte ranges; the poster remains available offline.
+  if (/\.(?:mp4|webm)$/.test(url.pathname)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_VERSION);
     const cached = await cache.match(event.request, {ignoreSearch: true});

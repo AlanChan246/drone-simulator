@@ -8,8 +8,6 @@
 .v2-home { flex:1 0 auto; display:grid; grid-template-columns: minmax(0,1.2fr) minmax(340px,1fr); width:100%; min-height:min-content; }
 .v2-home-world { position:relative; overflow:hidden; background:var(--v2-secondary); min-height:400px; }
 .v2-home-world>img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
-.v2-world-caption { position:absolute; bottom:24px; left:24px; right:24px; padding:18px 20px; background:var(--v2-surface); display:flex; justify-content:space-between; gap:12px; font-size:var(--v2-caption-size); border-radius:var(--v2-radius-small); }
-.v2-world-caption span:first-child { font-weight:700; }
 .v2-home-copy { align-self:center; padding:48px clamp(32px,4vw,72px); }
 .v2-home-copy h1 { font:700 clamp(36px,4vw,60px)/1.25 var(--v2-display); letter-spacing:-.03em; color:var(--v2-text); margin:0 0 24px; }
 .v2-home-copy>p { color:var(--v2-text-secondary); font-size:16px; line-height:1.9; margin:0 0 32px; max-width:35ch; }
@@ -43,8 +41,16 @@
 .v2-mission-copy strong { color:var(--v2-primary); }
 .v2-hub :focus-visible,.v2-missions :focus-visible { outline:3px solid var(--v2-focus); outline-offset:4px; }
 .v2-hub ::selection,.v2-missions ::selection { color:var(--v2-surface); background:var(--v2-secondary); }
-@media(max-width:1100px) { .v2-header{min-height:72px;padding:12px 24px} .v2-home{grid-template-columns:1fr 1fr;min-height:0}.v2-home-copy{padding:32px}.v2-home-copy h1{font-size:40px}.v2-world-caption{flex-direction:column}.v2-mission-image{height:210px}.v2-mission-copy>div{flex-direction:column} }
-@media(max-width:700px) { .v2-home{display:flex;flex-direction:column}.v2-home-world{min-height:240px}.v2-home-copy{padding:28px 24px}.v2-home-copy h1{font-size:36px}.v2-edition{display:none}.v2-home-footer{gap:20px}.v2-mission-grid{grid-template-columns:1fr}.v2-mission-main{padding:28px 0}.v2-brand{font-size:18px}.v2-world-caption{display:none} }
+@media(max-width:1100px) { .v2-header{min-height:72px;padding:12px 24px} .v2-home{grid-template-columns:1fr 1fr;min-height:0}.v2-home-copy{padding:32px}.v2-home-copy h1{font-size:40px}.v2-mission-image{height:210px}.v2-mission-copy>div{flex-direction:column} }
+@media(max-width:700px) { .v2-home{display:flex;flex-direction:column}.v2-home-world{min-height:240px}.v2-home-copy{padding:28px 24px}.v2-home-copy h1{font-size:36px}.v2-edition{display:none}.v2-home-footer{gap:20px}.v2-mission-grid{grid-template-columns:1fr}.v2-mission-main{padding:28px 0}.v2-brand{font-size:18px} }
 @media(prefers-reduced-motion:reduce) { .v2-primary,.v2-secondary,.v2-mission-card{transition:none}.v2-mission-card:hover{transform:none} }
 
 .v2-mission-copy strong{display:inline-flex;align-items:center;gap:8px}
+
+/* Keep the 720p film at a compact, uncropped size, alongside the invitation. */
+.v2-home { grid-template-columns:minmax(340px, .85fr) minmax(0, 1.15fr); align-items:center; gap:40px; width:100%; min-width:0; max-width:1280px; box-sizing:border-box; margin:auto; padding:40px; }
+.v2-home-copy { grid-column:1; grid-row:1; padding:16px 0; max-width:440px; }
+.v2-home-world { grid-column:2; grid-row:1; min-height:0; min-width:0; margin:0; width:100%; max-width:640px; justify-self:end; background:transparent; overflow:visible; }
+.v2-home-world video { display:block; width:100%; max-width:100%; min-width:0; height:auto; aspect-ratio:16/9; object-fit:contain; background:var(--v2-secondary); border-radius:var(--v2-radius); }
+@media(max-width:1100px) { .v2-home { gap:28px; padding:32px; grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr); } }
+@media(max-width:700px) { .v2-home { padding:28px 24px; gap:28px; } .v2-home-copy { padding:0; order:0; max-width:100%; } .v2-home-world { order:1; min-height:0; } }
