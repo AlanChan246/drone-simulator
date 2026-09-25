@@ -1,0 +1,32 @@
+{
+  "name": "drone-simulator-promo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Isolated real-product capture and 45-second Remotion promo",
+  "scripts": {
+    "audit": "node scripts/audit.cjs",
+    "verify:production": "node scripts/verify-production.cjs",
+    "audio": "node scripts/audio.cjs",
+    "benchmark": "node scripts/benchmark.cjs",
+    "candidates": "node scripts/candidates.cjs",
+    "qa": "node scripts/qa.cjs",
+    "capture": "node scripts/capture.cjs all",
+    "capture:ui": "node scripts/capture.cjs ui",
+    "capture:blockly": "node scripts/capture.cjs blockly",
+    "capture:mission1": "node scripts/capture.cjs mission1",
+    "capture:mission2": "node scripts/capture.cjs mission2",
+    "studio": "remotion studio src/index.tsx",
+    "render": "node scripts/render.cjs",
+    "previews": "node scripts/render.cjs previews"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@remotion/bundler": "4.0.528",
+    "@remotion/cli": "4.0.528",
+    "@remotion/renderer": "4.0.528",
+    "playwright": "1.63.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.528"
+  }
+}
