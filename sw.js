@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-theme-20260924b';
+const CACHE_VERSION = 'drone-simulator-promo-20260925a';
 const APP_SHELL = [
   "./",
   "index.html",
@@ -21,7 +21,7 @@ const APP_SHELL = [
   "assets/video/hero-loop-v2-poster.jpg",
   "assets/video/hero-ai-first-three-poster.jpg",
   "assets/images/mission-preview-1-final.png",
-  "assets/video/rescue-home-poster.jpg",
+  "assets/video/drone-simulator-promo-poster.jpg",
   "assets/images/mission-preview-2.png",
   "assets/images/mission-preview-2-v2.png",
   "assets/models/drone.glb",

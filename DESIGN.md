@@ -92,7 +92,7 @@ Traditional Chinese body text uses Noto Sans TC with local CJK fallbacks. Displa
 
 ## Layout
 
-Home pairs a left-hand invitation with a right-hand 16:9 rescue concept film, capped at 640 CSS pixels to respect its 1280×720 source. On narrow screens the invitation comes first and the film follows. The film is displayed alone without captions or external controls, has a poster, respects reduced motion, and pauses outside the home or in a hidden tab. Its intrinsic 16:9 dimensions and shrinkable container keep the full frame inside the available width. Mission cards are the two actual scenarios. Briefing places optional full rules behind disclosure.
+Home pairs a left-hand invitation with a larger right-hand 16:9, 45-second product promo. At widths below 900 px the invitation comes first and the full-width film follows. The film starts muted and loops automatically when the home is visible; native controls let viewers pause, enable sound and view full screen. Reduced-motion preference pauses the automatic playback and offers a play button. The film pauses outside the home or in a hidden tab. Its intrinsic 16:9 dimensions and shrinkable container keep the full frame inside the available width. Mission cards are the two actual scenarios. Briefing places optional full rules behind disclosure.
 
 Desktop deck starts at 38% code, remaining world; the separator resizes. Code/world/split views share the same program. Below 1100 px start with full-width code and switch to world on execution. Bottom execution controls remain visible. Below 700 px home stacks; portrait simulation offers a rotate prompt. Spacing scale: 4/8/12/16/24/32/48/64 px.
 

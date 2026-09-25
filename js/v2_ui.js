@@ -162,16 +162,22 @@ window.V2UI = (() => {
     const consoleObserver=new ResizeObserver(()=>scheduleGameUILayoutRefresh());
     consoleObserver.observe(el('console-panel'));
     const hero=el('hero-loop-video');
+    const promoPlay=el('hero-promo-play');
     const motion=matchMedia('(prefers-reduced-motion: reduce)');
-    window.resumeHeroLoopVideo=()=>{
-        if(!hero || motion.matches || document.hidden) return;
-        hero.play().catch(()=>{});
+    const playHero=()=>{
+        if(document.hidden || getComputedStyle(el('main-menu')).display==='none')return;
+        if(motion.matches){hero.pause();promoPlay.hidden=false;return;}
+        hero.muted=true;
+        const attempt=hero.play();
+        if(attempt&&typeof attempt.then==='function')attempt.then(()=>{promoPlay.hidden=true;}).catch(()=>{promoPlay.hidden=false;});
     };
-    document.addEventListener('visibilitychange',()=>{
-        if(document.hidden)hero.pause();
-        else if(getComputedStyle(el('main-menu')).display!=='none')window.resumeHeroLoopVideo();
+    promoPlay.addEventListener('click',()=>{
+        const attempt=hero.play();
+        if(attempt&&typeof attempt.then==='function')attempt.then(()=>{promoPlay.hidden=true;}).catch(()=>{promoPlay.hidden=false;});
     });
-    motion.addEventListener('change',()=>{if(motion.matches)hero.pause();});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)hero.pause();else playHero();});
+    motion.addEventListener('change',()=>{if(motion.matches){hero.pause();promoPlay.hidden=false;}else playHero();});
+    window.resumeHeroLoopVideo=playHero;
     window.resumeHeroLoopVideo();
     icons();
     return {enter,setView,workspaceReady,starter,undo,camera,command,programEnded,sync,briefing,nextMission,toggleTelemetry,toggleDebug,icon,resetFeedback,projectLabels,prepareRun};

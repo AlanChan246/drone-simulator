@@ -76,7 +76,10 @@
     <div id="main-menu" class="menu-screen menu-screen--hub v2-hub">
         <header class="v2-header"><a class="v2-brand" href="#" onclick="showMainMenu(); return false"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M8 24L24 8"/><circle cx="8" cy="8" r="5"/><circle cx="24" cy="8" r="5"/><circle cx="8" cy="24" r="5"/><circle cx="24" cy="24" r="5"/></svg><span>Drone Simulator<small>救災無人機訓練</small></span></a><div class="v2-header-actions"><span class="v2-edition">用程式，讓救援起飛。</span><button type="button" class="theme-toggle" data-theme-toggle aria-label="切換至深色模式" title="切換至深色模式"><svg class="v2-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"/></svg><svg class="v2-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button></div></header>
         <main id="main-menu-content" tabindex="-1" class="v2-home" aria-labelledby="hub-brand-heading">
-            <figure class="v2-home-world" id="main-menu-preview"><video id="hero-loop-video" width="1280" height="720" muted loop playsinline preload="metadata" poster="assets/video/rescue-home-poster.jpg" aria-label="救援無人機概念短片"><source src="assets/video/rescue-home-720.mp4" type="video/mp4"></video></figure>
+            <figure class="v2-home-world" id="main-menu-preview">
+                <video id="hero-loop-video" width="1920" height="1080" muted loop playsinline controls preload="metadata" poster="assets/video/drone-simulator-promo-poster.jpg" aria-label="Drone Simulator 45 秒宣傳片"><source src="assets/video/drone-simulator-promo-45s-web.mp4" type="video/mp4"></video>
+                <button type="button" class="v2-promo-play" id="hero-promo-play" aria-label="播放宣傳片" hidden><svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7V5Z"/></svg><span>播放宣傳片</span></button>
+            </figure>
             <div class="v2-home-copy"><h1 id="hub-brand-heading">下一次救援，<br>由你編程。</h1><p>連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。</p><button class="v2-primary" onclick="showMissionSelect()">開始救援任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button><button class="v2-secondary" onclick="startFreePlay()">自由練習</button><div class="v2-first-flight"><strong>第一次操控無人機？</strong><button class="v2-text" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">從第一次飛行開始</button><span>起飛、移動、降落。邊做邊學。</span></div></div>
         </main>
         <footer class="v2-home-footer"><span>觀察。修正。再試一次。</span><span>Blockly × 3D 飛行模擬</span></footer>
@@ -462,7 +465,7 @@
     <script src="js/mission2_answer.js?v=type-20260924a"></script>
     <script src="js/blockly_workspace_io.js?v=type-20260924a"></script>
     <script src="js/main.js?v=interaction-20260924a"></script>
-    <script src="js/v2_ui.js?v=home-media-2"></script>
+    <script src="js/v2_ui.js?v=promo-45s-loop-1"></script>
     <script>
         window.addEventListener('load', function () {
             var loader = document.getElementById('app-loading');
