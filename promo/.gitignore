@@ -1,0 +1,8 @@
+node_modules/
+captures/
+previews/
+output/
+.cache/
+public/footage/
+public/audio/
+*.log
