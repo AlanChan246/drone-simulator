@@ -54,6 +54,7 @@ function getBlocklyAutosaveKey() {
     if (currentGameMode === 'freeplay') return 'freeplay';
     if (activeMissionId === 1 || activeMissionId === 'training') return 'mission-1';
     if (activeMissionId === 2) return 'mission-2';
+    if (activeMissionId === 3) return 'mission-3';
     if (typeof currentSceneType !== 'undefined') {
         if (currentSceneType === 'tunnel') return 'mission-1';
         if (currentSceneType === 'city') return 'mission-2';
@@ -653,6 +654,8 @@ function runBlocklyCode() {
         return;
     }
     
+    if (currentSceneType === 'sky') { void SkyMission.run(currentWorkspace); return; }
+
     cmdQueue = [];
     blockToCommandMap.clear();
     commandToBlockMap.clear();
@@ -795,6 +798,8 @@ function runBlocklyCode() {
  */
 async function dispatchCommand(cmd) {
     if (!cmd) return;
+    const skyToken = currentSceneType === 'sky' ? SkyMission.generation() : null;
+    const skyCancelled = () => skyToken !== null && (SkyMission.generation() !== skyToken || state.stopSignal);
     if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
         && cmd.type && cmd.type.startsWith('move_')) {
         logToConsole('⚠️ 電力耗盡！請找黃色充電站懸停補電（+15 行），或返回基地。');
@@ -836,6 +841,7 @@ async function dispatchCommand(cmd) {
                     console.log(`   [Takeoff] 進度: ${(p*100).toFixed(0)}%, y: ${state.y.toFixed(1)}`);
                 }
             }, { canAbort: false }); 
+            if (skyCancelled()) return;
             state.isFlying = true; 
             hasTakenOff = true; 
             console.log("🚀 [Takeoff] 起飛完成！");
@@ -849,6 +855,7 @@ async function dispatchCommand(cmd) {
                 state.y -= (distToLand * dp);
                 lastLand_p = p;
             }, { canAbort: false }); 
+            if (skyCancelled()) return;
             state.isFlying = false; 
             break;
         case 'hover':
@@ -1367,6 +1374,7 @@ function updateFlightTelemetry() {
         missionTitle = '任務二 · 山火應對';
         missionProgress = `火點 ${firesExtinguished}/${getRequiredFires()}`;
     }
+    if (currentSceneType === 'sky') { missionTitle = '任務三 · 天空機關城'; missionProgress = `閘門 ${SkyMission.snapshot()?.completed || 0}/3`; }
     setTelemetryText('hud-mission-progress', missionProgress);
     setTelemetryText('active-mission-title', missionTitle);
     setTelemetryText('top-mission-progress', missionProgress);
@@ -1394,6 +1402,7 @@ function updateMazeAnswerButtonVisibility() {
 window.updateMazeAnswerButtonVisibility = updateMazeAnswerButtonVisibility;
 
 function updateGotoXyzToolboxVisibility() {
+    if (currentSceneType === 'sky' && workspace) { SkyToolbox.install(workspace); return; }
     const blockEl = document.getElementById('toolbox-goto-xyz-block');
     if (blockEl) {
         const hide = isTunnelMissionScene();
@@ -1409,6 +1418,7 @@ function updateGotoXyzToolboxVisibility() {
 window.updateGotoXyzToolboxVisibility = updateGotoXyzToolboxVisibility;
 
 function resetSimulator() {
+    if (window.SkyMission && SkyMission.active()) SkyMission.reset();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false;
@@ -1495,7 +1505,8 @@ function resetSimulator() {
     logToConsole("已回到起點，積木已保留。");
     console.log(`System Reset to (${state.x.toFixed(1)}, ${state.y.toFixed(1)}, ${state.z.toFixed(1)})`);
 }
-function emergencyStop() { 
+function emergencyStop() {
+    if (window.SkyMission && SkyMission.active()) SkyMission.cancel();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false; 
@@ -1525,13 +1536,14 @@ const waitKey = () => new Promise(resolve => {
 });
 // 動畫輔助函數
 async function animateAction(durationSec, updateFn, options = { canAbort: true }) {
+    const skyToken = currentSceneType === 'sky' ? SkyMission.generation() : null;
     const startTime = performance.now(); 
     const durationMs = (durationSec * 1000) / executionSpeed; 
     state.collisionDetected = false; // 重置碰撞旗標
     
     return new Promise(resolve => {
         function loop(currentTime) {
-            if (state.stopSignal) { resolve(); return; }
+            if (state.stopSignal || (skyToken !== null && SkyMission.generation() !== skyToken)) { resolve(); return; }
             
             // 如果指令允許被碰撞中斷（如移動指令），則檢查碰撞
             if (options.canAbort && state.collisionDetected) {
@@ -1542,7 +1554,9 @@ async function animateAction(durationSec, updateFn, options = { canAbort: true }
             
             const elapsed = currentTime - startTime; 
             const progress = Math.min(elapsed / durationMs, 1);
+            const before = skyToken !== null ? {x:state.x,y:state.y,z:state.z} : null;
             updateFn(progress);
+            if (before) SkyMission.moved(before);
             
             if (progress < 1) requestAnimationFrame(loop); else resolve();
         } requestAnimationFrame(loop);
@@ -2596,7 +2610,11 @@ function showMissionBriefing(missionId) {
     
     if (!briefingModal || !title || !content) return;
     
-    if (targetMissionId == 1) {
+    if (targetMissionId == 3) {
+        title.textContent = '天空機關城';
+        if (icon) icon.textContent = '';
+        SkyUI.briefing(content);
+    } else if (targetMissionId == 1) {
         title.textContent = '任務一：坍塌廢墟搜救';
         if (icon) icon.textContent = '';
         content.innerHTML = `
@@ -2779,6 +2797,8 @@ async function startMission(missionId) {
         activeMissionId = 1;
     } else if (missionId === 2 || missionId === '2') {
         activeMissionId = 2;
+    } else if (Number(missionId) === 3) {
+        activeMissionId = 3;
     } else {
         activeMissionId = null;
     }
@@ -2880,6 +2900,9 @@ async function startMission(missionId) {
         changeScene('city');
         logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
         logToConsole('💡 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。');
+    } else if (Number(missionId) === 3) {
+        await SkyCity.preload();
+        changeScene('sky');
     } else {
         changeScene('free');
     }
@@ -2903,7 +2926,7 @@ async function startMission(missionId) {
 }
 
 function shouldAutoShowMissionBriefing(missionId) {
-    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
+    return [1,2,3].includes(Number(missionId));
 }
 
 // 啟動自由遊戲
@@ -3678,6 +3701,8 @@ document.addEventListener('keydown', function onModalEscapeKeydown(e) {
 }, true);
 
 window.showResultModal = function(data) {
+    setTelemetryText('result-modal-title', '救援完成。做得好！');
+    setTelemetryText('res-row3-label', '任務耗時');
     _modalFocusResultReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     console.log("🏆 顯示結算彈窗:", data);
     logToConsole("📊 任務完成。正在顯示成績單…");

@@ -34,7 +34,7 @@
         }
         function activate(p){if(completed!==3)throw new GateError('incomplete',`已通過 ${completed}/3 道閘門。必須依序通過全部閘門才能啟動基地。`);if(p.isFlying||Math.hypot(p.x-config.goal.x,p.z-config.goal.z)>85||Math.abs(p.y-config.goal.y)>18)throw new GateError('landing','請先在中央核心平台降落，再發送啟動指令。');activated=true;}
         function snapshot(){return {configuration, gates:gates.map(g=>({...g})),channel,completed,activated,rejections,reads,waits,elapsed};}
-        return {reset,target,nearby,signal,select,send,tick,move,activate,snapshot,isOpen:()=>target()?.status==='open',noteWait:()=>waits++,distance:p=>target()?Math.hypot(p.x-target().x,p.z-target().z):0};
+        return {reset,target,nearby,signal,select,send,tick,move,activate,snapshot,isOpen:()=>target()?.status==='open',noteWait:()=>waits++,distance:p=>target()?Math.round(Math.hypot(p.x-target().x,p.z-target().z)*100)/100:0};
     }
     return {create,GateError};
 });

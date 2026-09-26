@@ -1,0 +1,37 @@
+/* Local extension of the existing Flight Deck, including appearance tokens. */
+.sky-strip {flex:none;background:var(--v2-surface);border-bottom:1px solid var(--v2-border);padding:8px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--v2-text);font-size:14px;position:relative;z-index:12;}
+.sky-strip[hidden]{display:none;}
+.sky-gates{display:flex;gap:12px;align-items:center;}
+.sky-gates span{padding:6px 0;border-bottom:2px solid var(--v2-border);white-space:nowrap;}
+.sky-gates [data-state="open"],.sky-gates [data-state="completed"]{color:var(--v2-success);border-color:var(--v2-success);font-weight:700;}
+.sky-gates [data-state="accepted"]{color:var(--v2-warning);border-color:var(--v2-warning);}
+.sky-tools{display:flex;gap:8px;align-items:center;margin-left:auto;}
+.sky-tools button,.sky-tools select,.sky-route-toggle>summary{min-height:44px;border:1px solid var(--v2-border);border-radius:var(--v2-radius-small);padding:8px 12px;background:var(--v2-surface);color:var(--v2-text);font:inherit;cursor:pointer;}
+.sky-tools button:hover,.sky-route-toggle>summary:hover{background:var(--v2-bg);}
+.sky-tools button:disabled{opacity:.5;cursor:default;}
+.sky-tools label{display:flex;gap:6px;align-items:center;}
+.sky-feedback{flex-basis:100%;margin:0;color:var(--v2-text-secondary);min-height:21px;}
+.sky-feedback--error{color:var(--v2-danger);}
+.sky-config{font-family:var(--v2-mono);color:var(--v2-text-muted);}
+.sky-route-toggle>div{position:absolute;right:16px;top:64px;width:min(550px,calc(100vw - 48px));max-height:55vh;overflow:auto;padding:20px;background:var(--v2-elevated);box-shadow:var(--v2-shadow);border-radius:var(--v2-radius);z-index:25;}
+.sky-route{padding-left:24px;margin:8px 0;}
+.sky-route li{padding:8px 0;}
+.sky-route strong,.sky-route span{display:block;}
+.sky-route span{margin-top:4px;color:var(--v2-text-secondary);line-height:1.6;}
+.sky-note{color:var(--v2-text-muted);font-size:14px;line-height:1.6;}
+.sky-brief>img{width:100%;height:190px;object-fit:cover;border-radius:var(--v2-radius);}
+.sky-brief h3{font-size:24px;margin:20px 0 16px;}
+.sky-brief p{font-size:16px;line-height:1.6;}
+.sky-flow{display:flex;gap:20px;list-style:none;padding:0;margin:0;}
+.sky-flow li{flex:1;border-top:2px solid var(--v2-secondary);padding-top:12px;}
+.sky-flow strong,.sky-flow span{display:block;}
+.sky-flow span{font-size:14px;margin-top:6px;color:var(--v2-text-secondary);}
+.sky-brief summary{cursor:pointer;min-height:44px;padding:12px 0;color:var(--v2-secondary);font-weight:700;}
+#game-interface[data-scene="sky"] .v2-goal-label{display:none;}
+@media(max-width:1100px){.sky-strip{gap:4px 12px;padding:6px 12px;}.sky-tools{gap:6px;}.sky-tools button,.sky-tools select,.sky-route-toggle>summary{padding:6px 8px;}.sky-config{display:none;}}
+@media(max-width:800px){.sky-tools{margin-left:0;}.sky-flow{gap:10px;}.sky-brief>img{height:150px;}}
+@media(prefers-reduced-motion:reduce){.sky-strip *{scroll-behavior:auto;}}
+
+#game-interface[data-scene="sky"] #v2-command-progress{display:none;}
+/* Three missions stay discoverable together on a desktop mission menu. */
+@media(min-width:1200px){.v2-mission-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}

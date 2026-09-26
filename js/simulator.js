@@ -1570,6 +1570,10 @@ const simulatorSceneAdapters = SceneLifecycle.createRegistry({
             }
         }
     }),
+    sky: Object.freeze({
+        prepare: restoreDefaultSceneLighting,
+        build: function () { SkyMission.build(); }
+    }),
     free: Object.freeze({
         prepare: restoreDefaultSceneLighting,
         build: function () {
@@ -1617,6 +1621,8 @@ function loadScene(type) {
         console.error("environmentGroup is not initialized. Please wait for init3D() to complete.");
         return;
     }
+
+    if (environmentGroup.userData.sceneVariant === 'mission3') SkyMission.dispose();
 
     if (environmentGroup.userData.disposeMission1Quality) {
         environmentGroup.userData.disposeMission1Quality();
@@ -4211,6 +4217,7 @@ function finishTunnelMission() {
 }
 
 function getGroundHeight(x, z) {
+    if (currentSceneType === 'sky') return SkyMission.ground(x, z);
     if (typeof currentSceneType !== 'undefined' && isCityMissionScene()
         && typeof getForestHeight === 'function') {
         const h = getForestHeight(x, z);
@@ -4725,6 +4732,7 @@ function updateCameraPosition() {
 function animateLoop() {
     requestAnimationFrame(animateLoop);
     
+    if (currentSceneType === 'sky') SkyMission.tick();
     // 執行碰撞偵測
     handleWallCollision();
 

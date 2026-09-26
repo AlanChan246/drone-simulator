@@ -1,16 +1,17 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),acorn=require('acorn'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const baseline=JSON.parse(read('audit/mission-2-v2/legacy-contract-hashes.json'));
+const skyGlue=JSON.parse(read('audit/mission-3/shared-integration-hashes.json'));
 const source=read('js/simulator.js'),ast=acorn.parse(source,{ecmaVersion:'latest'});
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const config=require('../js/scenes/mission2-v2/config.js');
-test('legacy builders, all mission logic and drone physics remain byte-identical',()=>{
+test('legacy builders, mission rules and physics remain identical outside explicit sky hooks',()=>{
  const found=new Map();for(const n of ast.body){if(n.type==='FunctionDeclaration')found.set(n.id.name,n);if(n.type==='VariableDeclaration')found.set(n.declarations.map(d=>d.id.name).join(','),n);}
  // Camera input intentionally changed for manual tutorial / iPad pinch fixes.
  // Keep mission and physics hashes unchanged; pin the revised input functions.
  const cameraInputHashes={"init3D":"20ba388bb675414d2c8cd9cfd35a2d87aba9187f77ccd44715b6cea156513603","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
  // Only the approved Mission 1 visual hook is excluded.
- for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
+ for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=(name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end)).replace("    if (currentSceneType === 'sky') return SkyMission.ground(x, z);\n",'').replace("    if (currentSceneType === 'sky') SkyMission.tick();\n",'');assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
  for(const [file,expected] of Object.entries(baseline.files)){
    const original=read(file)
      // Presentation-only homepage film controls are outside the mission contract.
@@ -22,7 +23,9 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
    // Pin the approved manual tutorial and Blockly theme integration; flight execution remains unchanged.
    // Pre-existing user change in 460e863: protect the new airframe paint baseline.
    const currentExpected=file==='js/main.js'?'5088950368c8cc626b04a8ddb0fcb8219531b0b183c1aa88324fc80da19d484a':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
-   assert.equal(hash(original),currentExpected,file);
+   // Mission 3 adds audited selection/runtime/camera hooks in these two glue files.
+   // All original scene/rule/physics hashes above and real browser regressions remain required.
+   assert.equal(hash(original),skyGlue[file] || currentExpected,file);
  }
 });
 test('independent v2 grid exactly matches the actual Legacy builder',()=>{
