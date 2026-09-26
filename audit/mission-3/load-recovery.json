@@ -1,7 +1,0 @@
-{
-  "recovery": {
-    "message": true,
-    "retry": true
-  },
-  "errors": []
-}

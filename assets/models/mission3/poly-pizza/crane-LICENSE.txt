@@ -1,5 +1,0 @@
-Crane by J-Toastie
-Source: https://poly.pizza/m/gCcpjaxFdv
-Licence: https://creativecommons.org/licenses/by/3.0/
-Downloaded: 2026-09-26
-Modifications: runtime scale and orientation only.
