@@ -1556,6 +1556,7 @@ async function init3D() {
 // 3. 場景生成邏輯
 // ==========================================
 const simulatorSceneAdapters = SceneLifecycle.createRegistry({
+    storm: Object.freeze({ prepare: restoreDefaultSceneLighting, build: () => Mission3Scene.build() }),
     tunnel: Object.freeze({
         prepare: restoreDefaultSceneLighting,
         build: createMazeMap
@@ -1628,6 +1629,12 @@ function loadScene(type) {
         delete environmentGroup.userData.disposeMission2V2;
         delete environmentGroup.userData.sceneVariant;
         delete environmentGroup.userData.mission2V2;
+    }
+    if (environmentGroup.userData.disposeMission3) {
+        Mission3.cancel();
+        environmentGroup.userData.disposeMission3();
+        delete environmentGroup.userData.disposeMission3;
+        delete environmentGroup.userData.sceneVariant;
     }
     applyMissionConfigForScene(type);
 

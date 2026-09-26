@@ -1,0 +1,5 @@
+Tower by iPoly3D
+Source: https://poly.pizza/m/Xfb0lAPvnh
+Licence: https://creativecommons.org/publicdomain/zero/1.0/
+Downloaded: 2026-09-26
+Modifications: runtime scale and orientation only.

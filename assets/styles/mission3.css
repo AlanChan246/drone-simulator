@@ -1,0 +1,20 @@
+/* Local extension of the rescue field school's Operate surface. */
+#m3-hud{position:absolute;top:16px;left:16px;z-index:12;width:min(370px,calc(100% - 32px));padding:12px 16px;background:var(--v2-surface,#fffef9);color:var(--v2-text,#173b37);border:1px solid var(--v2-border,#cdd4c8);border-radius:12px;font-size:14px;line-height:1.5;box-sizing:border-box}
+#m3-hud[hidden]{display:none}
+.m3-status-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.m3-power-row{display:flex;gap:12px;align-items:center;margin-top:8px}
+.m3-power-row meter{width:85px;flex:1;height:14px;accent-color:#286c4b}
+#m3-storm[data-level=danger]{color:var(--v2-danger,#b12c36)}
+#m3-storm[data-level=warning]{color:var(--v2-warning,#825713)}
+#m3-storm[data-level=safe]{color:var(--v2-success,#286c4b)}
+#m3-hud p{margin:6px 0}#m3-hud summary{cursor:pointer;padding:4px 0;min-height:28px}
+#m3-hud details button{min-height:44px}
+#m3-result{width:min(560px,calc(100vw - 48px));max-height:85vh;overflow:auto;border:1px solid var(--v2-border,#cdd4c8);border-radius:12px;background:var(--v2-surface,#fffef9);color:var(--v2-text,#173b37);padding:28px}
+#m3-result::backdrop{background:#143b37a8}
+#m3-result h2{font-size:28px;margin:0 0 16px}#m3-result p{line-height:1.6}
+#m3-result dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:20px 0;border-block:1px solid var(--v2-border,#cdd4c8)}
+#m3-result dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+#m3-result>div{display:flex;flex-wrap:wrap;gap:12px}
+.v2-mission-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){.v2-mission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#m3-hud{top:8px;left:8px;padding:8px 12px;width:340px;max-width:calc(100% - 16px)}}
+@media(max-width:700px){.v2-mission-grid{grid-template-columns:1fr}}

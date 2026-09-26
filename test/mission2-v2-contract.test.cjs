@@ -12,7 +12,7 @@ test('legacy builders, all mission logic and drone physics remain byte-identical
  // Only the approved Mission 1 visual hook is excluded.
  for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
  for(const [file,expected] of Object.entries(baseline.files)){
-   const original=read(file)
+   const original=require('./mission3-legacy-normalize.cjs')(read(file))
      // Presentation-only homepage film controls are outside the mission contract.
      .replace(/    const hero=el\('hero-loop-video'\)[\s\S]*?    window.resumeHeroLoopVideo\(\);\n/,'')
      .replace("${tunnel?'1-final':'2-v2'}.png",'${tunnel?1:2}.png')

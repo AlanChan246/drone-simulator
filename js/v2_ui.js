@@ -84,6 +84,7 @@ window.V2UI = (() => {
         camTarget.x=followDrone?state.x:0;camTarget.y=followDrone?state.y:0;camTarget.z=followDrone?state.z:0;
         camRadius=followDrone?(currentGameMode==='freeplay'?FOLLOW_CAMERA_RADIUS:220):(currentGameMode==='freeplay'?FREE_CAMERA_RADIUS:3200);
         if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;
+        if(!followDrone && currentSceneType==='storm')camRadius=3300;
         camPhi=mode==='top'?10:followDrone?30:35;
         updateCameraPosition();
         text('camera-mode-label',followDrone?'跟隨視角':mode==='top'?'俯視':'全景');
@@ -91,7 +92,7 @@ window.V2UI = (() => {
     }
     const names={takeoff:'起飛',land:'安全降落',move_forward:'向前飛行',move_backward:'向後飛行',move_left:'向左飛行',move_right:'向右飛行',move_up:'上升',move_down:'下降',hover:'懸停觀察',turn_left:'向左轉向',turn_right:'向右轉向',goto_xyz:'飛向指定座標',collect_water:'裝填水箱',release_water:'噴水滅火',set_color:'改變燈光',print:'輸出觀察結果',wait_key:'等待按下空白鍵',turn_time:'按時間轉向',set_var:'設定飛行動力',set_heading:'轉至指定航向',move_complex:'按設定動力飛行'};
     function command(cmd,index,total) {
-        lastCommand=names[cmd.type]||'執行飛行指令';
+        lastCommand=(currentSceneType==='storm'?Mission3.commandName(cmd):null)||names[cmd.type]||'執行飛行指令';
         text('v2-action-status',`指令 ${index+1} / ${total}`);
         text('v2-action-label',lastCommand);
         el('v2-command-progress').max=total;
@@ -133,7 +134,7 @@ window.V2UI = (() => {
         content.querySelectorAll('.brief-step-icon').forEach(node=>node.remove());
         content.querySelectorAll('.brief-legend-swatch:not(.brief-legend-swatch--model)').forEach(node=>{node.innerHTML=icon(node.classList.contains('brief-legend-swatch--beacon')?'point':'download');});
     }
-    function nextMission() {closeResultModal();emergencyStop();if(activeMissionId===1)startMission(2);else showMissionSelect();}
+    function nextMission() {closeResultModal();emergencyStop();if(activeMissionId===1)startMission(2);else if(activeMissionId===2)startMission(3);else showMissionSelect();}
     function toggleTelemetry(){el('game-interface').classList.toggle('show-telemetry');}
     function toggleDebug(){el('game-interface').classList.toggle('show-debug');}
     document.addEventListener('keydown',event=>{

@@ -3,9 +3,16 @@
     if (typeof module === 'object' && module.exports) module.exports = exported;
     if (root) root.MissionRules = exported;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-    const MISSION_IDS = Object.freeze({ TUNNEL_RESCUE: 1, WILDFIRE_RESPONSE: 2 });
+    const MISSION_IDS = Object.freeze({ TUNNEL_RESCUE: 1, WILDFIRE_RESPONSE: 2, STORM_ISLAND: 3 });
 
     const adapters = Object.freeze({
+        storm: Object.freeze({
+            id: MISSION_IDS.STORM_ISLAND,
+            name: 'Storm Island: Restore the Grid',
+            requiredInspectionCheckpoints: 0,
+            requiredFireSites: 0,
+            pending() { return '掃描並恢復所有能源站，返回基地降落。'; }
+        }),
         tunnel: Object.freeze({
             id: MISSION_IDS.TUNNEL_RESCUE,
             name: 'Tunnel Rescue',

@@ -54,9 +54,11 @@ function getBlocklyAutosaveKey() {
     if (currentGameMode === 'freeplay') return 'freeplay';
     if (activeMissionId === 1 || activeMissionId === 'training') return 'mission-1';
     if (activeMissionId === 2) return 'mission-2';
+    if (activeMissionId === 3) return 'mission-3';
     if (typeof currentSceneType !== 'undefined') {
         if (currentSceneType === 'tunnel') return 'mission-1';
         if (currentSceneType === 'city') return 'mission-2';
+        if (currentSceneType === 'storm') return 'mission-3';
     }
     return 'freeplay';
 }
@@ -653,6 +655,7 @@ function runBlocklyCode() {
         return;
     }
     
+    if (currentSceneType === 'storm') { Mission3.execute(currentWorkspace); return; }
     cmdQueue = [];
     blockToCommandMap.clear();
     commandToBlockMap.clear();
@@ -1371,6 +1374,7 @@ function updateFlightTelemetry() {
     setTelemetryText('active-mission-title', missionTitle);
     setTelemetryText('top-mission-progress', missionProgress);
     if (window.V2UI) V2UI.sync();
+    if (window.Mission3) Mission3.sync();
 }
 window.updateFlightTelemetry = updateFlightTelemetry;
 function updateHUD() { updateFlightTelemetry(); }
@@ -1402,13 +1406,14 @@ function updateGotoXyzToolboxVisibility() {
     if (workspace && typeof workspace.updateToolbox === 'function') {
         const toolboxEl = document.getElementById('toolbox');
         if (toolboxEl) {
-            workspace.updateToolbox(toolboxEl);
+            workspace.updateToolbox(currentSceneType === 'storm' ? Mission3Blockly.toolbox() : toolboxEl);
         }
     }
 }
 window.updateGotoXyzToolboxVisibility = updateGotoXyzToolboxVisibility;
 
 function resetSimulator() {
+    if (window.Mission3 && currentSceneType === 'storm') Mission3.reset();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false;
@@ -1496,6 +1501,7 @@ function resetSimulator() {
     console.log(`System Reset to (${state.x.toFixed(1)}, ${state.y.toFixed(1)}, ${state.z.toFixed(1)})`);
 }
 function emergencyStop() { 
+    if (window.Mission3) Mission3.cancel();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false; 
@@ -2702,7 +2708,8 @@ function showMissionBriefing(missionId) {
         `;
     }
     
-    if (window.V2UI) V2UI.briefing(targetMissionId, content);
+    if (Number(targetMissionId) === 3) Mission3.briefing(title, content);
+    else if (window.V2UI) V2UI.briefing(targetMissionId, content);
     briefingModal.style.display = 'flex';
     // 添加 active class 以觸發動畫，並將焦點移至主要按鈕（模態無障礙）
     setTimeout(() => {
@@ -2779,6 +2786,8 @@ async function startMission(missionId) {
         activeMissionId = 1;
     } else if (missionId === 2 || missionId === '2') {
         activeMissionId = 2;
+    } else if (Number(missionId) === 3) {
+        activeMissionId = 3;
     } else {
         activeMissionId = null;
     }
@@ -2871,6 +2880,14 @@ async function startMission(missionId) {
         return;
     }
     
+    if (Number(missionId) === 3) {
+        try { await Mission3Scene.preload(); }
+        catch (error) {
+            returnToMissionSelect();
+            showAppMessage({variant:'warn', title:'能源島素材未能載入', body:error.message, nextStep:'檢查連線後重新選擇任務三。'});
+            return;
+        }
+    }
     // 根據任務 ID 設置場景
     if (missionId === 'training' || missionId === 1 || missionId === '1') {
         changeScene('tunnel');
@@ -2880,6 +2897,9 @@ async function startMission(missionId) {
         changeScene('city');
         logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
         logToConsole('💡 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。');
+    } else if (Number(missionId) === 3) {
+        changeScene('storm');
+        Mission3.reset(true);
     } else {
         changeScene('free');
     }
@@ -2903,7 +2923,7 @@ async function startMission(missionId) {
 }
 
 function shouldAutoShowMissionBriefing(missionId) {
-    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
+    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2' || Number(missionId) === 3;
 }
 
 // 啟動自由遊戲
