@@ -1,42 +1,62 @@
 # Mission 3 — 暴風島能源重啟
 
-Storm Island: Restore the Grid 將學生從直接駕駛帶到「感測 → 判斷 → 行動 → 重複」。Mission 1 的路線搜救和 Mission 2 的取水滅火保留原有行為。
+## Primary School Design
 
-## Story and completion
+香港小學生的主線只有一句話：**飛去每個能源站，先掃描，關了就重新啟動。** 三站完成後，返回基地降落。學習順序是 Scan → Decide → Act → Repeat；Mission 1 / 2 保留原有行為。
 
-風暴切斷離島供電；醫療中心只剩備用電源。學生必須起飛、掃描港口 A／城鎮 B／山區 C 三個能源站，恢復離線站，確認全部供電，再回到 Drone Base 降落。正常能源站也要掃描確認。提早返航或漏掉離線站不會完成。
+### Before → after
 
-## Relay and randomization
+| 範圍 | 原本負擔 | 現在主流程 |
+| --- | --- | --- |
+| Briefing | 規則、風暴、電量、編程提示同時出現 | 一句故事、一句任務、三個圖示、返回降落 |
+| Blockly | 34 塊、計數變數、數值比較、兩個等待迴圈 | 11 塊：Repeat 3 + 一個 IF + 狀態感測 |
+| Relay | 技術狀態名稱 | 先掃描；掃描後只分「正常／需要啟動」 |
+| Storm | 三個等級、隨機相位、累積暴露失敗 | 安全／危險，固定週期，導航可等候 |
+| Backup | 600 秒倒數及失敗 | 普通模式不倒數、不因此失敗 |
+| HUD | 風暴數值、備電、多站清單、遙測 | 站數、山區風暴、一個目前目標、短回饋 |
+| Hints | 固定答案階梯與變數要求 | 到站、掃描、判斷、重複、風暴、重試時才提示 |
+| Result | 七項技術統計及效率分 | 三站亮起、安全、時間；以文字肯定 IF 和 Repeat |
 
-Relay has ACTIVE / OFFLINE states, plus visual UNKNOWN, ACTIVATING and RESTORED feedback. Station numbers 1–3 address individual locations. Scan requires horizontal distance ≤85 cm and altitude within 65 cm of the marked waypoint. Activation requires a prior scan and an offline station. Activating an already active station is harmless but counted as waste.
+### Main student flow
 
-Each new mission selects a seed and one of four configurations: two offline with A/B/C active, or all offline. New entry changes the configuration; reset/retry preserves it for debugging. The seed also offsets the storm cycle. Production chooses seeds using `crypto.getRandomValues`; local development accepts `?mission3State=test-a|test-b|test-c|all-offline` or `?mission3Seed=...`. These overrides are ignored on non-local hosts.
+1. 起飛。
+2. **重複 3 次**：前往下一站 → 掃描 → **如果「能源站需要啟動？」便啟動**。
+3. 返回基地，降落。
 
-## Storm and backup power
+[主答案 XML](../answers/mission-3-primary.xml) 可從工具列匯入；測試 fixture 是相同內容。主答案沒有變數、數學比較、巢狀 IF、巢狀迴圈或等待秒數。正常能源站也必須掃描，不能只用方向積木飛回基地完成。
 
-A reproducible 24-second simulated storm cycle is DANGER 85 for 9 seconds, WARNING 45 for 4 seconds, then SAFE 15 for 11 seconds. The sensor reads the mountain forecast from anywhere. Students can wait outside the zone and repeatedly check it before departing. A waypoint flight takes 5 seconds, scan 1 second, activation 2 seconds. No random forces move the drone.
+「前往下一站」每次只導航至 A、B、C 中下一站，並在山區危險時先於山外等候。它**不會掃描、判斷能源站或啟動**，也不會一次走完三站。自動等候是降低導航負擔的支援，不能算作學生自己寫了風暴判斷。學生仍須自己寫狀態感測、IF 與 Repeat；工具提示明示這個分工。
 
-The mountain hazard is a 290 cm radius around C above 80 cm. DANGER blocks activation and adds exposure. At 30 cumulative seconds the mission fails with advice to wait outside. Collision proxies stop flight with specific recovery feedback; high-poly visual meshes are not used for collision. Movement is checked in small simulation steps.
+普通工具箱有「飛行、能源站、如果、重複」四個核心分類，另有預設收合的「進一步」。完整答案沒有在學生初始介面自動展示。Briefing 不講 programming theory；素材授權藏於可展開的鳴謝，仍保留作者連結。
 
-Medical backup lasts 600 simulated seconds before grid restoration. It drains during flight-program actions, including hover/wait; time spent editing or paused between blocks does not drain it. Restoring all three stations restores normal medical power. Power failure requires reset, preserving the program and seed.
+### Hints and recovery
 
-## Programming architecture
+- 先嘗試啟動但未掃描：提示「先掃描，看看能源站是不是關了」。
+- 掃描後：先問哪個動作需要判斷，再提示 IF，最後才提示 IF 內放啟動。
+- 相同流程重複、沒有迴圈：引導把下一站、掃描、IF 放進 Repeat 3。
+- 遇上山區風暴：只介紹安全／危險，並說明導航等候。
+- 程式結束但未完成：保留已亮起的站，學生修改後直接再執行，無人機從基地重新出發。
+- 碰撞仍會停下，需重設；重設保留 XML 及本次站點組合。新進入任務才更換組合。
 
-`js/mission3/core.js` owns deterministic domain rules; `blockly.js` defines capabilities and isolated compilation; `runtime.js` runs commands against the live simulation; `scene.js` loads and composes the environment.
+提示一次只顯示一個問題或下一步；按「再給我一點提示」才深入。未完成不是 Game Over。風暴暴露只出現警告和次要安全分數影響；等待或思考沒有倒數懲罰。
 
-Mission 1/2 keep the original precomputed command queue. Mission 3 temporarily wraps supported Blockly statement generators during synchronous compilation and restores them in `finally`. The generated async program awaits each movement or action before evaluating subsequent sensors and branches. Standard Blockly IF/ELSE, repeat, while/until, for, arithmetic and variables retain their meaning. Loops yield and have a 600-iteration guard. Commands have a separate 600-action limit. A run-generation token prevents stopped or reset animations from mutating a newer run.
+### Advanced extensions
 
-Mission-specific blocks: Scan Relay, Relay Status, Activate Relay, Storm Level, Checked Relay Count, travel to one indexed station, and return to base. A travel block performs no scan, repair, choice of station or loop. It ascends, traverses and descends to one explicit target. No block completes the mission or visits all relays automatically. Standard hover supplies wait. A scoped toolbox excludes unsupported procedures and advanced legacy power-control commands; importing them produces a recoverable message, not a silent fallback.
+「進一步」保留指定站點飛行、方向與等待、Boolean 風暴感測、while/until、變數、計數、數值感測和比較。教師可讓學生自行決定山區出發時機、使用變數記錄完成數量、寫巢狀條件，或比較積木與飛行效率。不另建複雜模式，也不阻塞普通完成。
 
-The Mission 3 autosave key is `drone-simulator:v1:blockly-workspace:mission-3`; legacy keys and XML formats are unchanged. Existing workspace replacement remains transactional.
+[原進階答案](../test/fixtures/mission3-advanced-reference.xml) 保留原 XML 作相容性驗證；舊比較、變數與數值感測仍可編譯執行，但舊風暴週期與失敗規則已由本次簡化取代。完成時間只供比較，沒有時間扣分。
 
-## Scoring and feedback
+## Rules and architecture
 
-Completion is 500 points; safety up to 150; coding efficiency up to 250; time up to 100. An incomplete mission earns no completion score. Efficiency considers effective IF use with status readings, loops, storm readings, variables, duplicated capability blocks, redundant scans/activations, unnecessary waypoint moves and flight distance. It does not reward block count alone. Block count is reported for reflection.
+`core.js` 負責獨立規則，`blockly.js` 負責積木及隔離編譯，`runtime.js` 負責真實非同步執行與回饋，`scene.js` 負責場景。Mission 1 / 2 仍使用原 command queue。Mission 3 編譯暫時包裝 statement generators，並在 finally 還原；感測是在指令執行後讀取即時狀態。
 
-Progress uses labels as well as colour. Relay markers show unknown, offline, normal, activating or restored. Infrastructure light pools respond to restored relays; the medical area lights when the whole grid is online. Results show repair count, distance, block count, waste, exposure, time and coding efficiency.
+每次只有哪些站正常／關閉會隨機變化；位置、目標和風暴規則固定。風暴每 40 模擬秒循環，首 16 秒危險，之後 24 秒安全；舊數值感測維持 85／15，相位固定為 0。山區範圍為 C 周圍 290 cm、80 cm 以上。普通模式無 30 秒暴露失敗、無啟動風暴鎖、無備電倒數；所有站用同一套 scan-before-activate 規則。
 
-Four progressive hints move from observing differing states, to IF, to a station counter and repeat, to repeatedly checking the storm. The full reference solution is not exposed through student UI.
+到站掃描須水平距離 ≤85 cm、高度差 ≤65 cm。啟動正常站無害，但計入多餘動作。完成必須三站全掃描且正常，再回基地降落。碰撞仍按小步進檢查；停止／重設以 generation token 取消舊動畫。迴圈和動作各有 600 次保護，避免無限執行。
+
+計分維持滿分 1000：完成 500、安全 150、編程 250、時間項固定 100。編程獎勵迴圈與 IF + 狀態讀取；不再要求變數。重複程式仍可完成，但重複積木、無效掃描／啟動／移動會減低次要效率分。結果主要回饋用文字指出學生用了哪些概念。
+
+舊 block IDs、OFFLINE／ACTIVE／UNKNOWN 內部值與 XML 格式保留。新增 `m3_next`、`m3_needs_power`、`m3_storm_safe`。Mission 3 存檔 key 仍是 `drone-simulator:v1:blockly-workspace:mission-3`；Mission 1 / 2 keys 不變。不支援的匯入積木會顯示可修正錯誤。
 
 ## Scene and design
 
@@ -47,37 +67,55 @@ The existing rescue field school UI is extended in Operate mode: compact warm-pa
 - Town: residential and commercial models, road network, obstructed junction, civic shelter and street lamps.
 - Medical Centre: recognisable building, rooftop helipad, ambulance, tent and generator.
 - Mountain: authored rock meshes, forest, raised relay platform, communication tower and wind turbine.
-- Storm Zone: local cloud/rain, continuous sensor readout and measurable safety consequences. Reduced-motion preference hides rain; there are no flashing lightning effects.
+- Storm Zone: local cloud/rain, binary safe/danger feedback and optional safety reflection. Reduced-motion preference hides rain; there are no flashing lightning effects.
 
 Primary art uses real external GLBs. Procedural geometry is limited to water, gameplay indicators and lightweight effects. See [asset register](assets/mission-3-assets.md) for licences and exact files. Static model instances share scene-owned geometry/materials; the global template cache survives scene switching. New assets are loaded only on entry to Mission 3, while the offline app shell includes them for subsequent offline use.
 
-## Teacher / QA reference
-
-`test/fixtures/mission3-reference.xml` is an internal reference: initialise `restoredRelays`, take off, if the initial forecast is already SAFE wait until that partial window ends, then iterate station 1–3, wait until storm <40, fly to the current station, scan, activate only if OFFLINE, increment the counter, return, land. It demonstrates a robust solution across every supplied test state and all 24 initial storm phases. A SAFE reading alone does not imply a full 11 seconds remain; the initial phase alignment avoids departing late in a window. Other correct orderings and repetitive programs can complete; repetition receives weaker efficiency feedback.
-
 ## Verification
 
-- `npm test`: existing contracts plus Mission 3 domain and real Blockly generation tests.
-- `node scripts/verify-static-site.cjs`: existing packaging recipe, entirely local.
-- `node scripts/verify-mission1-answer.cjs`: legacy route fixtures.
-- `node scripts/mission3-browser-qa.cjs`: real Chromium playthroughs, negative cases, persistence, reset cancellation and viewport evidence. Requires a local server and Playwright; `PLAYWRIGHT_MODULE` can point to an existing installation, `QA_URL` selects the server, `QA_CHANNEL` selects the installed browser.
+執行 `npm start`，另一終端執行以下本地檢查。Playwright 可由 `PLAYWRIGHT_MODULE` 指向既有安裝，`QA_URL` 指定 localhost，`QA_CHANNEL` 選瀏覽器。
 
-Browser evidence and final results are recorded under `audit/mission-3/`. Desktop emulation and iPad-sized viewports do not establish physical iPad GPU or Safari performance. No production deployment is part of this change.
+- `npm test`：規則、真實 Blockly 生成、主答案四種狀態、進階舊答案、legacy contracts。
+- `node scripts/mission3-browser-qa.cjs`：真實執行、錯誤與重試、匯入及存檔、四尺寸截圖。
+- `node scripts/mission3-student-qa.cjs`：首次操作分類、先啟動錯誤、重複提示、保留進度修正、舊 XML 匯入。
+- `node scripts/mission3-regression-qa.cjs`：進入 Mission 3 後真實執行 Mission 1／2 舊答案，驗證分數、清理和存檔隔離。
+- `node scripts/mission3-lifecycle-qa.cjs`：切換、16 種重複 RNG、資源穩定、載入失敗復原。
+- `node scripts/verify-static-site.cjs` 及 `node scripts/verify-mission1-answer.cjs`。
 
-## Final QA record — 2026-09-26
+本次證據放在 `audit/mission-3-primary/`，原 `audit/mission-3/` 是簡化前歷史紀錄，不代表現行規則。
 
-- `npm test`: **47/47 passed**, including 96 real Blockly/domain runs (four relay patterns × 24 initial storm phases), nested IF/ELSE, generator restoration and legacy byte contracts.
-- Real Chromium: all four relay patterns completed from Blockly through scan/activate/return/land; reference scores 951/1000, 34 blocks, no redundant activation and zero danger exposure. A separate seed 30 run begins at phase 22 and also completes with zero exposure.
-- Negative browser cases: early return and ignored offline relays cannot complete; unsafe storm exposure fails with advice; repetitive unconditional repair can complete but earns lower efficiency; mid-flight reset cancels stale execution. Workspace survives reload.
-- Mission 1: actual direct-route fixture completed after Mission 3, landed at Bravo, no collision or Mission 3 toolbox/HUD leakage. Mission 2 v2: actual four-fire fixture completed after visiting Mission 3, four fires extinguished, 1225 points, no collision, old scene disposer restored. See the two regression JSON reports.
-- Responsive evidence: 1440×900, 1280×800, 1024×768 and 1180×820 landscape, including editor, HUD, briefing and result. No document overflow or offscreen result actions. Narrow split views use Blockly's existing pan/scroll; dedicated code view remains available.
-- `node scripts/mission3-lifecycle-qa.cjs`: 16 forced repeated RNG seeds terminate with changed patterns; reset retains the seed; three 2→3 switch cycles retain 143 geometries / 40 renderer textures / 54 model batches. An intentionally blocked manifest produces a retry message and returns to selection, without an uncaught page error.
-- Final local headless Chrome sample at 1180×820: 549 ms Mission 3 entry, 157 draw calls, 76,715 triangles, 80 scene materials, 38 scene textures (40 including shared renderer content), textures at most 512×512, 54 shadow-casting model batches, no additional scene lights. Frame interval median 16.7 ms / p95 16.7 ms over 120 frames. These are one desktop localhost sample, not network-load guarantees or physical iPad measurements.
-- Texture copies are shared per source texture inside each scene. Browser playthrough records precede that optimization (55 renderer textures); the final lifecycle measurement above supersedes that resource count.
-- Static-site verifier passed with 197 offline entries. GLB checksums, external texture references, JavaScript syntax and `git diff --check` passed. No new file exceeds 5 MB.
-- Independent read-only UI review disposition: **ship**, limited to the supplied desktop/tablet captures. The detector was degraded by missing optional parser dependencies; its empty result is not treated as proof of accessibility compliance. Primary-agent visual verification also completed.
-- The Mission 2 trace retains an initial preview-image 404 from before the first preview was generated. Final lifecycle requests have zero HTTP failures; the generated preview and offline package now exist.
+### Testing limits
 
-### Remaining limits
+這次是模擬首次遊玩流程及獨立 UI 檢查，**沒有真人小學生測試**，因此不能聲稱已實證所有學生 5–10 秒理解。桌面 Chrome 的 iPad 尺寸測試不代表實體 iPad、Safari 或觸控已認證。Detector 缺少 optional parser，退回 regex；空結果不是無障礙合格證明。沒有 push、PR 或部署。
 
-Physical iPad GPU, touch interaction and Safari have not been certified. The scene uses coherent low-poly/stylized models rather than photorealistic art. Mission 3 deliberately supports the documented toolbox subset; imported unsupported procedures/advanced legacy power blocks show a recoverable error. Existing Mission 1/2 support is unchanged. No production deployment, push or PR was performed.
+## Final QA — 2026-09-26
+
+- `npm test`：49/49 通過。涵蓋主答案四種狀態、進階舊答案、Boolean 分支、generator 還原、長等待不失敗及舊任務 byte contracts。
+- [真實瀏覽器紀錄](../audit/mission-3-primary/browser-qa.json)：test-a、test-b、test-c、all-offline 全部完成，11 塊積木、1000/1000、零多餘啟動、零風暴暴露；模擬時間 30–32 秒。透過實際檔案匯入入口驗證主答案。
+- 同一份瀏覽器紀錄：提早返航、漏啟動不能完成；危險區暴露超過 52 秒只提醒不失敗；修正重跑成功；不使用 IF/Repeat 的重複程式可完成但效率較低；飛行中重設能取消舊動畫；存檔能跨 reload 還原。
+- [首次遊玩模擬](../audit/mission-3-primary/student-walkthrough.json)：實際打開四個核心工具箱分類，先啟動未掃描不會修好；兩站重複流程觸發迴圈提示；修改後直接執行，保留先前修好的站並完成；原進階 XML 在真實 Blockly 可匯入編譯。
+- [場景生命周期](../audit/mission-3-primary/performance.json)：16 種強制重複 RNG 都能產生不同組合；reset 保留本次組合；三次 2→3 切換穩定為 143 geometries、40 textures、54 model batches；無 pageerror/HTTP failure。阻擋 manifest 時仍能顯示可重試訊息。
+- [舊任務實測](../audit/mission-3-primary/legacy-regression.json)：Mission 1 到達 Bravo 並降落；Mission 2 四火點全部撲滅、1225 分。兩者無碰撞、無 pageerror，M3 HUD 隱藏、toolbox 還原、disposer 清理，M3 XML 存檔未被改寫。
+- 本機 Chrome、1180×820 樣本：157 draw calls、76,715 triangles、frame median/p95 約 16.7 ms，80 materials、38 scene textures；沒有修改模型檔案、位置、照明或幾何。這不是實體 iPad 效能保證。
+- 視覺證據涵蓋四個指定尺寸的 briefing、Blockly、HUD、展開 hints、results。獨立 reviewer 判定 ship；主代理補核全部 hint captures。無文件橫向溢出，HUD 留在場景容器內，結果操作完整可見。[審閱範圍](../audit/mission-3-primary/review.md)。
+- 靜態打包驗證通過 197 個 offline entries；JavaScript syntax、舊任務一路線 fixture、`git diff --check` 均通過。
+
+### Final QA questions
+
+| 問題 | 判定與依據 |
+| --- | --- |
+| 小學生 5–10 秒看懂嗎？ | 三步、一句規則符合閱讀設計目標；模擬者可回答，但真人理解速度尚未實證。 |
+| Briefing 是否少字？ | 是；只有故事、任務、三圖示、返回降落；授權收合。 |
+| 是否很快可以開始？ | 是；一個「開始編程」，四核心分類，無設定問卷。 |
+| 是否少量核心規則？ | 是；每站先掃描，有需要才啟動，重複三站。 |
+| Condition 是否仍重要？ | 是；各站隨機正常／關閉，IF 避免多餘啟動並獲編程回饋。 |
+| Loop 是否仍鼓勵？ | 是；一組流程重複三次，無 loop 時有情境提示及結果引導。 |
+| Sensor 是否容易理解？ | 是；Boolean「能源站需要啟動？」可直接放 IF，先掃描才有資訊。 |
+| Variables 是否不阻塞？ | 是；主答案不含任何變數。 |
+| Storm 是否保留但不複雜？ | 是；場景風雨保留，只顯示安全／危險，導航等候，手動感測作延伸。 |
+| HUD 是否清楚？ | 是；站數、山區風暴、一個下一步，細節按需展開。 |
+| Failure 是否較不挫敗？ | 是；未完成可修正重跑，既有修復保留，無電量倒數或風暴 Game Over。碰撞仍需重設。 |
+| Result 是否學生用語？ | 是；小島亮起、避開風暴、肯定 IF/Repeat；分數與多餘動作收合。 |
+| Mission 1 / 2 是否無 regression？ | 以本輪實際舊答案通關與 byte contracts 核驗；詳細數值見 legacy-regression.json。 |
+
+上述涵蓋需求 1–55 及 Definition of Done 的實作／本地 QA 項目。真人小學生理解時間、實體 iPad 仍是已列明的外部驗證限制，不以模擬測試冒充。
