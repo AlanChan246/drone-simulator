@@ -1,0 +1,86 @@
+[
+  {
+    "file": "assets/models/kenney/sky-city/space/gate_complex.glb",
+    "bytes": 29912,
+    "triangles": 460,
+    "sha256": "6c0914bd5886928760fab54fc602aafd1441314a7c08c9cd30fad2a3f9191b90"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/hangar_roundGlass.glb",
+    "bytes": 10076,
+    "triangles": 113,
+    "sha256": "6b6346d95b90b8c012880832cef3969a108ae2b153bef8e2106b27997e33d601"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/machine_generatorLarge.glb",
+    "bytes": 10220,
+    "triangles": 126,
+    "sha256": "bbfa33a2e7c7eff7d9ee12f64255249b7e2f5d4b2ada2d681aa35cf38ba599bc"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/machine_wireless.glb",
+    "bytes": 13420,
+    "triangles": 174,
+    "sha256": "9d49e70d51515bc38628fb0d6e43f4eda7f9cd5326882fd02e8815e61f2259d7"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/pipe_straight.glb",
+    "bytes": 6492,
+    "triangles": 80,
+    "sha256": "3386146dbfa9a9f2c7bcc5a6599a3c9d43a9e029c26f61b345ff6b16df80e6a1"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/platform_large.glb",
+    "bytes": 6272,
+    "triangles": 76,
+    "sha256": "aa1fba20818bc1d623953794146d9f9ff0e0f025463b013e325b373deb9be6c4"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/platform_low.glb",
+    "bytes": 10828,
+    "triangles": 156,
+    "sha256": "394be79e0dcb2babb882889b5466d9178db08090818d7548f5428785e06bb747"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/satelliteDish.glb",
+    "bytes": 19528,
+    "triangles": 274,
+    "sha256": "db27a561b66fabda45a6ce2bcf41d650852e89e15bb9f63b68133ad1293aed8b"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/satelliteDish_large.glb",
+    "bytes": 13948,
+    "triangles": 186,
+    "sha256": "8fe696a37081a0a6f1c56ab867f447f33a498ef9f1daabb5aabc62b1ce09277e"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/structure_closed.glb",
+    "bytes": 15604,
+    "triangles": 264,
+    "sha256": "1020c2f86d3653caf475690c632838ac54e4adc963abc7831c6056f71499bff3"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/space/structure_detailed.glb",
+    "bytes": 13944,
+    "triangles": 232,
+    "sha256": "e0bbdfca04b9e645f0b7feec5a7a5096dc6701b744b42103fe437db06b345a4b"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/station/computer-wide.glb",
+    "bytes": 17076,
+    "triangles": 174,
+    "sha256": "9e010763a4f01bf8761fda8f633225e1fda2fe5e46798897ed44cc8a11e81f9b"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/station/door-double-closed.glb",
+    "bytes": 6924,
+    "triangles": 52,
+    "sha256": "6c2141265f294da065b95bc26917168a8e1e9d373f568ca14b8b0dc5866ba3ad"
+  },
+  {
+    "file": "assets/models/kenney/sky-city/station/table-display.glb",
+    "bytes": 24280,
+    "triangles": 240,
+    "sha256": "ef05ec49507b907c467aa9ab6db6bee18b293d950a728a578321477a2577043d"
+  }
+]

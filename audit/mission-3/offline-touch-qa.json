@@ -1,0 +1,73 @@
+{
+  "offlineRequested": true,
+  "navigatorOnline": true,
+  "touch": 1,
+  "scene": "sky",
+  "gates": 3,
+  "configuration": {
+    "mode": "challenge",
+    "revision": 1,
+    "key": "C-2",
+    "gates": [
+      {
+        "id": 1,
+        "name": "閘門 1",
+        "x": -450,
+        "z": 150,
+        "base": 0,
+        "nx": 0,
+        "nz": -1,
+        "signal": "C",
+        "openingMs": 3600
+      },
+      {
+        "id": 2,
+        "name": "閘門 2",
+        "x": -50,
+        "z": 50,
+        "base": 80,
+        "nx": 1,
+        "nz": 0,
+        "signal": "A",
+        "openingMs": 4800
+      },
+      {
+        "id": 3,
+        "name": "閘門 3",
+        "x": 50,
+        "z": -450,
+        "base": 160,
+        "nx": 0,
+        "nz": -1,
+        "signal": "B",
+        "openingMs": 2400
+      }
+    ]
+  },
+  "overflow": false,
+  "targets": [
+    {
+      "id": "sky-retry",
+      "width": 54,
+      "height": 44
+    },
+    {
+      "id": "sky-new",
+      "width": 68,
+      "height": 44
+    },
+    {
+      "id": "sky-mode",
+      "width": 74,
+      "height": 44
+    },
+    {
+      "id": "run-blockly-btn",
+      "width": 140,
+      "height": 48
+    }
+  ],
+  "controller": true,
+  "networkProbe": "blocked",
+  "errors": []
+}

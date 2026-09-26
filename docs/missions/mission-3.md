@@ -94,7 +94,7 @@ Mission 1／2 繼續用原執行流程。規則／物理／原場景的既有 ha
 
 同一瀏覽器由 Mission 3 切回 Mission 1，完成三個巡檢及終點降落；再完成 Mission 2 v2 四處滅火及終點降落，原有陰影／工具箱／計分流程正常。對應截圖為 `mission-1-regression.png`、`mission-2-regression.png`。
 
-畫面檢查 1440×900、1280×800、1024×768、1180×820；無橫向溢出，Run／狀態列／畫布均在視窗內。另以 1180×820、DPR 2、touch/mobile、reduced motion 模擬平板，主要操作高 44–48 px。離線證據使用未快取 URL 的 fetch 拒絕確認斷網；Chrome mobile 模擬下 `navigator.onLine` 仍回傳 true，沒有把該欄位當成功依據。
+畫面檢查 1440×900、1280×800、1024×768、1180×820；無橫向溢出，Run／狀態列／畫布均在視窗內。另以 1180×820、DPR 2、touch/mobile、reduced motion 模擬平板，主要操作高 44–48 px。另確認跟隨／全景／俯視均包含無人機，以及鍵盤 Enter 可開關航線資料，見 `camera-keyboard-qa.json`、`overview-top.png`。離線證據使用未快取 URL 的 fetch 拒絕確認斷網；Chrome mobile 模擬下 `navigator.onLine` 仍回傳 true，沒有把該欄位當成功依據。
 
 截圖位於 `audit/mission-3/`：任務選擇、簡報、出發、三門、核心塔、結算、錯誤、四個尺寸及平板離線／暗色。獨立 fresh default 視覺核驗為 **ship**，回報見 `visual-review.md`；此判斷只覆蓋指定截圖。主代理另外執行互動及最終驗證。機械設計掃描一次，`design-scan.json` 為 `[]`。
 

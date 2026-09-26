@@ -1,0 +1,302 @@
+
+> test
+> node --test test/*.test.cjs
+
+TAP version 13
+# Subtest: Flight Command block knowledge has one authoritative list
+ok 1 - Flight Command block knowledge has one authoritative list
+  ---
+  duration_ms: 0.294042
+  type: 'test'
+  ...
+# Subtest: Flight Command execution stops through its interface
+ok 2 - Flight Command execution stops through its interface
+  ---
+  duration_ms: 0.428167
+  type: 'test'
+  ...
+# Subtest: Mission adapters own pending progress language
+ok 3 - Mission adapters own pending progress language
+  ---
+  duration_ms: 0.084458
+  type: 'test'
+  ...
+# Subtest: scene lifecycle keeps ordering behind one interface
+ok 4 - scene lifecycle keeps ordering behind one interface
+  ---
+  duration_ms: 0.074083
+  type: 'test'
+  ...
+# Subtest: synchronous scene lifecycle supports the existing static browser
+ok 5 - synchronous scene lifecycle supports the existing static browser
+  ---
+  duration_ms: 0.521959
+  type: 'test'
+  ...
+# Subtest: Flight Deck presentation owns screen DOM knowledge
+ok 6 - Flight Deck presentation owns screen DOM knowledge
+  ---
+  duration_ms: 0.20125
+  type: 'test'
+  ...
+# Subtest: lifting one pinch finger must not rotate the camera on the remaining finger move
+ok 7 - lifting one pinch finger must not rotate the camera on the remaining finger move
+  ---
+  duration_ms: 1.428375
+  type: 'test'
+  ...
+# Subtest: cancelled gesture must not leave a stale pinch baseline
+ok 8 - cancelled gesture must not leave a stale pinch baseline
+  ---
+  duration_ms: 0.454125
+  type: 'test'
+  ...
+# Subtest: completed tutorial steps stay on the same page until manually advanced
+ok 9 - completed tutorial steps stay on the same page until manually advanced
+  ---
+  duration_ms: 1.234167
+  type: 'test'
+  ...
+# Subtest: pinch zoom is proportional, bounded and does not rotate or tug the follow target
+ok 10 - pinch zoom is proportional, bounded and does not rotate or tug the follow target
+  ---
+  duration_ms: 1.373917
+  type: 'test'
+  ...
+# Subtest: tutorial completion and restart both require explicit progression
+ok 11 - tutorial completion and restart both require explicit progression
+  ---
+  duration_ms: 1.264167
+  type: 'test'
+  ...
+# Subtest: wheel zoom responds more strongly and normalizes pixel/line input
+ok 12 - wheel zoom responds more strongly and normalizes pixel/line input
+  ---
+  duration_ms: 0.507333
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 250
+ok 13 - two-finger pan follows 40 px drag at camera radius 250
+  ---
+  duration_ms: 1.301958
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 1000
+ok 14 - two-finger pan follows 40 px drag at camera radius 1000
+  ---
+  duration_ms: 0.438042
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 3200
+ok 15 - two-finger pan follows 40 px drag at camera radius 3200
+  ---
+  duration_ms: 0.558042
+  type: 'test'
+  ...
+# Subtest: medical rescue drone keeps its identity-defining detailed parts
+ok 16 - medical rescue drone keeps its identity-defining detailed parts
+  ---
+  duration_ms: 0.359166
+  type: 'test'
+  ...
+# Subtest: simulator enables the high-definition PBR rendering path
+ok 17 - simulator enables the high-definition PBR rendering path
+  ---
+  duration_ms: 0.096333
+  type: 'test'
+  ...
+# Subtest: medical drone lighting preserves surface detail without clipping whites
+ok 18 - medical drone lighting preserves surface detail without clipping whites
+  ---
+  duration_ms: 0.098917
+  type: 'test'
+  ...
+# Subtest: follow view is close while free view retains the map overview
+ok 19 - follow view is close while free view retains the map overview
+  ---
+  duration_ms: 0.054708
+  type: 'test'
+  ...
+# Subtest: both real Blockly routes reach Bravo; three inspections remain optional
+ok 20 - both real Blockly routes reach Bravo; three inspections remain optional
+  ---
+  duration_ms: 180.786
+  type: 'test'
+  ...
+# Subtest: completion requires a connected low-altitude route and an actual landing
+ok 21 - completion requires a connected low-altitude route and an actual landing
+  ---
+  duration_ms: 0.586
+  type: 'test'
+  ...
+# Subtest: patrol height and inspection boundaries preserve strict tolerances
+ok 22 - patrol height and inspection boundaries preserve strict tolerances
+  ---
+  duration_ms: 0.412708
+  type: 'test'
+  ...
+# Subtest: time bonus boundaries do not change
+ok 23 - time bonus boundaries do not change
+  ---
+  duration_ms: 0.311833
+  type: 'test'
+  ...
+# Subtest: legacy builders, mission rules and physics remain identical outside explicit sky hooks
+ok 24 - legacy builders, mission rules and physics remain identical outside explicit sky hooks
+  ---
+  duration_ms: 2.933375
+  type: 'test'
+  ...
+# Subtest: independent v2 grid exactly matches the actual Legacy builder
+ok 25 - independent v2 grid exactly matches the actual Legacy builder
+  ---
+  duration_ms: 0.719625
+  type: 'test'
+  ...
+# Subtest: v2 is the default; explicit Legacy query preserves rollback
+ok 26 - v2 is the default; explicit Legacy query preserves rollback
+  ---
+  duration_ms: 0.488416
+  type: 'test'
+  ...
+# Subtest: four-fire fixture uses actual Blockly commands and stays in the preserved corridor
+ok 27 - four-fire fixture uses actual Blockly commands and stays in the preserved corridor
+  ---
+  duration_ms: 182.260167
+  type: 'test'
+  ...
+# Subtest: gate rejects wrong channel, no-signal crossing and accepted-but-not-open crossing
+ok 28 - gate rejects wrong channel, no-signal crossing and accepted-but-not-open crossing
+  ---
+  duration_ms: 1.378917
+  type: 'test'
+  ...
+# Subtest: sensing has range/height limits; bypass/reverse/frame cannot complete a gate
+ok 29 - sensing has range/height limits; bypass/reverse/frame cannot complete a gate
+  ---
+  duration_ms: 2.372959
+  type: 'test'
+  ...
+# Subtest: retry keeps exact configuration; each new challenge differs; hardcoding cannot cover configurations
+ok 30 - retry keeps exact configuration; each new challenge differs; hardcoding cannot cover configurations
+  ---
+  duration_ms: 0.974792
+  type: 'test'
+  ...
+# Subtest: all three gates and a landed core activation are required
+ok 31 - all three gates and a landed core activation are required
+  ---
+  duration_ms: 0.583166
+  type: 'test'
+  ...
+# Subtest: runtime reads sensors after actions and supports live if/else and condition waiting
+ok 32 - runtime reads sensors after actions and supports live if/else and condition waiting
+  ---
+  duration_ms: 0.566833
+  type: 'test'
+  ...
+# Subtest: runtime yields, stops, and bounds an empty forever loop and impossible wait
+ok 33 - runtime yields, stops, and bounds an empty forever loop and impossible wait
+  ---
+  duration_ms: 1.833208
+  type: 'test'
+  ...
+# Subtest: distance reading quantizes floating point drift at loop stopping boundaries
+ok 34 - distance reading quantizes floating point drift at loop stopping boundaries
+  ---
+  duration_ms: 0.141292
+  type: 'test'
+  ...
+# Subtest: actual Blockly XML compiles into one event and a reusable conditional routine
+ok 35 - actual Blockly XML compiles into one event and a reusable conditional routine
+  ---
+  duration_ms: 179.932208
+  type: 'test'
+  ...
+# Subtest: a fixed BAC sequence succeeds in Standard but fails five of the six Challenge configurations
+ok 36 - a fixed BAC sequence succeeds in Standard but fails five of the six Challenge configurations
+  ---
+  duration_ms: 0.440625
+  type: 'test'
+  ...
+# Subtest: first paint follows system; all controls sync; saved preference overrides system on reload
+ok 37 - first paint follows system; all controls sync; saved preference overrides system on reload
+  ---
+  duration_ms: 0.957
+  type: 'test'
+  ...
+# Subtest: only system mode follows live system changes; invalid storage defaults to system
+ok 38 - only system mode follows live system changes; invalid storage defaults to system
+  ---
+  duration_ms: 0.219791
+  type: 'test'
+  ...
+# Subtest: blocked storage still supports session switching
+ok 39 - blocked storage still supports session switching
+  ---
+  duration_ms: 0.236042
+  type: 'test'
+  ...
+# Subtest: switching updates attached workspace theme without replacement or other mutations
+ok 40 - switching updates attached workspace theme without replacement or other mutations
+  ---
+  duration_ms: 1.042167
+  type: 'test'
+  ...
+# Subtest: cross-tab changes and removal synchronize selectors and theme
+ok 41 - cross-tab changes and removal synchronize selectors and theme
+  ---
+  duration_ms: 0.651125
+  type: 'test'
+  ...
+# Subtest: pre-redesign tunnel XML generates the same nine flight commands with source links
+ok 42 - pre-redesign tunnel XML generates the same nine flight commands with source links
+  ---
+  duration_ms: 10.474375
+  type: 'test'
+  ...
+# Subtest: existing fire-rescue program retains water, recharge waits and all 68 commands
+ok 43 - existing fire-rescue program retains water, recharge waits and all 68 commands
+  ---
+  duration_ms: 18.7755
+  type: 'test'
+  ...
+# Subtest: legacy short turn block continues to generate a valid rotation command
+ok 44 - legacy short turn block continues to generate a valid rotation command
+  ---
+  duration_ms: 0.9725
+  type: 'test'
+  ...
+# Subtest: invalid or unknown imported blocks leave the existing program intact
+ok 45 - invalid or unknown imported blocks leave the existing program intact
+  ---
+  duration_ms: 1.081667
+  type: 'test'
+  ...
+# Subtest: offline installation covers local app dependencies under a Pages subpath
+ok 46 - offline installation covers local app dependencies under a Pages subpath
+  ---
+  duration_ms: 20.832625
+  type: 'test'
+  ...
+# Subtest: offline navigation can recover but a missing model never receives HTML
+ok 47 - offline navigation can recover but a missing model never receives HTML
+  ---
+  duration_ms: 1.105875
+  type: 'test'
+  ...
+# Subtest: an online refresh retrieves current code instead of keeping stale cached code
+ok 48 - an online refresh retrieves current code instead of keeping stale cached code
+  ---
+  duration_ms: 2.802
+  type: 'test'
+  ...
+1..48
+# tests 48
+# suites 0
+# pass 48
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 271.789458

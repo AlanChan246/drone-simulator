@@ -1,0 +1,473 @@
+{
+  "errors": [],
+  "warnings": [
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.GLTFLoader: Custom UV sets in \"KHR_texture_transform\" extension not yet supported.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material.",
+    "THREE.MeshLambertMaterial: 'flatShading' is not a property of this material."
+  ],
+  "failedRequests": [],
+  "expectedMediaCancellations": [
+    {
+      "url": "http://127.0.0.1:8080/assets/video/drone-simulator-promo-45s-web.mp4",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "cases": [
+    {
+      "name": "standard conditional + loop + procedure",
+      "completed": 3,
+      "score": 600,
+      "configuration": {
+        "mode": "standard",
+        "revision": 0,
+        "key": "S-1",
+        "gates": [
+          {
+            "id": 1,
+            "name": "閘門 1",
+            "x": -450,
+            "z": 150,
+            "base": 0,
+            "nx": 0,
+            "nz": -1,
+            "signal": "B",
+            "openingMs": 1800
+          },
+          {
+            "id": 2,
+            "name": "閘門 2",
+            "x": -50,
+            "z": 50,
+            "base": 80,
+            "nx": 1,
+            "nz": 0,
+            "signal": "A",
+            "openingMs": 2400
+          },
+          {
+            "id": 3,
+            "name": "閘門 3",
+            "x": 50,
+            "z": -450,
+            "base": 160,
+            "nx": 0,
+            "nz": -1,
+            "signal": "C",
+            "openingMs": 3000
+          }
+        ]
+      }
+    },
+    {
+      "name": "retry preserves configuration and program",
+      "passed": true
+    },
+    {
+      "name": "wrong-channel",
+      "feedback": "閘門 1 要求頻道 B，但無人機發送了 A。請檢查感測結果與條件分支。",
+      "passed": true
+    },
+    {
+      "name": "no-signal",
+      "feedback": "閘門 1 尚未收到正確的通行訊號。請先感測、選頻道並發送訊號。",
+      "passed": true
+    },
+    {
+      "name": "too-early",
+      "feedback": "閘門 1 正在開啟，無人機太早前進了。請等待「閘門已打開」才通過。",
+      "passed": true
+    },
+    {
+      "name": "wrong-navigation",
+      "feedback": "已通過 0/3 道閘門。必須依序通過全部閘門才能啟動基地。",
+      "passed": true
+    },
+    {
+      "name": "impossible-wait",
+      "feedback": "等待條件一直未成立。請檢查是否已發送正確訊號，以及等待的條件。",
+      "passed": true
+    },
+    {
+      "name": "challenge conditional 0",
+      "configuration": {
+        "mode": "challenge",
+        "revision": 1,
+        "key": "C-2",
+        "gates": [
+          {
+            "id": 1,
+            "name": "閘門 1",
+            "x": -450,
+            "z": 150,
+            "base": 0,
+            "nx": 0,
+            "nz": -1,
+            "signal": "C",
+            "openingMs": 3600
+          },
+          {
+            "id": 2,
+            "name": "閘門 2",
+            "x": -50,
+            "z": 50,
+            "base": 80,
+            "nx": 1,
+            "nz": 0,
+            "signal": "A",
+            "openingMs": 4800
+          },
+          {
+            "id": 3,
+            "name": "閘門 3",
+            "x": 50,
+            "z": -450,
+            "base": 160,
+            "nx": 0,
+            "nz": -1,
+            "signal": "B",
+            "openingMs": 2400
+          }
+        ]
+      },
+      "completed": 3
+    },
+    {
+      "name": "challenge conditional 1",
+      "configuration": {
+        "mode": "challenge",
+        "revision": 2,
+        "key": "C-3",
+        "gates": [
+          {
+            "id": 1,
+            "name": "閘門 1",
+            "x": -450,
+            "z": 150,
+            "base": 0,
+            "nx": 0,
+            "nz": -1,
+            "signal": "C",
+            "openingMs": 4800
+          },
+          {
+            "id": 2,
+            "name": "閘門 2",
+            "x": -50,
+            "z": 50,
+            "base": 80,
+            "nx": 1,
+            "nz": 0,
+            "signal": "B",
+            "openingMs": 2400
+          },
+          {
+            "id": 3,
+            "name": "閘門 3",
+            "x": 50,
+            "z": -450,
+            "base": 160,
+            "nx": 0,
+            "nz": -1,
+            "signal": "A",
+            "openingMs": 3600
+          }
+        ]
+      },
+      "completed": 3
+    },
+    {
+      "name": "challenge conditional 2",
+      "configuration": {
+        "mode": "challenge",
+        "revision": 3,
+        "key": "C-4",
+        "gates": [
+          {
+            "id": 1,
+            "name": "閘門 1",
+            "x": -450,
+            "z": 150,
+            "base": 0,
+            "nx": 0,
+            "nz": -1,
+            "signal": "A",
+            "openingMs": 2400
+          },
+          {
+            "id": 2,
+            "name": "閘門 2",
+            "x": -50,
+            "z": 50,
+            "base": 80,
+            "nx": 1,
+            "nz": 0,
+            "signal": "B",
+            "openingMs": 3600
+          },
+          {
+            "id": 3,
+            "name": "閘門 3",
+            "x": 50,
+            "z": -450,
+            "base": 160,
+            "nx": 0,
+            "nz": -1,
+            "signal": "C",
+            "openingMs": 4800
+          }
+        ]
+      },
+      "completed": 3
+    },
+    {
+      "name": "hardcoded fails another configuration",
+      "feedback": "閘門 2 要求頻道 C，但無人機發送了 A。請檢查感測結果與條件分支。"
+    },
+    {
+      "name": "reset cancels takeoff without stale flying state",
+      "passed": true
+    },
+    {
+      "name": "pause and resume through gate waiting",
+      "passed": true
+    }
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "rects": [
+        {
+          "id": "run-blockly-btn",
+          "x": 485,
+          "y": 838.5,
+          "w": 140,
+          "h": 48,
+          "right": 625,
+          "bottom": 886.5
+        },
+        {
+          "id": "sky-strip",
+          "x": 0,
+          "y": 76,
+          "w": 1440,
+          "h": 90,
+          "right": 1440,
+          "bottom": 166
+        },
+        {
+          "id": "canvas-container",
+          "x": 563.03125,
+          "y": 218,
+          "w": 860.96875,
+          "h": 594,
+          "right": 1424,
+          "bottom": 812
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "overflow": false,
+      "rects": [
+        {
+          "id": "run-blockly-btn",
+          "x": 405,
+          "y": 738.5,
+          "w": 140,
+          "h": 48,
+          "right": 545,
+          "bottom": 786.5
+        },
+        {
+          "id": "sky-strip",
+          "x": 0,
+          "y": 76,
+          "w": 1280,
+          "h": 90,
+          "right": 1280,
+          "bottom": 166
+        },
+        {
+          "id": "canvas-container",
+          "x": 502.234375,
+          "y": 218,
+          "w": 761.765625,
+          "h": 494,
+          "right": 1264,
+          "bottom": 712
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "overflow": false,
+      "rects": [
+        {
+          "id": "run-blockly-btn",
+          "x": 328,
+          "y": 712,
+          "w": 86,
+          "h": 48,
+          "right": 414,
+          "bottom": 760
+        },
+        {
+          "id": "sky-strip",
+          "x": 0,
+          "y": 76,
+          "w": 1024,
+          "h": 82,
+          "right": 1024,
+          "bottom": 158
+        },
+        {
+          "id": "canvas-container",
+          "x": 8,
+          "y": 218,
+          "w": 1008,
+          "h": 477,
+          "right": 1016,
+          "bottom": 695
+        }
+      ]
+    },
+    {
+      "width": 1180,
+      "height": 820,
+      "overflow": false,
+      "rects": [
+        {
+          "id": "run-blockly-btn",
+          "x": 355,
+          "y": 758.5,
+          "w": 140,
+          "h": 48,
+          "right": 495,
+          "bottom": 806.5
+        },
+        {
+          "id": "sky-strip",
+          "x": 0,
+          "y": 76,
+          "w": 1180,
+          "h": 90,
+          "right": 1180,
+          "bottom": 166
+        },
+        {
+          "id": "canvas-container",
+          "x": 464.234375,
+          "y": 218,
+          "w": 699.765625,
+          "h": 514,
+          "right": 1164,
+          "bottom": 732
+        }
+      ]
+    }
+  ],
+  "regressions": [
+    {
+      "mission": 1,
+      "complete": true,
+      "scene": "tunnel",
+      "beacons": 3,
+      "fires": 0,
+      "score": 300,
+      "running": false,
+      "shadow": true
+    },
+    {
+      "mission": 2,
+      "complete": true,
+      "scene": "city",
+      "variant": "mission2-v2",
+      "beacons": 0,
+      "fires": 4,
+      "score": 1225,
+      "running": false,
+      "shadow": true
+    }
+  ],
+  "performance": {
+    "render": {
+      "frame": 12818,
+      "calls": 148,
+      "triangles": 21187,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 103,
+      "textures": 16
+    },
+    "dpr": 1,
+    "shadow": false
+  },
+  "passed": true
+}

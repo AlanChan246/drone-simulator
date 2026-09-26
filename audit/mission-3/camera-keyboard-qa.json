@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "routeDisclosureKeyboard": true,
+  "views": [
+    {
+      "mode": "follow",
+      "label": "跟隨視角",
+      "droneInView": true,
+      "phi": 65,
+      "radius": 650
+    },
+    {
+      "mode": "map",
+      "label": "全景",
+      "droneInView": true,
+      "phi": 35,
+      "radius": 2200
+    },
+    {
+      "mode": "top",
+      "label": "俯視",
+      "droneInView": true,
+      "phi": 10,
+      "radius": 2200
+    }
+  ]
+}
