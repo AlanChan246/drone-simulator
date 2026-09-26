@@ -1,0 +1,302 @@
+{
+  "date": "2026-09-26T06:39:52.772Z",
+  "url": "http://localhost:8080/",
+  "steps": [
+    {
+      "step": "startMission(3)+closeBriefing",
+      "scene": {
+        "currentSceneType": "storm",
+        "activeMissionId": 3,
+        "briefingOpen": null,
+        "hudHidden": false
+      }
+    }
+  ],
+  "errors": [],
+  "mission3": {
+    "completed": true,
+    "position": {
+      "x": -650,
+      "y": 14,
+      "z": 650
+    },
+    "scene": "storm",
+    "run": {
+      "seed": "3105625082",
+      "phase": 5,
+      "seconds": 46.99999999999913,
+      "backup": 100,
+      "relays": [
+        {
+          "id": "A",
+          "name": "港口",
+          "x": -650,
+          "y": 100,
+          "z": -250,
+          "active": true,
+          "initiallyActive": true,
+          "scanned": true,
+          "restored": false,
+          "activating": false
+        },
+        {
+          "id": "B",
+          "name": "城鎮",
+          "x": 100,
+          "y": 100,
+          "z": 200,
+          "active": true,
+          "initiallyActive": false,
+          "scanned": true,
+          "restored": true,
+          "activating": false
+        },
+        {
+          "id": "C",
+          "name": "山區",
+          "x": 600,
+          "y": 340,
+          "z": -550,
+          "active": true,
+          "initiallyActive": false,
+          "scanned": true,
+          "restored": true,
+          "activating": false
+        }
+      ],
+      "started": true,
+      "completed": true,
+      "failure": "",
+      "distance": 7460.80294820913,
+      "exposure": 0,
+      "scans": 3,
+      "redundantScans": 0,
+      "redundantActivations": 0,
+      "unnecessaryMoves": 0,
+      "commands": 29,
+      "stormReads": 20,
+      "statusReads": 3,
+      "restored": 2,
+      "trace": [
+        {
+          "type": "takeoff",
+          "seconds": 0,
+          "block": "]OKmVB,+!^}TO+$qCoF+"
+        },
+        {
+          "type": "hover",
+          "seconds": 1.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 2.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 3.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 4.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 5.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 6.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 7.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "m3_travel",
+          "seconds": 8.5,
+          "block": "!0HG+H%N*yyHeh=E}Qib"
+        },
+        {
+          "type": "m3_scan",
+          "seconds": 13.5,
+          "block": "0Zv`sw7`VICuDJ=ZMd}+"
+        },
+        {
+          "type": "m3_travel",
+          "seconds": 14.5,
+          "block": "!0HG+H%N*yyHeh=E}Qib"
+        },
+        {
+          "type": "m3_scan",
+          "seconds": 19.5,
+          "block": "0Zv`sw7`VICuDJ=ZMd}+"
+        },
+        {
+          "type": "m3_activate",
+          "seconds": 20.5,
+          "block": "]z.AM%1x:71YH$k(f8Vy"
+        },
+        {
+          "type": "hover",
+          "seconds": 22.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 23.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 24.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 25.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 26.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 27.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 28.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 29.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 30.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "hover",
+          "seconds": 31.5,
+          "block": "i|`sl+EXP@o[F={i|;d`"
+        },
+        {
+          "type": "m3_travel",
+          "seconds": 32.5,
+          "block": "!0HG+H%N*yyHeh=E}Qib"
+        },
+        {
+          "type": "m3_scan",
+          "seconds": 37.5,
+          "block": "0Zv`sw7`VICuDJ=ZMd}+"
+        },
+        {
+          "type": "m3_activate",
+          "seconds": 38.5,
+          "block": "]z.AM%1x:71YH$k(f8Vy"
+        },
+        {
+          "type": "print",
+          "seconds": 40.5,
+          "block": "-R0V=$nd0wI*]lDuu$0N"
+        },
+        {
+          "type": "m3_return",
+          "seconds": 40.5,
+          "block": "j}8rYDi}{a!NuVd@6/?L"
+        },
+        {
+          "type": "land",
+          "seconds": 45.5,
+          "block": "Yx-k-z1i:Miu5k*fzd08"
+        }
+      ]
+    },
+    "resultOpen": true
+  },
+  "mission1BeforeRun": {
+    "scene": "tunnel",
+    "activeMissionId": 1,
+    "missionCompleted": false,
+    "isRunning": false,
+    "position": {
+      "x": -675,
+      "y": 0,
+      "z": -675
+    },
+    "hud": {
+      "hidden": true,
+      "display": "none"
+    },
+    "env": {
+      "sceneVariant": null,
+      "hasDisposeMission3": false,
+      "children": 340
+    },
+    "toolboxTypes": [],
+    "staticToolboxHasM3": false,
+    "staticToolboxBlockTypes": ["event_start", "event_wait_key", "drone_takeoff", "drone_land", "drone_hover", "drone_collect_water", "drone_release_water", "drone_move_time", "drone_move_cm", "drone_goto_xyz", "drone_turn_degree", "drone_turn_time", "drone_set_variable", "drone_turn_heading", "drone_move_complex", "drone_move_complex_infinite", "drone_set_led_color", "drone_set_led_rgb", "drone_led_off", "drone_led_sequence", "drone_get_range", "drone_get_height", "drone_print", "text", "text_join", "logic_compare", "logic_operation", "logic_negate", "logic_boolean", "logic_ternary", "controls_if", "controls_repeat_ext", "controls_whileUntil", "controls_flow_statements", "math_number", "math_arithmetic", "math_random_int", "math_round", "math_modulo"]
+  },
+  "mission1": {
+    "completed": true,
+    "isRunning": false,
+    "isFlying": false,
+    "collision": false,
+    "stopSignal": true,
+    "position": {
+      "x": 825.0000000000013,
+      "y": 3.552713678800501e-15,
+      "z": 674.9999999999992
+    },
+    "scene": "tunnel",
+    "activeMissionId": 1,
+    "message": "\n        \n            \n                \n                \n                \n            \n            關閉\n        \n    ",
+    "action": "安全降落",
+    "execution": {
+      "index": 8,
+      "commands": [
+        "takeoff",
+        "move_left",
+        "move_forward",
+        "move_left",
+        "move_forward",
+        "move_left",
+        "move_forward",
+        "move_left",
+        "land"
+      ]
+    },
+    "routeTracking": null,
+    "hud": {
+      "hidden": true,
+      "display": "none"
+    },
+    "env": {
+      "sceneVariant": null,
+      "hasDisposeMission3": false,
+      "children": 340
+    },
+    "toolboxTypes": [],
+    "staticToolboxHasM3": false
+  },
+  "checks": {
+    "mission3HudHidden": true,
+    "evidenceNoM3ToolboxBlocks": true,
+    "sceneCleanup": true,
+    "mission1Completed": true,
+    "mission1RouteEnd": true
+  }
+}
