@@ -1,7 +1,7 @@
 // Local rendering measurements, repeated mission switching and load recovery.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const out=path.resolve(__dirname,'../audit/mission-3'),base=process.env.QA_URL||'http://localhost:8080/';
+const out=path.resolve(__dirname,'../audit/mission-3-primary'),base=process.env.QA_URL||'http://localhost:8080/';
 (async()=>{
     const browser=await chromium.launch({channel:process.env.QA_CHANNEL||'chrome',headless:true});
     try{

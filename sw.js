@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-mission3-20260926a';
+const CACHE_VERSION = 'drone-simulator-mission3-primary-20260926b';
 const APP_SHELL = [
   "assets/styles/mission3.css",
   "js/mission3/core.js",

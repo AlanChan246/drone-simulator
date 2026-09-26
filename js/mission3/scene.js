@@ -91,13 +91,13 @@ window.Mission3Scene=(()=>{
         for(let x=-225;x<=650;x+=125)model('road',x,12,400,125,8,125,Math.PI/2);
         model('junction',-350,13,400,125,8,125);
         // Drone Base.
-        model('platform',-650,10,650,230,8,230);marker('BASE',-650,20,650,85);
+        model('platform',-650,10,650,230,8,230);marker('基地',-650,20,650,85);
         model('tent',-820,13,520,175,85,130,0,true);
         model('relay',-810,13,710,55,70,55);model('screen',-765,15,600,45,48,25);
         model('car-kit/firetruck',-465,18,620,65,65,150,0,true);
         model('city-kit-industrial/solar-panel-landscape',-805,15,805,130,50,75);
         model('poly-pizza/tower',-925,13,410,75,250,75,0,true);
-        label('指揮所 · DRONE BASE',-710,180,715,260);
+        label('無人機基地',-710,180,715,260);
         // Working port with warehouse roofs, container stacks, cargo vessel and flooded access.
         model('city-kit-industrial/building-a',-800,13,-590,300,135,200,0,true);
         model('city-kit-industrial/building-j',-590,13,-650,160,140,170,0,true);
@@ -106,7 +106,7 @@ window.Mission3Scene=(()=>{
         model('watercraft-kit/ship-cargo-a',-1270,-22,-420,180,170,540,Math.PI/2);
         model('watercraft-kit/boat-tug-a',-1130,-22,80,90,75,150,-.3);
         model('poly-pizza/crane',-960,14,-660,230,350,190,0,true);
-        label('港口 · RELAY A',-725,235,-470,240);
+        label('港口 · 能源站 A',-725,235,-470,240);
         const flood=new THREE.Mesh(new THREE.PlaneGeometry(280,160),new THREE.MeshPhongMaterial({color:'#699eaa',transparent:true,opacity:.8}));
         flood.rotation.x=-Math.PI/2;flood.position.set(-440,22,-550);root.add(flood);
         // Town and civic shelter.
@@ -115,13 +115,13 @@ window.Mission3Scene=(()=>{
         label('社區避難中心',200,205,780,240);
         for(let i=0;i<5;i++)model('car-kit/cone',-250+i*30,21,400,20,28,20);
         model('nature-kit/rock_largeA',-175,18,403,70,38,60,0,true);
-        label('城鎮 · RELAY B',60,225,190,240);
+        label('城鎮 · 能源站 B',60,225,190,240);
         // Medical Centre landmark: authored building, rooftop helipad, ambulance and emergency tents.
         model('city-kit-commercial/building-c',650,13,520,245,150,220,0,true);
-        marker('H · MEDICAL',650,164,520,76);
+        marker('H · 醫療',650,164,520,76);
         model('car-kit/ambulance',760,18,720,60,52,125,Math.PI/2,true);
         model('tent',450,13,780,110,65,100);model('relay',850,13,440,55,65,50);
-        label('醫療中心 · 備用電源',650,230,510,275);
+        label('醫療中心',650,230,510,275);
         // Mountain ridge and narrow valley. Models, not cone mountains or primitive trees.
         [[360,-470,190],[450,-850,230],[820,-800,290],[920,-410,180],[170,-650,140]].forEach(([x,z,h],i)=>model('nature-kit/rock_largeA',x,8,z,360,h,360,i*.7,true));
         model('nature-kit/rock_largeA',600,10,-550,250,240,250);
@@ -129,7 +129,7 @@ window.Mission3Scene=(()=>{
         model('platform',600,240,-550,190,10,180);
         model('city-kit-industrial/windmill',920,150,-640,150,270,120);
         model('poly-pizza/tower',750,230,-700,95,210,95);
-        label('山區 · RELAY C',620,425,-560,260);
+        label('山區 · 能源站 C',620,425,-560,260);
         for(let i=0;i<62;i++){
             const x=70+(i*197%990),z=-900+(i*113%840);
             if(Math.hypot(x-600,z+550)<150)continue;
@@ -173,7 +173,7 @@ window.Mission3Scene=(()=>{
     function update(run){
         if(cloud)cloud.material.opacity=Mission3Core.storm(run)>=70?.65:.25;
         relayMarkers.forEach((item,i)=>{
-            const r=run.relays[i],text=!r.scanned?'未掃描':r.activating?'啟動中':r.restored?'已恢復':r.active?'ACTIVE':'OFFLINE';
+            const r=run.relays[i],text=!r.scanned?'先掃描':r.active?'正常':'需要啟動';
             if(item.last!==text){item.last=text;item.status.write(`${r.id} · ${text}`,r.active&&r.scanned?'#286c4b':'#825713');item.ring.material.color.set(r.active&&r.scanned?'#8bcfa9':'#edb85e');}
         });
         lamps.forEach((light,i)=>light.material.opacity=(i===2?run.relays.every(r=>r.active):run.relays[i].active)?.23:0);

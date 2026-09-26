@@ -1,20 +1,29 @@
-/* Local extension of the rescue field school's Operate surface. */
-#m3-hud{position:absolute;top:16px;left:16px;z-index:12;width:min(370px,calc(100% - 32px));padding:12px 16px;background:var(--v2-surface,#fffef9);color:var(--v2-text,#173b37);border:1px solid var(--v2-border,#cdd4c8);border-radius:12px;font-size:14px;line-height:1.5;box-sizing:border-box}
+/* Primary School Design: keep the field-school world; one rule and one next action.
+   Operate surface: three visual briefing steps, small status panel, contextual help.
+   Colours and navigation inherit the existing product; detailed results stay secondary. */
+#m3-hud{position:absolute;top:16px;left:16px;z-index:12;width:min(350px,calc(100% - 32px));padding:12px 16px;background:var(--v2-surface,#fffef9);color:var(--v2-text,#173b37);border:1px solid var(--v2-border,#cdd4c8);border-radius:12px;font-size:16px;line-height:1.5;box-sizing:border-box;max-height:calc(100% - 64px);overflow:auto}
 #m3-hud[hidden]{display:none}
-.m3-status-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.m3-power-row{display:flex;gap:12px;align-items:center;margin-top:8px}
-.m3-power-row meter{width:85px;flex:1;height:14px;accent-color:#286c4b}
+.m3-status-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px}
 #m3-storm[data-level=danger]{color:var(--v2-danger,#b12c36)}
-#m3-storm[data-level=warning]{color:var(--v2-warning,#825713)}
 #m3-storm[data-level=safe]{color:var(--v2-success,#286c4b)}
-#m3-hud p{margin:6px 0}#m3-hud summary{cursor:pointer;padding:4px 0;min-height:28px}
-#m3-hud details button{min-height:44px}
+#m3-objective{font-size:20px;font-weight:700}
+#m3-hud p{margin:8px 0}
+#m3-hud summary,#m3-result summary,.m3-credit summary{cursor:pointer;min-height:44px;display:list-item;align-content:center}
+#m3-hud details button{min-height:44px}#m3-help{font-size:14px}
+#game-interface[data-scene=storm]:not(.show-telemetry) #hud-display{display:none}
 #m3-result{width:min(560px,calc(100vw - 48px));max-height:85vh;overflow:auto;border:1px solid var(--v2-border,#cdd4c8);border-radius:12px;background:var(--v2-surface,#fffef9);color:var(--v2-text,#173b37);padding:28px}
 #m3-result::backdrop{background:#143b37a8}
 #m3-result h2{font-size:28px;margin:0 0 16px}#m3-result p{line-height:1.6}
 #m3-result dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:20px 0;border-block:1px solid var(--v2-border,#cdd4c8)}
 #m3-result dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
-#m3-result>div{display:flex;flex-wrap:wrap;gap:12px}
+#m3-result>div{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+#m3-result [data-advice]{font-weight:600}
+.m3-brief{font-size:16px;line-height:1.6;text-align:center}
+.m3-brief p{margin:8px 0}.m3-story{font-size:20px;font-weight:600}
+.m3-steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:0;margin:28px 0}
+.m3-steps li{display:flex;align-items:center;flex-direction:column;gap:12px;font-size:20px}
+.m3-steps svg{width:44px;height:44px;fill:none;stroke:var(--v2-secondary,#164d48);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.m3-finish{font-weight:600}.m3-credit{font-size:14px;text-align:left;margin-top:12px}
 .v2-mission-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1100px){.v2-mission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#m3-hud{top:8px;left:8px;padding:8px 12px;width:340px;max-width:calc(100% - 16px)}}
-@media(max-width:700px){.v2-mission-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.v2-mission-grid{grid-template-columns:1fr}.m3-steps{gap:8px}.m3-steps li{font-size:16px}}

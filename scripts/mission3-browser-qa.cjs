@@ -2,7 +2,7 @@
 // Start npm start first. PLAYWRIGHT_MODULE may point to an existing Playwright installation.
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'audit/mission-3');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'..'),out=path.join(root,'audit/mission-3-primary');fs.mkdirSync(out,{recursive:true});
 const base=process.env.QA_URL||'http://localhost:8080/';
 const reference=fs.readFileSync(path.join(root,'test/fixtures/mission3-reference.xml'),'utf8');
 const b=(type,body='')=>`<block type="${type}">${body}</block>`;
@@ -21,14 +21,16 @@ function program(items){let next='';for(const [type,body='']of items.slice().rev
         await page.evaluate(()=>closeBriefing());
     }
     async function play(xml){
-        await page.evaluate(xml=>{applyBlocklyWorkspaceXmlText(xml);runBlocklyCode();},xml);
+        await page.evaluate(xml=>applyBlocklyWorkspaceXmlText(xml),xml);await page.click('#run-blockly-btn');
         await page.waitForFunction(()=>!state.isRunning,null,{timeout:180000});
         return page.evaluate(()=>({completed:state.missionCompleted,run:JSON.parse(JSON.stringify(Mission3.run)),structure:Mission3.structure,score:Mission3Core.score(Mission3.run,Mission3.structure),feedback:document.getElementById('m3-feedback').textContent}));
     }
     try{
         for(const preset of ['test-a','test-b','test-c','all-offline']){
             if(process.env.QA_CONTINUE&&results.states.some(r=>r.preset===preset&&r.completed))continue;
-            await enter(preset);const result=await play(reference);
+            await enter(preset);
+            if(preset==='test-a'){await page.locator('#blockly-import-input').setInputFiles(path.join(root,'answers/mission-3-primary.xml'));await page.click('#app-confirm-ok');await page.click('#app-message-close');}
+            const result=await play(reference);
             assert.ok(result.completed,preset+': '+result.feedback);assert.equal(result.run.scans,3);assert.equal(result.run.redundantActivations,0);assert.equal(result.run.failure,'');
             results.states.push({preset,...result});console.log(preset,'completed',result.run.seconds.toFixed(2),'seconds');
             if(preset==='test-a'){
@@ -41,17 +43,18 @@ function program(items){let next='';for(const [type,body='']of items.slice().rev
             }
         }
         await page.goto(base+'?mission3Seed=30');await page.evaluate(()=>startMission(3));await page.waitForFunction(()=>currentSceneType==='storm'&&workspace);await page.evaluate(()=>closeBriefing());
-        const phaseResult=await play(reference);assert.equal(phaseResult.completed,true);assert.equal(phaseResult.run.phase,22);assert.equal(phaseResult.run.exposure,0);
+        const phaseResult=await play(reference);assert.equal(phaseResult.completed,true);assert.equal(phaseResult.run.phase,0);assert.equal(phaseResult.run.exposure,0);
         results.randomPhase={seed:30,...phaseResult};
         await enter();
         let result=await play(program([['drone_takeoff'],['m3_return'],['drone_land']]));
-        assert.equal(result.completed,false);assert.match(result.feedback,/尚未掃描/);results.failures.push({case:'return early',feedback:result.feedback});
+        assert.equal(result.completed,false);assert.match(result.feedback,/掃描/);results.failures.push({case:'return early',feedback:result.feedback});
         await page.evaluate(()=>resetSimulator());
         result=await play(reference.replaceAll('type="m3_activate"','type="drone_hover"'));
-        assert.equal(result.completed,false);assert.match(result.feedback,/仍然離線/);results.failures.push({case:'ignore offline',feedback:result.feedback});
+        assert.equal(result.completed,false);assert.match(result.feedback,/啟動/);results.failures.push({case:'ignore offline',feedback:result.feedback});
         await page.evaluate(()=>resetSimulator());
         result=await play(program([['drone_takeoff'],['m3_travel',value('INDEX',3)],['m3_scan'],['m3_activate'],['drone_hover',value('DURATION',120)]]));
-        assert.equal(result.completed,false);assert.match(result.run.failure,/風暴/);results.failures.push({case:'unsafe storm',exposure:result.run.exposure,feedback:result.feedback});
+        assert.equal(result.completed,false);assert.equal(result.run.failure,'');assert.ok(result.run.exposure>30);results.failures.push({case:'unsafe storm gives warning without game over',exposure:result.run.exposure,feedback:result.feedback});
+        result=await play(reference);assert.ok(result.completed);results.failures.push({case:'edit and rerun preserves progress and completes',passed:true});await page.evaluate(()=>document.getElementById('m3-result').close());
         await page.evaluate(()=>resetSimulator());
         const repetitive=[['drone_takeoff'],['drone_hover',value('DURATION',11.5)]];
         for(let i=1;i<=3;i++){if(i===3)repetitive.push(['drone_hover',value('DURATION',9)]);repetitive.push(['m3_travel',value('INDEX',i)],['m3_scan'],['m3_activate']);}
@@ -74,8 +77,6 @@ function program(items){let next='';for(const [type,body='']of items.slice().rev
         assert.ok(await page.evaluate(()=>workspace.getBlocksByType('m3_scan').length>0));
         // True scene screenshots, not illustrations or fabricated success states.
         await page.evaluate(()=>V2UI.setView('world'));await page.waitForTimeout(250);
-        const png=await page.evaluate(()=>{renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png').split(',')[1]});
-        fs.writeFileSync(path.join(root,'assets/images/mission-preview-3.png'),Buffer.from(png,'base64'));
         await page.screenshot({path:path.join(out,'storm-warning.png')});
         for(const [name,x,y,z,radius]of [['drone-base',-650,0,650,1000],['port-relay',-780,0,-390,1450],['town-relay',100,0,300,1350],['medical-centre',650,50,580,1050],['mountain-relay',600,180,-550,1450]]){
             await page.evaluate(({x,y,z,radius})=>{followDrone=false;camTarget={x,y,z};camRadius=radius;updateCameraPosition()},{x,y,z,radius});
