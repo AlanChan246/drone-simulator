@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "offline reload restores UI, all factory models and Blockly",
+    "all 50 local GLBs available offline",
+    "missing model reports failure without substitute scene",
+    "Retry loads the actual model and factory"
+  ],
+  "errors": [],
+  "cache": {
+    "names": [
+      "drone-simulator-factory-20260927a"
+    ],
+    "entries": 232
+  },
+  "ok": true
+}

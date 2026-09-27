@@ -1,0 +1,552 @@
+[
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/conveyor.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 18676,
+    "sha256": "879c75a74fdf972326f3f177738d893bce79bafc2f0f557cc5e84adcfda6d6d5",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/conveyor-long.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 18688,
+    "sha256": "9087ec11d9dcc85ada9d14a66910244bfbb5df57c64b2647956a32525935dee3",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/conveyor-corner.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 22088,
+    "sha256": "e1169e56b61e952350545664993d7d1662dc4b33fa301100f3bad4b0e07870e2",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/conveyor-stripe.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 23592,
+    "sha256": "c120efb00c977c69322de43d5209d5ebc9318905042e3dc9f37e0475bbd24dc0",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/conveyor-bars.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 18476,
+    "sha256": "f6806054bfe03e1daa071edd460da96bd5c20a0a5bcd2a3665f7b9a5a2a0d144",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/scanner-low.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 22192,
+    "sha256": "0baa337bc3c653522ce01baa09cc02b8810640225e823fe735dc8e4167a7913b",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/machine.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 25620,
+    "sha256": "a39e3042bcb7789274428357383317d70e1c31906e5301c99e7d9e90ac584863",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/machine-window.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 38812,
+    "sha256": "1387bd337354fca7c7cb4163e6bd4bef8711373bbe23dae01ba9d42cd35681b7",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/machine-bed.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 52136,
+    "sha256": "17dc8afaa1cd627d1cdb59691b5921ba85846a0b7aeb9c3c6d885fe27db77878",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/machine-fortified.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 29828,
+    "sha256": "0907f6616f49bbdaa20241ac4b568b780f30352f204851c53568b8e7df59b528",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/robot-arm-a.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 50592,
+    "sha256": "ad3f766791adadd1cfb5ccc27d2b2ac8787848282f2a15b3c407f350dc281b68",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/robot-arm-b.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 44524,
+    "sha256": "0563cb35d985d4de73b8f07f9e0c16bbac76784e09a5753e4f6d9b77bdc8e163",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/crane.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 53396,
+    "sha256": "ceaf20fb976ce0415d2b3d40e723b6ad377845818fa4fa68b55434108b1a6880",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/crane-magnet.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 16912,
+    "sha256": "9ed1d4690e03fd4cafcd30d182b2319cc6c743794a50108332cab9d76a083f6e",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/box-small.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 7500,
+    "sha256": "fd2ea1ac4f24a9515dc9c53a4a589a8897c824fa5865771799f965a252f684f0",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/box-large.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 7496,
+    "sha256": "f5c7a7b4d7ec48c2695dc5241d62a38dbb54b487e6be0f089548582c91bacdfd",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/box-long.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 7492,
+    "sha256": "6a6d7bfed3058809a9833606a6a3e78a156b6f3d898fba59fc054c62b5499c94",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/cog-a.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 13660,
+    "sha256": "71fac911b6f760a97af12fe81814186e84b8d8f8b380f211afe8175baba96a12",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/screen-panel-wide.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 16000,
+    "sha256": "092066a198f1f81c857ceab23497dd3ea6066d261a91497cf0f83f7ba951c4d0",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/screen-small.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 12352,
+    "sha256": "8521b13d7e7a9327ce4afe15a89d4c80abbf373209f8fc9b4192d59127e758e6",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/pipe-large-long.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 27288,
+    "sha256": "8e6650cc662695c28fffb1ffa10f190255f7d9c6c1d4a2a48d375e9bbb89b04f",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/pipe-large-bend.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 44512,
+    "sha256": "e234cba2e29bd825b9acdab56c0ff36504a6ceea4c74b21dafbbd98e84bb793b",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/pipe-large-valve.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 42604,
+    "sha256": "57126374dce5b172e06d5d6f8cbaab97c9cffe3e5e726060eb14c50a5bd519b6",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/structure-window-wide.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 23340,
+    "sha256": "447f0e5a4eca379a02c3ade829e04b4df2fc517ab23f0b4f99fd31ae439ac19e",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/structure-doorway-wide.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 5572,
+    "sha256": "588655c5594b55d6f715ca6251febb18f9636f6804e0e193e31d68643e7b2107",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/structure-high.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 25860,
+    "sha256": "3893a7eac2e676d40283372754aba868d6cdc2bc0894f68f3d558f0878d242c2",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/catwalk-straight.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 33492,
+    "sha256": "85797c6ce53e3f4373bc59ecd3ce951a3f6b707651def5e0bae46756051cd18d",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/catwalk-stairs.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 66256,
+    "sha256": "0356a040ebbf632cd20dfe384a13108270df26426ad1dd51a2c767c8f6a6960c",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/warning-orange.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 16136,
+    "sha256": "07974e9e78c2b2d2ed8198461a7fbac86d1744490ab687817543a07f163aa7d0",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/cone.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 7028,
+    "sha256": "deb6ea20fe61bc094f0e64a3d6891b029ff552c5ab00bf57b763798624228e41",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/hopper-round.glb",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 13700,
+    "sha256": "8d4a49f1608b0cdb33d4506bed0ca0648df31437ae2b488a418fa15e5a65b278",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/building-a.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 177316,
+    "sha256": "0e6ef8eb1e1bdbb9d06b5496b5daf3066e00eaf74b3fcd61b74072116a1c86cf",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/building-c.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 175844,
+    "sha256": "94eb05acef8d8e4c1d817eb12e1c2a1287ffed625879170663a8c4f48786b465",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/building-f.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 134916,
+    "sha256": "05a91ab02f424ca4f4819c1749e014bc4404cdf2a75242190c066bb24b59cde7",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/building-i.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 73848,
+    "sha256": "12d9be598becf2b6d3758d23aba6c573ca2701fca5e77870d2ee5645647765ca",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/building-m.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 138920,
+    "sha256": "526881cb1851120a60195f76bd4d8c1963653cdda66e4d1d53f085b3395fb8a9",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/detail-tank.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 31436,
+    "sha256": "9e955732e4ef9ccff4a4d6967d29d8a7d2f9ed16c903923f2568216d9f0b50d2",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/detail-tank-large.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 47452,
+    "sha256": "2fbf65dfbae114235dec65cc8730a870cf7d29dd76f9473218e96ee83e9f5f43",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/shipping-container-a.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 36624,
+    "sha256": "7b2d5ca874c8e659ee6cfd1614f0470b70410b2ddc7620ac83b8954dedeb861d",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/shipping-container-c.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 36620,
+    "sha256": "6a272420c37ccf4b354565d75c5d1fd889cd568297c215c681fcf11ef8c8ae13",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/solar-panel-landscape-group.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 81860,
+    "sha256": "451623ce9feedbcc99bf0d9e4b372c34e1704acbb847ef8574994867b30b085c",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/windmill-low.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 46296,
+    "sha256": "2e3da40d2f41454bf5af3b07cdad841abd5e06ca77560dc460633bc1f195a528",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/water-tower.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 93836,
+    "sha256": "11ac7ae19f32ce889bfe7a9c8e78c8ce8c77b7a76b52fd4ffa439a022ea2ef40",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/machine_generatorLarge.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 10220,
+    "sha256": "bbfa33a2e7c7eff7d9ee12f64255249b7e2f5d4b2ada2d681aa35cf38ba599bc",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/machine_wireless.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 13420,
+    "sha256": "9d49e70d51515bc38628fb0d6e43f4eda7f9cd5326882fd02e8815e61f2259d7",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/craft_cargoA.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 18964,
+    "sha256": "b9676e838c605699e164c4c1779262bf47db1562a1504ceb29764828cbaa80c2",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/rover.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 13384,
+    "sha256": "9784549775017e540ab84e6fc0eb8a1902dbeff9ba4285cecb97c086d2937fa5",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/barrels.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 20808,
+    "sha256": "5eefdb7cb192863ac6b6709293e196ae97e7cceb29c6ab754850a738f3b2379b",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/rail.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 6600,
+    "sha256": "ce9c3ece35b86e97c21463f491acbe824e4af4220e621db5d7a8f067bc2868fb",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/rail_corner.glb",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 9956,
+    "sha256": "2b1f172c03594f4c50485d0bbd24ead48b056bd9964416442f5fde95f130a00a",
+    "modification": "Original GLB bytes; scene-local scale/rotation and material clones only."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/License.txt",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 708,
+    "sha256": "60a8c5c31191256ec9779dc18745dea6d69c46f4b29703459ce064c1765a59ea",
+    "modification": "Original archive bytes; retained texture or licence."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/space-kit/License.txt",
+    "source": "https://kenney.nl/assets/space-kit",
+    "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 610,
+    "sha256": "bd4e050e69d41351282c4d53f943cd4d80a80b968593e60653ba5292637941b7",
+    "modification": "Original archive bytes; retained texture or licence."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/License.txt",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 700,
+    "sha256": "61e86565dd297e143ad631594980eda0a17fc81a4cd7c6d71acf2f5e0cad30b6",
+    "modification": "Original archive bytes; retained texture or licence."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+    "source": "https://kenney.nl/assets/factory-kit",
+    "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 11813,
+    "sha256": "35d7bd6900dde0208429eeaec87fa17fbf024ed59f3f4eab54bc92802eba9dd7",
+    "modification": "Original archive bytes; retained texture or licence."
+  },
+  {
+    "path": "assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "bytes": 11986,
+    "sha256": "950f4f891ebd05a2affac810e6eeb0fea1511bc39039b65a3cbf2e17d17bc6a2",
+    "modification": "Original archive bytes; retained texture or licence."
+  }
+]

@@ -17,32 +17,47 @@
         return COMMAND_BLOCK_TYPES.includes(type);
     }
 
-    async function runQueue(commands, collaborators) {
-        const {
-            shouldStop,
-            beforeCommand,
-            executeCommand,
-            afterCommand,
-            onComplete
-        } = collaborators;
+    class CancelledError extends Error {
+        constructor() { super('執行已停止。'); this.name = 'CancelledError'; }
+    }
 
-        let completed = 0;
-        for (let index = 0; index < commands.length; index++) {
-            if (shouldStop()) break;
-            const command = commands[index];
-            const context = { index, total: commands.length, command };
-            const shouldExecute = beforeCommand ? await beforeCommand(context) : true;
-            if (shouldStop()) break;
-            if (shouldExecute !== false) {
-                await executeCommand(command, context);
-                completed++;
+    function createSession() {
+        let revision = 0;
+        function capture() {
+            const ticket = revision;
+            const isCurrent = () => ticket === revision;
+            const check = () => { if (!isCurrent()) throw new CancelledError(); };
+            return Object.freeze({ isCurrent, check,
+                async wait(promise) { const result = await promise; check(); return result; },
+                finish(callback) { if (isCurrent()) callback(); }
+            });
+        }
+        return Object.freeze({ begin() { revision++; return capture(); }, cancel() { revision++; }, capture });
+    }
+
+    async function runQueue(commands, collaborators) {
+        const { shouldStop, beforeCommand, executeCommand, afterCommand, onComplete } = collaborators;
+        let completed = 0, failure;
+        try {
+            for (let index = 0; index < commands.length; index++) {
+                if (shouldStop()) break;
+                const command = commands[index];
+                const context = { index, total: commands.length, command };
+                const shouldExecute = beforeCommand ? await beforeCommand(context) : true;
+                if (shouldStop()) break;
+                if (shouldExecute !== false) { await executeCommand(command, context); completed++; }
+                if (shouldStop()) break;
+                if (afterCommand) await afterCommand(context);
             }
-            if (afterCommand) await afterCommand(context);
+        } catch (error) {
+            if (!(error instanceof CancelledError)) failure = error;
         }
         const result = { completed, total: commands.length, stopped: shouldStop() };
+        if (failure) result.error = failure;
         if (onComplete) await onComplete(result);
+        if (failure) throw failure;
         return result;
     }
 
-    return Object.freeze({ COMMAND_BLOCK_TYPES, isCommandBlockType, runQueue });
+    return Object.freeze({ COMMAND_BLOCK_TYPES, isCommandBlockType, createSession, CancelledError, runQueue });
 });

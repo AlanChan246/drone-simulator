@@ -1,0 +1,25 @@
+{
+  "js/main.js": [
+    "    if (currentGameMode !== 'freeplay' && activeMissionId === 3) return 'mission-3-factory'; // factory-hook\n",
+    "    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.run(); // factory-hook\n",
+    "    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.reset(); // factory-hook\n",
+    "    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.stop(); // factory-hook\n",
+    "    if (workspace && window.FactoryMission && FactoryMission.active()) return FactoryBlocks.install(workspace); // factory-hook\n",
+    "    if (window.FactoryUI) FactoryUI.sync(); // factory-hook\n",
+    "    if (Number(missionId) === 3) activeMissionId = 3; // factory-hook\n",
+    "    if (Number(missionId) === 3) { await FactoryScene.preload(); changeScene('factory'); } else // factory-hook\n",
+    "    if (Number(missionId) === 3) return true; // factory-hook\n",
+    "        if (Number(missionId) === 3) FactoryUI.loadingError(); // factory-hook\n"
+  ],
+  "js/simulator.js": [
+    "    factory: Object.freeze({ prepare: function () {}, build: function () { FactoryMission.build(); } }), // factory-hook\n",
+    "    if (environmentGroup.userData.disposeFactory) { environmentGroup.userData.disposeFactory(); delete environmentGroup.userData.sceneVariant; } // factory-hook\n",
+    "    if (window.FactoryMission) FactoryMission.frame(); // factory-hook\n",
+    "    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.sensor(type === 'bottom' ? 'height' : 'range', { TYPE: type, UNIT: unit }); // factory-hook\n"
+  ],
+  "js/v2_ui.js": [
+    "        if (Number(id) === 3) return FactoryUI.briefing(content); // factory-hook\n",
+    "        if(currentSceneType==='factory') { camRadius=followDrone?420:FactoryConfig.overviewRadius; if(!followDrone) camTheta=25; } // factory-hook\n",
+    "    const originalNextMission=nextMission; nextMission=function() { if(activeMissionId===3) { closeResultModal(); FactoryMission.newOrder(); } else if(activeMissionId===2) { closeResultModal(); emergencyStop(); startMission(3); } else originalNextMission(); }; // factory-hook\n"
+  ]
+}

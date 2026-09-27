@@ -1,10 +1,12 @@
-# Design systems
+# Design documentation
 
-This project uses two visual systems on purpose:
+The current product direction is defined in [PRODUCT.md](../../PRODUCT.md). The v2 redesign supersedes the earlier SpaceX-inspired brand treatment.
 
-| Surface | System | Source |
-|---------|--------|--------|
-| Brand / menus / boot gates | SpaceX-inspired (black, white, full-bleed video, ghost pill CTAs) | [spacex/DESIGN.md](spacex/DESIGN.md) |
-| Simulator workspace (`#game-interface`) | Flight Deck (cyan / green / amber / red HUD) | `:root` `--flight-*` tokens in `style.css` |
+- [UX architecture](v2-ux-architecture.md): navigation, the Flight Deck learning loop and state ownership. Its original two-mission scope predates the factory mission.
+- [Design system](v2-design-system.md): the v2 visual system; current styles live under `assets/styles/` together with shared `style.css`.
+- [Factory mission](../missions/factory.md): the third mission and teacher materials.
+- [QA history](v2-qa.md): dated verification evidence, not a specification of the current build.
 
-Do not mix brand accent cyan onto hub screens, and do not restyle the in-sim HUD with SpaceX black-and-white marketing rules.
+## Historical references
+
+[SpaceX design notes](spacex/DESIGN.md), earlier audits and before/after reports preserve historical decisions and evidence. They do not override the current product direction. Do not reintroduce retired visuals or missions solely to match these records.

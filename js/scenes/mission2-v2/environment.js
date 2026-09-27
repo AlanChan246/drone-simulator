@@ -8,8 +8,7 @@ FINISH: Behaviour parity, multi-camera evidence, measured rendering and recorded
 */
 (function(root) {
     const C=root.Mission2V2Config;
-    function selected(search) { return new URLSearchParams(search).get('scene')!=='mission2-legacy'; }
-    function build({THREE,scene,parent,templates,stations,createFireEffects,createFireLabel,animations}) {
+    function build({THREE,scene,camera,parent,templates,stations,createFireEffects,createFireLabel,animations}) {
         const P=C.palette, grid=C.grid;
         const kit=root.Mission2V2Assets.createKit(THREE,parent,templates,P);
         const {box,shape,model,label}=kit;
@@ -21,6 +20,8 @@ FINISH: Behaviour parity, multi-camera evidence, measured rendering and recorded
         // Only this variant borrows global lighting, with an exact restoration closure.
         const lights=scene.children.filter(o=>o.isLight).map(light=>({light,color:light.color.clone(),
             intensity:light.intensity,position:light.position.clone(),ground:light.groundColor?.clone()}));
+        // A 10 cm near plane avoids depth stripes between thin ground layers.
+        const cameraNear=camera.near;camera.near=10;camera.updateProjectionMatrix();
         const background=scene.background, fog=scene.fog;
         scene.background=new THREE.Color(0xdde5d9);scene.fog=new THREE.Fog(0xdde5d9,4200,7200);
         lights.forEach(({light})=>{
@@ -30,6 +31,7 @@ FINISH: Behaviour parity, multi-camera evidence, measured rendering and recorded
             else light.intensity=.1;
         });
         parent.userData.disposeMission2V2=()=>{
+            camera.near=cameraNear;camera.updateProjectionMatrix();
             scene.background=background;scene.fog=fog;
             lights.forEach(({light,color,intensity,position,ground})=>{light.color.copy(color);light.intensity=intensity;light.position.copy(position);if(ground)light.groundColor.copy(ground);});
         };
@@ -206,5 +208,5 @@ FINISH: Behaviour parity, multi-camera evidence, measured rendering and recorded
         // Store public diagnostics on the scene root for the local QA harness only.
         parent.userData.mission2V2={variant:C.id,gridRows:grid.length,assetPolicy:'private geometry/materials, shared read-only templates'};
     }
-    root.Mission2V2=Object.freeze({selected,build});
+    root.Mission2V2=Object.freeze({build});
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,0 +1,17 @@
+/* Extend the incumbent Flight Deck. No independent app shell or new theme. */
+#factory-new-order { position: absolute; top: 16px; right: 16px; z-index: 6; background: var(--v2-surface); min-height: 44px; box-shadow: var(--v2-shadow-small); }
+#factory-new-order[hidden] { display: none; }
+#factory-order-id { margin-top: 12px; color: var(--v2-text-muted); }
+.factory-hud { display: none; }
+#game-interface[data-scene="factory"] .factory-hud { display: flex; gap: 20px; margin-top: 10px; }
+.factory-hud small { display: block; font-size: 14px; }
+.factory-hud strong { display: block; font-size: 16px; line-height: 1.6; color: var(--v2-text); }
+#game-interface[data-scene="factory"] .hud__grid > div:first-child,
+#game-interface[data-scene="factory"] .hud__grid > div:nth-child(6) { display: none; }
+/* Flow the camera controls after the status card, including wrapped messages. */
+.v2-observation-tools { display: contents; }
+#game-interface[data-scene="factory"] .v2-observation-tools { position: absolute; top: 16px; left: 16px; z-index: 5; width: min(390px, calc(100% - 172px)); display: grid; justify-items: start; gap: 12px; pointer-events: none; }
+#game-interface[data-scene="factory"] .v2-action { position: static; max-width: 100%; }
+#game-interface[data-scene="factory"] .v2-camera-tools { position: static; pointer-events: auto; }
+#game-interface[data-scene="factory"] #v2-empty p { max-width: 29ch; }
+@media (min-width: 1100px) { .v2-mission-grid:has([data-mission="factory"]) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

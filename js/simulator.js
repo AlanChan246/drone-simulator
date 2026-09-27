@@ -190,22 +190,7 @@ const assets = {
 
 // 固定次序的混合模板：Starter City 提供低樓／綠化，Commercial Kit 提供商業大樓。
 // 每項保留自己的 baseDir，避免 GLB 的相對貼圖路徑解析到另一個資源包。
-const KENNEY_STARTER_CITY_DIR = 'assets/models/kenney/starter-city/models/';
-const KENNEY_COMMERCIAL_DIR = 'assets/models/kenney_city-kit-commercial_2.1/Models/GLB format/';
-const KENNEY_DISTRICT_MANIFEST = [
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-a.glb', role: 'building' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-b.glb', role: 'building' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-c.glb', role: 'building' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-small-d.glb', role: 'building' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'building-garage.glb', role: 'building' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'grass-trees.glb', role: 'landscape' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'grass-trees-tall.glb', role: 'landscape' },
-    { dir: KENNEY_STARTER_CITY_DIR, name: 'pavement-fountain.glb', role: 'landscape' },
-    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-g.glb', role: 'building' },
-    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-c.glb', role: 'building' },
-    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-skyscraper-a.glb', role: 'building' },
-    { dir: KENNEY_COMMERCIAL_DIR, name: 'building-skyscraper-b.glb', role: 'building' }
-];
+const KENNEY_DISTRICT_MANIFEST = AssetCatalog.district;
 
 function prepareKenneyDistrictModel(root) {
     root.traverse(child => {
@@ -254,8 +239,8 @@ async function loadKenneyDistrictTemplates() {
 
 // 任務道路沿用已校準 N/E/S/W 開口的 Kenney Road Kit；Starter Kit 道路的
 // 模型朝向不同，直接套用會令視覺道路與碰撞網格不一致。
-const KENNEY_ROADS_DIR = 'assets/models/kenney_city-kit-roads/Models/GLB format/';
-const KENNEY_COLORMAP_URL = KENNEY_ROADS_DIR + 'Textures/colormap.png';
+const KENNEY_ROADS_DIR = AssetCatalog.roads.dir;
+const KENNEY_COLORMAP_URL = AssetCatalog.roads.texture;
 let _kenneyColormapTex = null;
 
 function applySrgbToTexture(tex) {
@@ -367,13 +352,7 @@ function prepareKenneyRoadModel(root) {
 async function loadKenneyRoadTemplates() {
     getKenneyColormapTexture();
     assets.kenneyRoads = { straight: null, bend: null, cross: null, tee: null, end: null };
-    const files = {
-        straight: 'road-straight.glb',
-        bend: 'road-bend.glb',
-        cross: 'road-crossroad.glb',
-        tee: 'road-split.glb',
-        end: 'road-end.glb'
-    };
+    const files = AssetCatalog.roads.files;
     const entries = Object.entries(files);
     await Promise.all(entries.map(([key, name]) => new Promise(resolve => {
         const fileLoader = new THREE.GLTFLoader();
@@ -399,7 +378,7 @@ async function loadKenneyRoadTemplates() {
     await new Promise(resolve => {
         const fileLoader = new THREE.GLTFLoader();
         fileLoader.setPath(KENNEY_ROADS_DIR);
-        fileLoader.load('road-square.glb', (gltf) => {
+        fileLoader.load(AssetCatalog.roads.plot, (gltf) => {
             prepareKenneyPlotModel(gltf.scene);
             assets.kenneyPlotTile = gltf.scene;
             console.log('✅ Kenney plot: road-square.glb（建築格底）');
@@ -1157,88 +1136,7 @@ async function preloadModels() {
     }
     const loader = new THREE.GLTFLoader();
     
-    // 定義所有可能的模型（包括可選的）
-    const allModels = [
-        { key: 'corridor', path: 'assets/models/corridor.glb', required: true },
-        { key: 'window',   path: 'assets/models/corridor_window.glb', required: false },
-        { key: 'open',     path: 'assets/models/corridor_open.glb', required: false },
-        { key: 'drone',    path: 'assets/models/drone.glb', required: false },
-        { key: 'tree_pine', path: 'assets/models/nature/GLTF format/tree_pineTallA.glb', required: false },
-        { key: 'tree_small', path: 'assets/models/nature/GLTF format/tree_pineSmallA.glb', required: false },
-        { key: 'tree_oak', path: 'assets/models/nature/GLTF format/tree_oak.glb', required: false },
-        { key: 'rock', path: 'assets/models/nature/GLTF format/rock_smallA.glb', required: false },
-        { key: 'bush', path: 'assets/models/nature/GLTF format/plant_bushLarge.glb', required: false },
-        { key: 'grass', path: 'assets/models/nature/GLTF format/grass.glb', required: false },
-        { key: 'stump', path: 'assets/models/nature/GLTF format/stump_old.glb', required: false },
-        { key: 'log', path: 'assets/models/nature/GLTF format/log.glb', required: false },
-        { key: 'lily', path: 'assets/models/nature/GLTF format/lily_large.glb', required: false },
-        { key: 'fire_logs', path: 'assets/models/nature/GLTF format/campfire_logs.glb', required: false },
-        { key: 'rock_flat', path: 'assets/models/nature/GLTF format/rock_smallFlatA.glb', required: false }
-    ];
-
-    const kenneyForestModels = [
-        ['ground_grass', 'nature/ground_grass.glb'],
-        ['path_straight', 'nature/ground_pathStraight.glb'],
-        ['path_bend', 'nature/ground_pathBend.glb'],
-        ['path_tee', 'nature/ground_pathSplit.glb'],
-        ['path_cross', 'nature/ground_pathCross.glb'],
-        ['path_end', 'nature/ground_pathEnd.glb'],
-        ['path_tile', 'nature/ground_pathTile.glb'],
-        ['river_tile', 'nature/ground_riverTile.glb'],
-        ['forest_tree_a', 'nature/tree_default.glb'],
-        ['forest_tree_b', 'nature/tree_detailed.glb'],
-        ['forest_tree_c', 'nature/tree_tall.glb'],
-        ['forest_tree_burnt', 'nature/tree_oak_dark.glb'],
-        ['forest_rock_a', 'nature/rock_largeA.glb'],
-        ['forest_rock_b', 'nature/rock_largeB.glb'],
-        ['forest_rock_flat', 'nature/rock_smallFlatA.glb'],
-        ['forest_stump', 'nature/stump_old.glb'],
-        ['forest_fire_logs', 'nature/campfire_logs.glb'],
-        ['base_floor', 'survival/floor.glb'],
-        ['base_tent', 'survival/tent.glb'],
-        ['goal_floor', 'survival/structure-metal-floor.glb'],
-        ['goal_shelter', 'survival/structure-canvas.glb'],
-        ['supply_box', 'survival/box.glb'],
-        ['supply_box_large', 'survival/box-large.glb'],
-        ['supply_barrel', 'survival/barrel.glb'],
-        ['base_sign', 'survival/signpost.glb'],
-        ['goal_sign', 'survival/signpost-single.glb'],
-        ['fire_pit', 'survival/campfire-pit.glb'],
-        ['charge_machine', 'factory/machine.glb'],
-        ['charge_screen', 'factory/screen-panel-small.glb'],
-        ['charge_pad', 'factory/indicator-special-area.glb'],
-        ['charge_button', 'factory/button-floor-round.glb'],
-        ['charge_warning', 'factory/warning-orange.glb']
-    ];
-    kenneyForestModels.forEach(([key, relativePath]) => {
-        allModels.push({
-            key: `kenney_forest_${key}`,
-            forestKey: key,
-            path: `assets/models/kenney/${relativePath}`,
-            required: true,
-            preserveMaterial: true
-        });
-    });
-
-    console.log("🚀 開始載入 3D 模型...");
-
-    // 只載入存在的模型（跳過不存在的可選模型，避免 404 錯誤）
-    // 直接過濾掉已知不存在的可選模型
-    const modelsToLoad = allModels.filter(item => {
-        // 必需模型始終載入
-        if (item.required) return true;
-        
-        // 可選模型：只載入已知存在的（drone.glb）
-        // 如果將來需要添加 window 或 open，可以在這裡添加檢查
-        if (item.key === 'drone') return true; // drone.glb 存在
-        
-        // window 和 open 不存在，直接跳過
-        if (item.key === 'window' || item.key === 'open') {
-            return false; // 跳過不存在的文件
-        }
-        
-        return true;
-    });
+    const modelsToLoad = AssetCatalog.preload;
 
     const promises = modelsToLoad.map(item => {
         return new Promise((resolve) => {
@@ -1555,47 +1453,62 @@ async function init3D() {
 // ==========================================
 // 3. 場景生成邏輯
 // ==========================================
+function disposeSceneHook(name, metadata = []) {
+    const data = environmentGroup?.userData;
+    if (!data) return;
+    const dispose = data[name];
+    delete data[name];
+    try { if (dispose) dispose(); }
+    finally { metadata.forEach(key => delete data[key]); }
+}
+
 const simulatorSceneAdapters = SceneLifecycle.createRegistry({
+    factory: Object.freeze({
+        missionId: 3,
+        preload: () => FactoryScene.preload(),
+        build: () => FactoryMission.build(),
+        dispose: () => disposeSceneHook('disposeFactory', ['sceneVariant'])
+    }),
     tunnel: Object.freeze({
-        prepare: restoreDefaultSceneLighting,
-        build: createMazeMap
+        missionId: 1, prepare: restoreDefaultSceneLighting, build: createMazeMap,
+        dispose: () => disposeSceneHook('disposeMission1Quality')
     }),
     city: Object.freeze({
-        prepare: function () {},
-        build: function () {
-            if (window.Mission2V2 && Mission2V2.selected(window.location.search)) {
-                buildMission2V2Scene();
-            } else {
-                createCityMap();
-            }
-        }
-    }),
-    sky: Object.freeze({
-        prepare: restoreDefaultSceneLighting,
-        build: function () { SkyMission.build(); }
+        missionId: 2, build: buildMission2V2Scene,
+        dispose: () => disposeSceneHook('disposeMission2V2', ['sceneVariant', 'mission2V2'])
     }),
     free: Object.freeze({
         prepare: restoreDefaultSceneLighting,
-        build: function () {
-            createFreeFlightMap();
-            targetPosition = { x: 0, z: 0 };
-        }
+        build: function () { createFreeFlightMap(); targetPosition = { x: 0, z: 0 }; }
     })
+}, {
+    beforeEnter: type => {
+        if (typeof flightProgramSession !== 'undefined') flightProgramSession.cancel();
+        currentSceneType = type;
+    },
+    clear: clearSceneContents,
+    afterEnter: syncDroneToStart
 });
 
+function finishSceneChange(type) {
+    resetSimulator();
+    const sceneSelect = document.getElementById('scene-select');
+    if (sceneSelect) sceneSelect.value = type;
+    if (typeof updateMazeAnswerButtonVisibility === 'function') updateMazeAnswerButtonVisibility();
+    if (typeof updateGotoXyzToolboxVisibility === 'function') updateGotoXyzToolboxVisibility();
+    updateRoadEditorButtonVisibility();
+}
+
 function changeScene(type) {
-    SceneLifecycle.enterSync(type, {
-        beforeEnter: sceneType => { currentSceneType = sceneType; },
-        loadScene,
-        afterEnter: sceneType => {
-            resetSimulator();
-            const sceneSelect = document.getElementById('scene-select');
-            if (sceneSelect) sceneSelect.value = sceneType;
-            if (typeof updateMazeAnswerButtonVisibility === 'function') updateMazeAnswerButtonVisibility();
-            if (typeof updateGotoXyzToolboxVisibility === 'function') updateGotoXyzToolboxVisibility();
-            updateRoadEditorButtonVisibility();
-        }
-    });
+    loadScene(type);
+    finishSceneChange(type);
+}
+
+async function changeMissionScene(missionId) {
+    const type = simulatorSceneAdapters.forMission(missionId);
+    if (!await simulatorSceneAdapters.enter(type)) return false;
+    finishSceneChange(type);
+    return true;
 }
 
 function disposeObject3D(obj) {
@@ -1616,25 +1529,11 @@ function disposeObject3D(obj) {
 }
 
 function loadScene(type) {
-    // 檢查 environmentGroup 是否已初始化
-    if (typeof environmentGroup === 'undefined' || !environmentGroup) {
-        console.error("environmentGroup is not initialized. Please wait for init3D() to complete.");
-        return;
-    }
+    if (!environmentGroup) throw new Error('Scene renderer is not ready');
+    simulatorSceneAdapters.enterSync(type);
+}
 
-    if (environmentGroup.userData.sceneVariant === 'mission3') SkyMission.dispose();
-
-    if (environmentGroup.userData.disposeMission1Quality) {
-        environmentGroup.userData.disposeMission1Quality();
-        delete environmentGroup.userData.disposeMission1Quality;
-    }
-
-    if (environmentGroup.userData.disposeMission2V2) {
-        environmentGroup.userData.disposeMission2V2();
-        delete environmentGroup.userData.disposeMission2V2;
-        delete environmentGroup.userData.sceneVariant;
-        delete environmentGroup.userData.mission2V2;
-    }
+function clearSceneContents(type) {
     applyMissionConfigForScene(type);
 
     clearRoadPieceRegistry();
@@ -1662,12 +1561,6 @@ function loadScene(type) {
     waterLoaded = false;
     if (type === 'city') resetCityBattery();
 
-    const adapter = simulatorSceneAdapters.get(type);
-    adapter.prepare();
-    adapter.build();
-
-    // 強制同步無人機到場景起點
-    syncDroneToStart();
 }
 
 function syncDroneToStart() {
@@ -2038,7 +1931,10 @@ function createMazeMap() {
 }
 
 /** Mission 1 visual finish. The grid, sensor meshes and mission state remain owned by the existing builder. */
+// Keep centimetre-scale road layers distinguishable across the full scene.
 function polishMission1Environment() {
+    const cameraNear = camera.near;
+    camera.near = 10; camera.updateProjectionMatrix();
     const parent = environmentGroup;
     const lights = scene.children.filter(o => o.isLight).map(light => ({
         light, color: light.color.clone(), intensity: light.intensity,
@@ -2050,6 +1946,7 @@ function polishMission1Environment() {
     ['left', 'right', 'top', 'bottom', 'near', 'far'].forEach(k => { shadowBefore[k] = shadowCamera[k]; });
     const background = scene.background, fog = scene.fog;
     parent.userData.disposeMission1Quality = () => {
+        camera.near = cameraNear; camera.updateProjectionMatrix();
         scene.background = background; scene.fog = fog;
         lights.forEach(({light, color, intensity, position, ground}) => {
             light.color.copy(color); light.intensity = intensity; light.position.copy(position);
@@ -2987,259 +2884,9 @@ function addForestPlayfieldGridOverlay(grid, cellSize, offsetX, offsetZ) {
     }
 }
 
-function buildForestGridScene(forestGrid, logLabel) {
-    applyForestSceneAtmosphere();
 
-    const cellSize = 150;
-    const offsetX = -(forestGrid[0].length * cellSize) / 2;
-    const offsetZ = -(forestGrid.length * cellSize) / 2;
 
-    currentMazeGrid = forestGrid;
-    currentCellSize = cellSize;
-    mazeOffsetX = offsetX;
-    mazeOffsetZ = offsetZ;
-    forestHeightGrid = buildForestHeightGrid(forestGrid);
-    forestChargeData = [];
-
-    addForestPerimeterLighting(offsetX, offsetZ, forestGrid[0].length * cellSize, forestGrid.length * cellSize);
-
-    // 3. 放置場景物件（基地 2@1,1 · 受災區 3@1,12 · 水/火/充電見格網配置）
-    for (let i = 0; i < forestGrid.length; i++) {
-        for (let j = 0; j < forestGrid[i].length; j++) {
-            const val = forestGrid[i][j];
-            const x = j * cellSize + offsetX + cellSize/2;
-            const z = i * cellSize + offsetZ + cellSize/2;
-            const h = getForestHeight(x, z);
-            addForestGroundTile(forestGrid, i, j, x, z, cellSize, val);
-            if (renderKenneyForestCell(forestGrid, i, j, x, z, h, cellSize, val)) continue;
-
-            if (val === 1) {
-                // --- 物理碰撞強化：增加隱形格位碰撞盒 ---
-                // 確保整格 150x150cm 區域都是實體障礙，無人機無法從樹縫穿過
-                const wallBoxGeo = new THREE.BoxGeometry(cellSize, 400, cellSize);
-                const wallBoxMat = new THREE.MeshBasicMaterial({ visible: false }); // 隱形
-                const wallBox = new THREE.Mesh(wallBoxGeo, wallBoxMat);
-                wallBox.position.set(x, h + 200, z);
-                wallBox.isWall = true; 
-                environmentGroup.add(wallBox);
-
-                // 判斷是否靠近任何火源
-                let isBurnt = false;
-                for (let row = 0; row < forestGrid.length; row++) {
-                    for (let col = 0; col < forestGrid[row].length; col++) {
-                        if (forestGrid[row][col] === 4) {
-                            const fx = col * cellSize + offsetX + cellSize/2;
-                            const fz = row * cellSize + offsetZ + cellSize/2;
-                            const distToFire = Math.sqrt(Math.pow(x - fx, 2) + Math.pow(z - fz, 2));
-                            if (distToFire < cellSize * 1.5) {
-                                isBurnt = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (isBurnt) break;
-                }
-
-                const cluster = new THREE.Group();
-                cluster.position.set(x, h, z);
-                const count = isBurnt ? 2 : 3;
-                for (let k = 0; k < count; k++) {
-                    const r = forestCellRandom(i, j, k + 1);
-                    const angle = r * Math.PI * 2;
-                    const radius = 16 + forestCellRandom(i, j, k + 10) * 34;
-                    const options = {
-                        x: Math.cos(angle) * radius,
-                        z: Math.sin(angle) * radius,
-                        rotation: forestCellRandom(i, j, k + 20) * Math.PI * 2,
-                        isWall: true
-                    };
-                    if (isBurnt) {
-                        addKenneyForestProp(cluster, k === 0 ? 'forest_tree_burnt' : 'forest_stump', k === 0 ? 55 : 34, k === 0 ? 145 : 45, options);
-                    } else {
-                        const variants = ['forest_tree_a', 'forest_tree_b', 'forest_tree_c', 'forest_rock_a', 'forest_rock_b'];
-                        const key = variants[Math.floor(r * variants.length)];
-                        const isRock = key.indexOf('rock') >= 0;
-                        addKenneyForestProp(cluster, key, isRock ? 50 : 58, isRock ? 58 : 165, options);
-                    }
-                }
-                environmentGroup.add(cluster);
-            } else if (val === 0) {
-                // 可飛行路徑已由 Kenney ground_path* 模型完整呈現。
-            } else if (val === 2 || val === 3) {
-                // --- 森林救援木製平台 (替換原本的 H 停機坪) ---
-                const h = getForestHeight(x, z);
-                const platformGroup = new THREE.Group();
-                platformGroup.position.set(x, h, z);
-                environmentGroup.add(platformGroup);
-
-                // 主平台 (木板質感)
-                const plateGeo = new THREE.BoxGeometry(cellSize * 0.8, 8, cellSize * 0.8);
-                const plateMat = new THREE.MeshPhongMaterial({ 
-                    color: val === 2 ? 0x4a3828 : 0x244a28,
-                    flatShading: true 
-                });
-                const plate = new THREE.Mesh(plateGeo, plateMat);
-                plate.position.y = 4;
-                platformGroup.add(plate);
-
-                // 平台上的標記 (淡色半透明方塊)
-                const markerGeo = new THREE.PlaneGeometry(cellSize * 0.5, cellSize * 0.5);
-                const markerMat = new THREE.MeshBasicMaterial({ 
-                    color: 0xa0a098, 
-                    transparent: true, 
-                    opacity: 0.18,
-                    side: THREE.DoubleSide 
-                });
-                const marker = new THREE.Mesh(markerGeo, markerMat);
-                marker.rotation.x = -Math.PI/2;
-                marker.position.y = 8.1;
-                platformGroup.add(marker);
-
-                // 四角的支撐圓木
-                const legGeo = new THREE.CylinderGeometry(8, 8, 30, 8);
-                const legMat = new THREE.MeshPhongMaterial({ color: 0x281a14 });
-                [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(dir => {
-                    const leg = new THREE.Mesh(legGeo, legMat);
-                    leg.position.set(dir[0] * cellSize * 0.35, -5, dir[1] * cellSize * 0.35);
-                    platformGroup.add(leg);
-                });
-
-                if (val === 2) {
-                    startPosition = { x, y: h + 15, z, heading: 180 };
-                    spawnPosition = { ...startPosition };
-                    state.x = x; state.z = z; state.y = h + 15;
-                    lastSafePos = { x, y: h + 15, z };
-                    createWaypointArrowMarker(x, z, h + 8, {
-                        color: 0x4dabf7,
-                        emissive: 0x228be6,
-                        kind: 'alpha'
-                    });
-                } else {
-                    targetPosition = { x, z };
-                    createWaypointArrowMarker(x, z, h + 8, {
-                        color: 0x51cf66,
-                        emissive: 0x2f9e44,
-                        kind: 'bravo'
-                    });
-                }
-            } else if (val === 4) {
-                // --- 寫實火場設計 (恢復代碼) ---
-                const h = getForestHeight(x, z);
-                const fireGroup = new THREE.Group();
-                fireGroup.position.set(x, h, z);
-                fireGroup.userData.isForestFire = true;
-                fireGroup.userData.fireIJ = i + ',' + j;
-                environmentGroup.add(fireGroup);
-
-                // 1. 營火燃料基底
-                if (assets.campfire_logs) {
-                    const logs = assets.campfire_logs.clone();
-                    logs.scale.set(80, 80, 80);
-                    logs.position.y = 2;
-                    fireGroup.add(logs);
-                }
-
-                // 2. 多重火焰核心 (加法混合效果)
-                const createFlameLayer = (size, height, color, speed) => {
-                    const geo = new THREE.ConeGeometry(size, height, 8);
-                    const mat = new THREE.MeshBasicMaterial({ 
-                        color: color, 
-                        transparent: true, 
-                        opacity: 0.35,
-                        blending: THREE.NormalBlending,
-                        side: THREE.DoubleSide
-                    });
-                    const layer = new THREE.Mesh(geo, mat);
-                    layer.position.y = height/2;
-                    fireGroup.add(layer);
-                    window.mazeAnimations.push(() => {
-                        layer.rotation.y += speed;
-                        layer.scale.x = layer.scale.z = 1 + Math.sin(Date.now() * 0.01) * 0.1;
-                    });
-                    return layer;
-                };
-
-                createFlameLayer(28, 70, 0x883818, 0.04);
-                createFlameLayer(18, 50, 0x994422, -0.05);
-
-                const fireLight = new THREE.PointLight(0x883020, 0.55, 160);
-                fireLight.position.y = 40;
-                fireGroup.add(fireLight);
-                window.mazeAnimations.push(() => {
-                    fireLight.intensity = 0.35 + Math.random() * 0.2;
-                });
-
-                // 4. 煙霧粒子
-                for (let m = 0; m < 3; m++) {
-                    const smokeGeo = new THREE.SphereGeometry(12, 8, 8);
-                    const smokeMat = new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.2 });
-                    const smoke = new THREE.Mesh(smokeGeo, smokeMat);
-                    fireGroup.add(smoke);
-                    const offset = m * 50;
-                    window.mazeAnimations.push(() => {
-                        const t = (Date.now() * 0.1 + offset) % 400;
-                        smoke.position.y = 60 + t * 0.8;
-                        smoke.position.x = Math.sin(t * 0.05) * 20;
-                        smoke.scale.setScalar(1 + t * 0.01);
-                        smoke.material.opacity = 0.2 * (1 - t / 400);
-                    });
-                }
-
-                // 5. 火點優先序標籤（A/B/C/D）
-                createFireSiteLabel(fireGroup, i, j);
-            } else if (val === 5) {
-                // --- 寫實水源設計（全平地：水面略低於地面） ---
-                const waterH = h + 1;
-                const lakeGroup = new THREE.Group();
-                lakeGroup.position.set(x, waterH, z);
-                environmentGroup.add(lakeGroup);
-
-                const lakeGeo = new THREE.CircleGeometry(cellSize * 0.45, 32); // 縮小一點點，確保在整平區域內
-                const lakeMat = new THREE.MeshStandardMaterial({ 
-                    color: 0x003366, 
-                    metalness: 0.55,
-                    roughness: 0.32,
-                    transparent: true,
-                    opacity: 0.82
-                });
-                const lake = new THREE.Mesh(lakeGeo, lakeMat);
-                lake.rotation.x = -Math.PI/2;
-                lake.isWaterSource = true;
-                lakeGroup.add(lake);
-
-                // 池邊碎石也對齊盆地高度
-                if (assets.rock_flat) {
-                    for (let k = 0; k < 10; k++) {
-                        const r = assets.rock_flat.clone();
-                        const angle = (k / 10) * Math.PI * 2;
-                        const dist = cellSize * 0.48; // 碎石貼著水邊，但還在整平格內
-                        r.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
-                        r.scale.set(40, 20, 40);
-                        r.rotation.y = Math.random() * Math.PI;
-                        lakeGroup.add(r);
-                    }
-                }
-
-                // 睡蓮浮在水面
-                if (assets.lily) {
-                    for (let l = 0; l < 6; l++) {
-                        const lily = assets.lily.clone();
-                        const ang = Math.random() * Math.PI * 2;
-                        const d = cellSize * 0.35 * Math.random();
-                        lily.position.set(Math.cos(ang)*d, 0.5, Math.sin(ang)*d);
-                        lily.scale.set(45, 45, 45);
-                        lakeGroup.add(lily);
-                    }
-                }
-            } else if (val === 6) {
-                createForestChargeStation(i, j, x, z, h);
-            }
-        }
-    }
-    console.log(logLabel || '🌲 Kenney 山火場已載入');
-}
-
-// Visual variant bridge only. Mission identity, rules and Legacy builders stay intact.
+// Mission 2 scene bridge. Preserve shared sensor geometry and mission rules.
 function buildMission2V2Scene() {
     const config = Mission2V2Config;
     currentMazeGrid = config.grid.map(row => [...row]);
@@ -3281,29 +2928,12 @@ function buildMission2V2Scene() {
         else object.material = object.material.clone();
     });
     visualRoot.add(sensors);
-    Mission2V2.build({ THREE, scene, parent: visualRoot, templates: assets.kenneyForest,
+    Mission2V2.build({ THREE, scene, camera, parent: visualRoot, templates: assets.kenneyForest,
         stations: forestChargeData, createFireEffects: createForestFireEffects,
         createFireLabel: createFireSiteLabel, animations: window.mazeAnimations });
 }
 
-function createCityMap() {
-    buildForestGridScene([
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 2, 0, 0, 5, 0, 1, 1, 0, 0, 0, 0, 3, 1],
-        [1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 4, 1],
-        [1, 0, 1, 0, 0, 6, 0, 0, 0, 0, 1, 1, 0, 1],
-        [1, 0, 1, 1, 0, 0, 1, 1, 5, 0, 4, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1],
-        [1, 1, 1, 0, 0, 1, 1, 0, 6, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1],
-        [1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 5, 0, 0, 1, 1, 0, 1],
-        [1, 1, 0, 1, 1, 1, 0, 6, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 4, 0, 0, 0, 1, 1, 0, 1, 1],
-        [1, 0, 5, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ], '🌲 任務二 14×14 山火場已載入（全平地 · 格線 150cm）');
-}
+
 
 // ==========================================
 // 4. 共用幾何與工具
@@ -4217,7 +3847,6 @@ function finishTunnelMission() {
 }
 
 function getGroundHeight(x, z) {
-    if (currentSceneType === 'sky') return SkyMission.ground(x, z);
     if (typeof currentSceneType !== 'undefined' && isCityMissionScene()
         && typeof getForestHeight === 'function') {
         const h = getForestHeight(x, z);
@@ -4615,6 +4244,7 @@ function checkCityLogic() {
     maybeFinishCityMission();
 }
 function getSensorReading(type, unit) {
+    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.sensor(type === 'bottom' ? 'height' : 'range', { TYPE: type, UNIT: unit }); // factory-hook
     let value = 0;
     
     // 如果沒有迷宮網格，回傳預設值
@@ -4731,8 +4361,8 @@ function updateCameraPosition() {
 }
 function animateLoop() {
     requestAnimationFrame(animateLoop);
+    if (window.FactoryMission) FactoryMission.frame(); // factory-hook
     
-    if (currentSceneType === 'sky') SkyMission.tick();
     // 執行碰撞偵測
     handleWallCollision();
 

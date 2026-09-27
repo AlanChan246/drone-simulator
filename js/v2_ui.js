@@ -50,7 +50,7 @@ window.V2UI = (() => {
             if(!label.hidden)label.style.transform=`translate(${(projected.x+1)*width/2}px,${(1-projected.y)*height/2}px) translate(-50%,-160%)`;
         }
         place('v2-drone-label',drone.x,drone.y+15,drone.z,true);
-        place('v2-goal-label',destination.x,0,destination.z,currentGameMode==='mission'&&!followDrone&&currentSceneType!=='sky');
+        place('v2-goal-label',destination.x,0,destination.z,currentGameMode==='mission'&&!followDrone);
     }
     function enter() {
         dismissBlocklyDiscoverToast();
@@ -83,17 +83,16 @@ window.V2UI = (() => {
         followDrone=mode==='follow';
         camTarget.x=followDrone?state.x:0;camTarget.y=followDrone?state.y:0;camTarget.z=followDrone?state.z:0;
         camRadius=followDrone?(currentGameMode==='freeplay'?FOLLOW_CAMERA_RADIUS:220):(currentGameMode==='freeplay'?FREE_CAMERA_RADIUS:3200);
-        if(currentSceneType==='sky'){camTarget.x=followDrone?state.x:-190;camTarget.y=followDrone?state.y:140;camTarget.z=followDrone?state.z:-120;camRadius=followDrone?650:2200;camTheta=25;}
         if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;
+        if(currentSceneType==='factory') { camRadius=followDrone?420:FactoryConfig.overviewRadius; if(!followDrone) camTheta=25; } // factory-hook
         camPhi=mode==='top'?10:followDrone?30:35;
-        if(currentSceneType==='sky'&&followDrone)camPhi=65;
         updateCameraPosition();
         text('camera-mode-label',followDrone?'跟隨視角':mode==='top'?'俯視':'全景');
         document.querySelectorAll('.v2-camera-tools button').forEach(button=>button.setAttribute('aria-pressed',String(button.textContent===(followDrone?'跟隨':mode==='top'?'俯視':'全景'))));
     }
     const names={takeoff:'起飛',land:'安全降落',move_forward:'向前飛行',move_backward:'向後飛行',move_left:'向左飛行',move_right:'向右飛行',move_up:'上升',move_down:'下降',hover:'懸停觀察',turn_left:'向左轉向',turn_right:'向右轉向',goto_xyz:'飛向指定座標',collect_water:'裝填水箱',release_water:'噴水滅火',set_color:'改變燈光',print:'輸出觀察結果',wait_key:'等待按下空白鍵',turn_time:'按時間轉向',set_var:'設定飛行動力',set_heading:'轉至指定航向',move_complex:'按設定動力飛行'};
     function command(cmd,index,total) {
-        lastCommand=names[cmd.type]||(currentSceneType==='sky'&&cmd.text)||'執行飛行指令';
+        lastCommand=names[cmd.type]||'執行飛行指令';
         text('v2-action-status',`指令 ${index+1} / ${total}`);
         text('v2-action-label',lastCommand);
         el('v2-command-progress').max=total;
@@ -123,11 +122,10 @@ window.V2UI = (() => {
         if(state.isRunning&&executionDebug.paused)text('v2-action-status','下一塊積木前暫停 · 可按單步或繼續');
         else if(state.isRunning&&wasPaused)text('v2-action-status',`指令 ${executionDebug.currentIndex+1} / ${cmdQueue.length}`);
         wasPaused=executionDebug.paused;
-        if(window.SkyUI)SkyUI.sync();
         if(el('v2-empty')&&workspace)el('v2-empty').hidden=workspace.getAllBlocks(false).length>0;
     }
     function briefing(id,content) {
-        if (Number(id)===3) return;
+        if (Number(id) === 3) return FactoryUI.briefing(content); // factory-hook
         const details=content.innerHTML.replace(/<h4>/g,'<h3>').replace(/<\/h4>/g,'</h3>');
         const tunnel=Number(id)===1;
         content.innerHTML=`<div class="v2-brief-intro"><img src="assets/images/mission-preview-${tunnel?'1-final':'2-v2'}.png" alt="任務場景"><div><h3>${tunnel?'讓情報安全送達。':'把每一趟飛行用在救援上。'}</h3><p>${tunnel?'從基地起飛，沿道路抵達綠色疏散區，使用降落積木完成交班。':'在水源取水、飛到火點噴水，最後在綠色救援平台降落結算。'}</p><ul>${tunnel?'<li>不可飛越建築，也不能直接飛至座標。</li><li>巡檢是加分目標：懸停 3 秒，每處 +100。</li>':'<li>水箱只能裝一份水，用完要重新取水。</li><li>留意電量；充電站懸停 3 秒可補充。</li><li>撲滅愈多火點分數愈高，全滅額外加分。</li>'}</ul></div></div><details class="v2-brief-rules"><summary>地圖圖例、計分與進階提示</summary>${details}</details>`;
@@ -137,7 +135,7 @@ window.V2UI = (() => {
         content.querySelectorAll('.brief-step-icon').forEach(node=>node.remove());
         content.querySelectorAll('.brief-legend-swatch:not(.brief-legend-swatch--model)').forEach(node=>{node.innerHTML=icon(node.classList.contains('brief-legend-swatch--beacon')?'point':'download');});
     }
-    function nextMission() {closeResultModal();emergencyStop();if(activeMissionId===1)startMission(2);else if(activeMissionId===2)startMission(3);else showMissionSelect();}
+    function nextMission() {closeResultModal();emergencyStop();if(activeMissionId===1)startMission(2);else showMissionSelect();}
     function toggleTelemetry(){el('game-interface').classList.toggle('show-telemetry');}
     function toggleDebug(){el('game-interface').classList.toggle('show-debug');}
     document.addEventListener('keydown',event=>{
@@ -168,6 +166,8 @@ window.V2UI = (() => {
     const hero=el('hero-loop-video');
     const promoPlay=el('hero-promo-play');
     const motion=matchMedia('(prefers-reduced-motion: reduce)');
+    let heroPlayTimer=null;
+    const cancelHeroPlay=()=>{clearTimeout(heroPlayTimer);heroPlayTimer=null;};
     const playHero=()=>{
         if(document.hidden || getComputedStyle(el('main-menu')).display==='none')return;
         if(motion.matches){hero.pause();promoPlay.hidden=false;return;}
@@ -175,14 +175,21 @@ window.V2UI = (() => {
         const attempt=hero.play();
         if(attempt&&typeof attempt.then==='function')attempt.then(()=>{promoPlay.hidden=true;}).catch(()=>{promoPlay.hidden=false;});
     };
+    const scheduleHeroPlay=()=>{
+        cancelHeroPlay();
+        heroPlayTimer=setTimeout(()=>{heroPlayTimer=null;playHero();},2000);
+    };
+    window.pauseHeroLoopVideo=()=>{cancelHeroPlay();hero.pause();};
     promoPlay.addEventListener('click',()=>{
+        cancelHeroPlay();
         const attempt=hero.play();
         if(attempt&&typeof attempt.then==='function')attempt.then(()=>{promoPlay.hidden=true;}).catch(()=>{promoPlay.hidden=false;});
     });
-    document.addEventListener('visibilitychange',()=>{if(document.hidden)hero.pause();else playHero();});
-    motion.addEventListener('change',()=>{if(motion.matches){hero.pause();promoPlay.hidden=false;}else playHero();});
-    window.resumeHeroLoopVideo=playHero;
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)window.pauseHeroLoopVideo();else scheduleHeroPlay();});
+    motion.addEventListener('change',()=>{if(motion.matches){window.pauseHeroLoopVideo();promoPlay.hidden=false;}else scheduleHeroPlay();});
+    window.resumeHeroLoopVideo=scheduleHeroPlay;
     window.resumeHeroLoopVideo();
     icons();
+    const originalNextMission=nextMission; nextMission=function() { if(activeMissionId===3) { closeResultModal(); FactoryMission.newOrder(); } else if(activeMissionId===2) { closeResultModal(); emergencyStop(); startMission(3); } else originalNextMission(); }; // factory-hook
     return {enter,setView,workspaceReady,starter,undo,camera,command,programEnded,sync,briefing,nextMission,toggleTelemetry,toggleDebug,icon,resetFeedback,projectLabels,prepareRun};
 })();

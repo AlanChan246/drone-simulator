@@ -1,0 +1,161 @@
+{
+  "angles": [
+    {
+      "phi": 10,
+      "theta": -125,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 91541,
+      "unstablePixels": 0,
+      "ratio": 0
+    },
+    {
+      "phi": 10,
+      "theta": -50,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 91781,
+      "unstablePixels": 0,
+      "ratio": 0
+    },
+    {
+      "phi": 10,
+      "theta": 25,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 92445,
+      "unstablePixels": 0,
+      "ratio": 0
+    },
+    {
+      "phi": 10,
+      "theta": 100,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 92097,
+      "unstablePixels": 5,
+      "ratio": 0.000054290584926762
+    },
+    {
+      "phi": 55,
+      "theta": -125,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 54058,
+      "unstablePixels": 2,
+      "ratio": 0.00003699729919715861
+    },
+    {
+      "phi": 55,
+      "theta": -50,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 54557,
+      "unstablePixels": 0,
+      "ratio": 0
+    },
+    {
+      "phi": 55,
+      "theta": 25,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 54183,
+      "unstablePixels": 4,
+      "ratio": 0.00007382389310300278
+    },
+    {
+      "phi": 55,
+      "theta": 100,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 57180,
+      "unstablePixels": 3,
+      "ratio": 0.00005246589716684155
+    },
+    {
+      "phi": 80,
+      "theta": -125,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 8600,
+      "unstablePixels": 3,
+      "ratio": 0.0003488372093023256
+    },
+    {
+      "phi": 80,
+      "theta": -50,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 10641,
+      "unstablePixels": 1,
+      "ratio": 0.000093976130062964
+    },
+    {
+      "phi": 80,
+      "theta": 25,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 8740,
+      "unstablePixels": 3,
+      "ratio": 0.00034324942791762013
+    },
+    {
+      "phi": 80,
+      "theta": 100,
+      "near": 10,
+      "road": [
+        167,
+        182,
+        183
+      ],
+      "roadPixels": 9870,
+      "unstablePixels": 3,
+      "ratio": 0.00030395136778115504
+    }
+  ],
+  "ok": true
+}

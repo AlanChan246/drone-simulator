@@ -1,3 +1,5 @@
+const flightProgramSession = FlightCommandExecution.createSession();
+
 // ==========================================
 // 檔案：js/main.js
 // 用途：UI 互動、Blockly 執行核心、指令隊列處理
@@ -51,10 +53,10 @@ function reportBlocklyGuardError(e) {
 }
 
 function getBlocklyAutosaveKey() {
+    if (currentGameMode !== 'freeplay' && activeMissionId === 3) return 'mission-3-factory'; // factory-hook
     if (currentGameMode === 'freeplay') return 'freeplay';
     if (activeMissionId === 1 || activeMissionId === 'training') return 'mission-1';
     if (activeMissionId === 2) return 'mission-2';
-    if (activeMissionId === 3) return 'mission-3';
     if (typeof currentSceneType !== 'undefined') {
         if (currentSceneType === 'tunnel') return 'mission-1';
         if (currentSceneType === 'city') return 'mission-2';
@@ -628,6 +630,7 @@ function toggleCameraMode() {
 // --- 程式碼執行邏輯 ---
 
 function runBlocklyCode() {
+    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.run(); // factory-hook
     window.__tutorialRunAttempted = false;
     window.__tutorialFlightCompleted = false;
     console.log("runBlocklyCode 被調用，state.isRunning:", state.isRunning);
@@ -654,8 +657,6 @@ function runBlocklyCode() {
         return;
     }
     
-    if (currentSceneType === 'sky') { void SkyMission.run(currentWorkspace); return; }
-
     cmdQueue = [];
     blockToCommandMap.clear();
     commandToBlockMap.clear();
@@ -797,9 +798,9 @@ function runBlocklyCode() {
  * 統一使用「增量更新 (Incremental)」邏輯，防止與物理碰撞引擎產生位置衝突（瞬移/抖動）
  */
 async function dispatchCommand(cmd) {
+    const execution = flightProgramSession.capture();
+    const wait = ms => execution.wait(new Promise(resolve => setTimeout(resolve, ms / executionSpeed)));
     if (!cmd) return;
-    const skyToken = currentSceneType === 'sky' ? SkyMission.generation() : null;
-    const skyCancelled = () => skyToken !== null && (SkyMission.generation() !== skyToken || state.stopSignal);
     if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
         && cmd.type && cmd.type.startsWith('move_')) {
         logToConsole('⚠️ 電力耗盡！請找黃色充電站懸停補電（+15 行），或返回基地。');
@@ -841,7 +842,6 @@ async function dispatchCommand(cmd) {
                     console.log(`   [Takeoff] 進度: ${(p*100).toFixed(0)}%, y: ${state.y.toFixed(1)}`);
                 }
             }, { canAbort: false }); 
-            if (skyCancelled()) return;
             state.isFlying = true; 
             hasTakenOff = true; 
             console.log("🚀 [Takeoff] 起飛完成！");
@@ -855,7 +855,6 @@ async function dispatchCommand(cmd) {
                 state.y -= (distToLand * dp);
                 lastLand_p = p;
             }, { canAbort: false }); 
-            if (skyCancelled()) return;
             state.isFlying = false; 
             break;
         case 'hover':
@@ -1263,6 +1262,8 @@ function loadMazeAnswer() {
 }
 // --- 任務特定功能派發器 ---
 async function dispatchCollectWater() {
+    const execution = flightProgramSession.capture();
+    const wait = ms => execution.wait(new Promise(resolve => setTimeout(resolve, ms / executionSpeed)));
     console.log("💧 正在執行取水指令...");
     const cell = typeof findCityInteractionCell === 'function'
         ? findCityInteractionCell(5)
@@ -1280,6 +1281,8 @@ async function dispatchCollectWater() {
 }
 
 async function dispatchReleaseWater() {
+    const execution = flightProgramSession.capture();
+    const wait = ms => execution.wait(new Promise(resolve => setTimeout(resolve, ms / executionSpeed)));
     console.log("🔥 正在執行滅火指令...");
     
     if (!state.hasWater) {
@@ -1374,11 +1377,11 @@ function updateFlightTelemetry() {
         missionTitle = '任務二 · 山火應對';
         missionProgress = `火點 ${firesExtinguished}/${getRequiredFires()}`;
     }
-    if (currentSceneType === 'sky') { missionTitle = '任務三 · 天空機關城'; missionProgress = `閘門 ${SkyMission.snapshot()?.completed || 0}/3`; }
     setTelemetryText('hud-mission-progress', missionProgress);
     setTelemetryText('active-mission-title', missionTitle);
     setTelemetryText('top-mission-progress', missionProgress);
     if (window.V2UI) V2UI.sync();
+    if (window.FactoryUI) FactoryUI.sync(); // factory-hook
 }
 window.updateFlightTelemetry = updateFlightTelemetry;
 function updateHUD() { updateFlightTelemetry(); }
@@ -1402,7 +1405,7 @@ function updateMazeAnswerButtonVisibility() {
 window.updateMazeAnswerButtonVisibility = updateMazeAnswerButtonVisibility;
 
 function updateGotoXyzToolboxVisibility() {
-    if (currentSceneType === 'sky' && workspace) { SkyToolbox.install(workspace); return; }
+    if (workspace && window.FactoryMission && FactoryMission.active()) return FactoryBlocks.install(workspace); // factory-hook
     const blockEl = document.getElementById('toolbox-goto-xyz-block');
     if (blockEl) {
         const hide = isTunnelMissionScene();
@@ -1418,7 +1421,8 @@ function updateGotoXyzToolboxVisibility() {
 window.updateGotoXyzToolboxVisibility = updateGotoXyzToolboxVisibility;
 
 function resetSimulator() {
-    if (window.SkyMission && SkyMission.active()) SkyMission.reset();
+    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.reset(); // factory-hook
+    flightProgramSession.cancel();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false;
@@ -1506,7 +1510,8 @@ function resetSimulator() {
     console.log(`System Reset to (${state.x.toFixed(1)}, ${state.y.toFixed(1)}, ${state.z.toFixed(1)})`);
 }
 function emergencyStop() {
-    if (window.SkyMission && SkyMission.active()) SkyMission.cancel();
+    if (window.FactoryMission && FactoryMission.active()) return FactoryMission.stop(); // factory-hook
+    flightProgramSession.cancel();
     state.stopSignal = true; 
     state.isRunning = false;
     state.isFlying = false; 
@@ -1527,23 +1532,26 @@ function emergencyStop() {
 }
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms / executionSpeed));
 // Wait Key Promise
-const waitKey = () => new Promise(resolve => {
+const waitKey = () => {
+    const execution = flightProgramSession.capture();
+    return new Promise((resolve, reject) => {
     waitingForKey = true;
     const check = setInterval(() => {
-        if (state.stopSignal) { clearInterval(check); resolve(); }
+        if (state.stopSignal || !execution.isCurrent()) { clearInterval(check); reject(new FlightCommandExecution.CancelledError()); return; }
         if (!waitingForKey) { clearInterval(check); resolve(); }
     }, 100);
-});
+    });
+};
 // 動畫輔助函數
 async function animateAction(durationSec, updateFn, options = { canAbort: true }) {
-    const skyToken = currentSceneType === 'sky' ? SkyMission.generation() : null;
+    const execution = flightProgramSession.capture();
     const startTime = performance.now(); 
     const durationMs = (durationSec * 1000) / executionSpeed; 
     state.collisionDetected = false; // 重置碰撞旗標
     
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         function loop(currentTime) {
-            if (state.stopSignal || (skyToken !== null && SkyMission.generation() !== skyToken)) { resolve(); return; }
+            if (state.stopSignal || !execution.isCurrent()) { reject(new FlightCommandExecution.CancelledError()); return; }
             
             // 如果指令允許被碰撞中斷（如移動指令），則檢查碰撞
             if (options.canAbort && state.collisionDetected) {
@@ -1554,9 +1562,7 @@ async function animateAction(durationSec, updateFn, options = { canAbort: true }
             
             const elapsed = currentTime - startTime; 
             const progress = Math.min(elapsed / durationMs, 1);
-            const before = skyToken !== null ? {x:state.x,y:state.y,z:state.z} : null;
             updateFn(progress);
-            if (before) SkyMission.moved(before);
             
             if (progress < 1) requestAnimationFrame(loop); else resolve();
         } requestAnimationFrame(loop);
@@ -1887,7 +1893,20 @@ async function executeQueueSuperseded() {
     }
 }
 
+function finishFlightProgram(execution, afterFinish = () => {}) {
+    execution.finish(() => {
+        state.isRunning = false;
+        executionDebug.currentIndex = -1;
+        if (currentExecutingBlockId) highlightBlock(currentExecutingBlockId, false);
+        currentExecutingBlockId = null;
+        updateProgress(0, 0);
+        afterFinish();
+    });
+}
+
 async function executeQueue() {
+    const execution = flightProgramSession.begin();
+    const commands = cmdQueue.slice();
     if (window.V2UI) V2UI.prepareRun();
     state.isRunning = true;
     state.stopSignal = false;
@@ -1898,13 +1917,14 @@ async function executeQueue() {
         catch (error) { console.warn('清除高亮失敗:', error); }
     }
 
-    const executionResult = await FlightCommandExecution.runQueue(cmdQueue, {
-        shouldStop: () => state.stopSignal,
+    let executionResult;
+    try { executionResult = await FlightCommandExecution.runQueue(commands, {
+        shouldStop: () => state.stopSignal || !execution.isCurrent(),
         beforeCommand: async ({ command, index, total }) => {
             const blockId = commandToBlockMap.get(index) || command._blockId || null;
             executionDebug.currentIndex = index;
             await waitForExecutionGate(blockId);
-            if (state.stopSignal) return false;
+            if (state.stopSignal || !execution.isCurrent()) return false;
 
             if (isCityMissionScene() && getCityBatteryRemainingLines() <= 0
                 && command.type && command.type.startsWith('move_')) {
@@ -1927,20 +1947,19 @@ async function executeQueue() {
             return true;
         },
         executeCommand: command => dispatchCommand(command),
-        onComplete: result => {
-            if (currentExecutingBlockId) highlightBlock(currentExecutingBlockId, false);
-            updateProgress(0, 0);
-            state.isRunning = false;
-            executionDebug.currentIndex = -1;
-            window.__tutorialFlightCompleted = !result.stopped && result.completed === result.total
-                && !state.isFlying && cmdQueue.some(command => command.type === 'takeoff')
-                && cmdQueue.some(command => command.type.startsWith('move_'))
-                && cmdQueue.at(-1)?.type === 'land';
+        onComplete: result => finishFlightProgram(execution, () => {
+            window.__tutorialFlightCompleted = !result.error && !result.stopped && result.completed === result.total
+                && !state.isFlying && commands.some(command => command.type === 'takeoff')
+                && commands.some(command => command.type.startsWith('move_'))
+                && commands.at(-1)?.type === 'land';
             if (window.V2UI) V2UI.programEnded(result);
-        }
-    });
+        })
+    }); } catch (error) {
+        if (execution.isCurrent()) reportRuntimeIssue('execution', currentExecutingBlockId, error.message);
+        return;
+    }
 
-    if (!state.stopSignal && executionResult.completed === executionResult.total && !state.missionCompleted && currentGameMode === 'mission') {
+    if (execution.isCurrent() && !state.stopSignal && executionResult.completed === executionResult.total && !state.missionCompleted && currentGameMode === 'mission') {
         const mission = MissionRules.forScene(currentSceneType);
         const pending = mission.pending({
             inspectionCheckpoints: beaconsTriggered,
@@ -2451,6 +2470,7 @@ function initBlocklyResizer() {
 
 // 返回任務選擇畫面
 function returnToMissionSelect() {
+    simulatorSceneAdapters.cancelPending();
     emergencyStop();
     stopInteractiveTutorial();
     flushBlocklyAutosave();
@@ -2579,15 +2599,7 @@ function renderBriefMission1Legend() {
 }
 
 function renderBriefMission2Legend() {
-    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);
-    return renderBriefMapLegend([
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--start', image: 'assets/images/mission2-legend/start-base.png', badge: '↓', title: '起點（基地）', desc: '藍色懸浮箭嘴；木地板、帳篷、木箱與路牌' },
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--end', image: 'assets/images/mission2-legend/rescue-goal.png', badge: '↓', title: '終點（受災區）', desc: '綠色懸浮箭嘴；金屬救援平台與物資棚' },
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--fire', image: 'assets/images/mission2-legend/fire.png', badge: 'A', title: '火點 A/B/C/D', desc: 'Kenney 營火與浮動標籤；A 最優先（+200）' },
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--water', image: 'assets/images/mission2-legend/water.png', title: '水源', desc: '河流地形格與岸邊岩石；Collect Water 裝水' },
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--charge', image: 'assets/images/mission2-legend/charge.png', badge: '⚡', title: '充電站', desc: '工業機器、操作螢幕與警示燈；hover ≥3 秒 +15 行' },
-        { swatchClass: 'brief-legend-swatch--model brief-legend-swatch--forest', image: 'assets/images/mission2-legend/forest.png', title: '樹林／岩石', desc: '不可穿越；須繞路規劃' }
-    ]);
+    return renderBriefMapLegend(Mission2V2Config.legend);
 }
 
 function showMissionBriefing(missionId) {
@@ -2610,11 +2622,7 @@ function showMissionBriefing(missionId) {
     
     if (!briefingModal || !title || !content) return;
     
-    if (targetMissionId == 3) {
-        title.textContent = '天空機關城';
-        if (icon) icon.textContent = '';
-        SkyUI.briefing(content);
-    } else if (targetMissionId == 1) {
+    if (targetMissionId == 1) {
         title.textContent = '任務一：坍塌廢墟搜救';
         if (icon) icon.textContent = '';
         content.innerHTML = `
@@ -2746,6 +2754,7 @@ function closeBriefing() {
 
 // 顯示主選單
 function showMainMenu() {
+    simulatorSceneAdapters.cancelPending();
     FlightDeckView.create(document).showScreen('main');
 
     // 使用裁切水印後的 hero loop 影片（不再啟動選單 WebGL）
@@ -2771,6 +2780,7 @@ function resumeHeroLoopVideo() {
 
 // 顯示任務選擇畫面
 function showMissionSelect() {
+    simulatorSceneAdapters.cancelPending();
     FlightDeckView.create(document).showScreen('missions');
     
     cleanupMainMenuPreview();
@@ -2793,15 +2803,8 @@ async function startMission(missionId) {
     currentGameMode = 'mission';
     updateModeSpecificUi();
     
-    if (missionId === 'training' || missionId === 1 || missionId === '1') {
-        activeMissionId = 1;
-    } else if (missionId === 2 || missionId === '2') {
-        activeMissionId = 2;
-    } else if (Number(missionId) === 3) {
-        activeMissionId = 3;
-    } else {
-        activeMissionId = null;
-    }
+    const missionScene = simulatorSceneAdapters.forMission(missionId);
+    activeMissionId = simulatorSceneAdapters.get(missionScene).missionId ?? null;
     console.log("Mission started, activeMissionId set to:", activeMissionId);
 
     closeBriefing();
@@ -2891,22 +2894,15 @@ async function startMission(missionId) {
         return;
     }
     
-    // 根據任務 ID 設置場景
-    if (missionId === 'training' || missionId === 1 || missionId === '1') {
-        changeScene('tunnel');
-        logToConsole('📡 震後通訊中斷。請從指揮所 Alpha 起飛，沿可通行路網前往疏散集結區 Bravo。');
-        logToConsole('💡 支路巡檢回報點（通訊／結構／環境）可選完成，停留約 3 秒即上傳資料。');
-    } else if (missionId === 2 || missionId === '2') {
-        changeScene('city');
-        logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併 go forward 距離可節省電量。');
-        logToConsole('💡 須飛至受災區的金屬救援平台降落結算；全數撲滅可額外 +200。');
-    } else if (Number(missionId) === 3) {
-        await SkyCity.preload();
-        changeScene('sky');
-    } else {
-        changeScene('free');
+    if (!await changeMissionScene(missionId)) return;
+    if (missionScene === 'tunnel') {
+        logToConsole('📡 震後通訊中斷。請沿可通行路網前往疏散集結區 Bravo。');
+        logToConsole('💡 支路巡檢可選完成，停留約 3 秒即上傳資料。');
+    } else if (missionScene === 'city') {
+        logToConsole('🔥 14×14 山火場：滿電 20 行移動積木；合併距離可節省電量。');
+        logToConsole('💡 撲滅火點後到救援平台降落結算。');
     }
-    
+
     // 場景切換後，再次確保渲染器大小正確
     await new Promise(resolve => setTimeout(resolve, 100));
     if (typeof onWindowResize === 'function') {
@@ -2922,11 +2918,13 @@ async function startMission(missionId) {
     } catch (error) {
         console.error('Scene preparation failed:', error);
         showAppMessage({ variant:'error', title:'場景暫時未能載入', body:'請確認瀏覽器支援 3D 圖像並重新整理。', nextStep:'若仍未能載入，嘗試更新瀏覽器或重新連線。', focusClose:true });
+        if (Number(missionId) === 3) FactoryUI.loadingError(); // factory-hook
     } finally { loading.hidden = true; }
 }
 
 function shouldAutoShowMissionBriefing(missionId) {
-    return [1,2,3].includes(Number(missionId));
+    if (Number(missionId) === 3) return true; // factory-hook
+    return missionId === 1 || missionId === 2 || missionId === '1' || missionId === '2';
 }
 
 // 啟動自由遊戲
@@ -3701,8 +3699,6 @@ document.addEventListener('keydown', function onModalEscapeKeydown(e) {
 }, true);
 
 window.showResultModal = function(data) {
-    setTelemetryText('result-modal-title', '救援完成。做得好！');
-    setTelemetryText('res-row3-label', '任務耗時');
     _modalFocusResultReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     console.log("🏆 顯示結算彈窗:", data);
     logToConsole("📊 任務完成。正在顯示成績單…");

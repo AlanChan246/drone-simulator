@@ -1,0 +1,332 @@
+
+> test
+> node --test test/*.test.cjs
+
+TAP version 13
+# Subtest: Flight Command block knowledge has one authoritative list
+ok 1 - Flight Command block knowledge has one authoritative list
+  ---
+  duration_ms: 0.521042
+  type: 'test'
+  ...
+# Subtest: Flight Command execution stops through its interface
+ok 2 - Flight Command execution stops through its interface
+  ---
+  duration_ms: 0.773
+  type: 'test'
+  ...
+# Subtest: Mission adapters own pending progress language
+ok 3 - Mission adapters own pending progress language
+  ---
+  duration_ms: 0.149417
+  type: 'test'
+  ...
+# Subtest: scene lifecycle keeps ordering behind one interface
+ok 4 - scene lifecycle keeps ordering behind one interface
+  ---
+  duration_ms: 0.147458
+  type: 'test'
+  ...
+# Subtest: synchronous scene lifecycle supports the existing static browser
+ok 5 - synchronous scene lifecycle supports the existing static browser
+  ---
+  duration_ms: 0.957458
+  type: 'test'
+  ...
+# Subtest: Flight Deck presentation owns screen DOM knowledge
+ok 6 - Flight Deck presentation owns screen DOM knowledge
+  ---
+  duration_ms: 0.298041
+  type: 'test'
+  ...
+# Subtest: lifting one pinch finger must not rotate the camera on the remaining finger move
+ok 7 - lifting one pinch finger must not rotate the camera on the remaining finger move
+  ---
+  duration_ms: 3.409875
+  type: 'test'
+  ...
+# Subtest: cancelled gesture must not leave a stale pinch baseline
+ok 8 - cancelled gesture must not leave a stale pinch baseline
+  ---
+  duration_ms: 0.93575
+  type: 'test'
+  ...
+# Subtest: completed tutorial steps stay on the same page until manually advanced
+ok 9 - completed tutorial steps stay on the same page until manually advanced
+  ---
+  duration_ms: 1.858083
+  type: 'test'
+  ...
+# Subtest: pinch zoom is proportional, bounded and does not rotate or tug the follow target
+ok 10 - pinch zoom is proportional, bounded and does not rotate or tug the follow target
+  ---
+  duration_ms: 1.34975
+  type: 'test'
+  ...
+# Subtest: tutorial completion and restart both require explicit progression
+ok 11 - tutorial completion and restart both require explicit progression
+  ---
+  duration_ms: 1.414333
+  type: 'test'
+  ...
+# Subtest: wheel zoom responds more strongly and normalizes pixel/line input
+ok 12 - wheel zoom responds more strongly and normalizes pixel/line input
+  ---
+  duration_ms: 0.580375
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 250
+ok 13 - two-finger pan follows 40 px drag at camera radius 250
+  ---
+  duration_ms: 1.01925
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 1000
+ok 14 - two-finger pan follows 40 px drag at camera radius 1000
+  ---
+  duration_ms: 0.722792
+  type: 'test'
+  ...
+# Subtest: two-finger pan follows 40 px drag at camera radius 3200
+ok 15 - two-finger pan follows 40 px drag at camera radius 3200
+  ---
+  duration_ms: 1.0695
+  type: 'test'
+  ...
+# Subtest: real Blockly reference uses live branches and loops and solves every three-fault permutation
+ok 16 - real Blockly reference uses live branches and loops and solves every three-fault permutation
+  ---
+  duration_ms: 74.932959
+  type: 'test'
+  ...
+# Subtest: unrolled and no-argument function programs remain valid ways to finish
+ok 17 - unrolled and no-argument function programs remain valid ways to finish
+  ---
+  duration_ms: 69.720833
+  type: 'test'
+  ...
+# Subtest: fixed status sequence cannot solve a changed order; flying alone never completes
+ok 18 - fixed status sequence cannot solve a changed order; flying alone never completes
+  ---
+  duration_ms: 14.56125
+  type: 'test'
+  ...
+# Subtest: order seeds are reproducible, mixed and never repeat the previous permutation
+ok 19 - order seeds are reproducible, mixed and never repeat the previous permutation
+  ---
+  duration_ms: 1.499
+  type: 'test'
+  ...
+# Subtest: station errors preserve the part and disallow remote or duplicate actions
+ok 20 - station errors preserve the part and disallow remote or duplicate actions
+  ---
+  duration_ms: 0.411875
+  type: 'test'
+  ...
+# Subtest: operation boundaries and completion require genuine flight and final landing
+ok 21 - operation boundaries and completion require genuine flight and final landing
+  ---
+  duration_ms: 0.100416
+  type: 'test'
+  ...
+# Subtest: movement segments cannot tunnel through machines, the boundary or ceiling
+ok 22 - movement segments cannot tunnel through machines, the boundary or ceiling
+  ---
+  duration_ms: 0.292791
+  type: 'test'
+  ...
+# Subtest: unsupported, goto, empty expressions and missing start fail before execution
+ok 23 - unsupported, goto, empty expressions and missing start fail before execution
+  ---
+  duration_ms: 1.441
+  type: 'test'
+  ...
+# Subtest: waiting rereads live state, guards false conditions, and responds to stop
+ok 24 - waiting rereads live state, guards false conditions, and responds to stop
+  ---
+  duration_ms: 5.740292
+  type: 'test'
+  ...
+# Subtest: variable changes and arithmetic execute in order inside loops
+ok 25 - variable changes and arithmetic execute in order inside loops
+  ---
+  duration_ms: 2.463083
+  type: 'test'
+  ...
+# Subtest: until condition reads updated delivery state, and no part means exactly 無零件
+ok 26 - until condition reads updated delivery state, and no part means exactly 無零件
+  ---
+  duration_ms: 5.04025
+  type: 'test'
+  ...
+# Subtest: wait timeout measures elapsed simulation time even if a delayed timer skips frames
+ok 27 - wait timeout measures elapsed simulation time even if a delayed timer skips frames
+  ---
+  duration_ms: 0.509792
+  type: 'test'
+  ...
+# Subtest: part ID deduplication prevents score replay independently of an empty gripper
+ok 28 - part ID deduplication prevents score replay independently of an empty gripper
+  ---
+  duration_ms: 0.091375
+  type: 'test'
+  ...
+# Subtest: legacy exclusions are limited to the reviewed factory integration lines
+ok 29 - legacy exclusions are limited to the reviewed factory integration lines
+  ---
+  duration_ms: 6.227917
+  type: 'test'
+  ...
+# Subtest: medical rescue drone keeps its identity-defining detailed parts
+ok 30 - medical rescue drone keeps its identity-defining detailed parts
+  ---
+  duration_ms: 0.708
+  type: 'test'
+  ...
+# Subtest: simulator enables the high-definition PBR rendering path
+ok 31 - simulator enables the high-definition PBR rendering path
+  ---
+  duration_ms: 0.153166
+  type: 'test'
+  ...
+# Subtest: medical drone lighting preserves surface detail without clipping whites
+ok 32 - medical drone lighting preserves surface detail without clipping whites
+  ---
+  duration_ms: 0.168709
+  type: 'test'
+  ...
+# Subtest: follow view is close while free view retains the map overview
+ok 33 - follow view is close while free view retains the map overview
+  ---
+  duration_ms: 0.098375
+  type: 'test'
+  ...
+# Subtest: both real Blockly routes reach Bravo; three inspections remain optional
+ok 34 - both real Blockly routes reach Bravo; three inspections remain optional
+  ---
+  duration_ms: 465.147292
+  type: 'test'
+  ...
+# Subtest: completion requires a connected low-altitude route and an actual landing
+ok 35 - completion requires a connected low-altitude route and an actual landing
+  ---
+  duration_ms: 1.817959
+  type: 'test'
+  ...
+# Subtest: patrol height and inspection boundaries preserve strict tolerances
+ok 36 - patrol height and inspection boundaries preserve strict tolerances
+  ---
+  duration_ms: 0.910125
+  type: 'test'
+  ...
+# Subtest: time bonus boundaries do not change
+ok 37 - time bonus boundaries do not change
+  ---
+  duration_ms: 0.869291
+  type: 'test'
+  ...
+# Subtest: legacy builders, all mission logic and drone physics remain byte-identical
+ok 38 - legacy builders, all mission logic and drone physics remain byte-identical
+  ---
+  duration_ms: 8.741416
+  type: 'test'
+  ...
+# Subtest: independent v2 grid exactly matches the actual Legacy builder
+ok 39 - independent v2 grid exactly matches the actual Legacy builder
+  ---
+  duration_ms: 1.857417
+  type: 'test'
+  ...
+# Subtest: v2 is the default; explicit Legacy query preserves rollback
+ok 40 - v2 is the default; explicit Legacy query preserves rollback
+  ---
+  duration_ms: 1.465125
+  type: 'test'
+  ...
+# Subtest: four-fire fixture uses actual Blockly commands and stays in the preserved corridor
+ok 41 - four-fire fixture uses actual Blockly commands and stays in the preserved corridor
+  ---
+  duration_ms: 446.581792
+  type: 'test'
+  ...
+# Subtest: first paint follows system; all controls sync; saved preference overrides system on reload
+ok 42 - first paint follows system; all controls sync; saved preference overrides system on reload
+  ---
+  duration_ms: 1.924917
+  type: 'test'
+  ...
+# Subtest: only system mode follows live system changes; invalid storage defaults to system
+ok 43 - only system mode follows live system changes; invalid storage defaults to system
+  ---
+  duration_ms: 0.41625
+  type: 'test'
+  ...
+# Subtest: blocked storage still supports session switching
+ok 44 - blocked storage still supports session switching
+  ---
+  duration_ms: 0.446667
+  type: 'test'
+  ...
+# Subtest: switching updates attached workspace theme without replacement or other mutations
+ok 45 - switching updates attached workspace theme without replacement or other mutations
+  ---
+  duration_ms: 0.806625
+  type: 'test'
+  ...
+# Subtest: cross-tab changes and removal synchronize selectors and theme
+ok 46 - cross-tab changes and removal synchronize selectors and theme
+  ---
+  duration_ms: 0.626792
+  type: 'test'
+  ...
+# Subtest: pre-redesign tunnel XML generates the same nine flight commands with source links
+ok 47 - pre-redesign tunnel XML generates the same nine flight commands with source links
+  ---
+  duration_ms: 28.16625
+  type: 'test'
+  ...
+# Subtest: existing fire-rescue program retains water, recharge waits and all 68 commands
+ok 48 - existing fire-rescue program retains water, recharge waits and all 68 commands
+  ---
+  duration_ms: 53.02925
+  type: 'test'
+  ...
+# Subtest: legacy short turn block continues to generate a valid rotation command
+ok 49 - legacy short turn block continues to generate a valid rotation command
+  ---
+  duration_ms: 2.69175
+  type: 'test'
+  ...
+# Subtest: invalid or unknown imported blocks leave the existing program intact
+ok 50 - invalid or unknown imported blocks leave the existing program intact
+  ---
+  duration_ms: 3.101542
+  type: 'test'
+  ...
+# Subtest: offline installation covers local app dependencies under a Pages subpath
+ok 51 - offline installation covers local app dependencies under a Pages subpath
+  ---
+  duration_ms: 24.991167
+  type: 'test'
+  ...
+# Subtest: offline navigation can recover but a missing model never receives HTML
+ok 52 - offline navigation can recover but a missing model never receives HTML
+  ---
+  duration_ms: 1.663959
+  type: 'test'
+  ...
+# Subtest: an online refresh retrieves current code instead of keeping stale cached code
+ok 53 - an online refresh retrieves current code instead of keeping stale cached code
+  ---
+  duration_ms: 3.6395
+  type: 'test'
+  ...
+1..53
+# tests 53
+# suites 0
+# pass 53
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 757.011333

@@ -23,7 +23,7 @@ function worker({ networkFails = false } = {}) {
     };
     const caches = { open: async () => cache, keys: async () => [], delete: async () => true };
     vm.runInNewContext(source, {
-        URL, Response, caches,
+        URL, Response, caches, AssetCatalog: require('../js/asset_catalog.js'), importScripts() {},
         self: { location: { origin: 'https://school.test' }, addEventListener: (kind, handler) => handlers[kind] = handler, skipWaiting() {}, clients: { claim() {} } },
         fetch: async request => { requested.push(request.url); if (networkFails) throw new Error('offline'); return new Response('fresh'); }
     });
@@ -35,7 +35,7 @@ function worker({ networkFails = false } = {}) {
 }
 
 test('offline installation covers local app dependencies under a Pages subpath', async () => {
-    const shell = JSON.parse(source.match(/const APP_SHELL = (\[[\s\S]*?\]);/)[1]);
+    const shell = require('../scripts/offline-resources.cjs').readOfflineResources(root);
     for (const file of shell) assert.ok(fs.existsSync(path.join(root, file)), `missing cached asset: ${file}`);
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     for (const match of html.matchAll(/(?:src|href)="((?:js\/|assets\/styles\/|node_modules\/)[^"]+)"/g)) {

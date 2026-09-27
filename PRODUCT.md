@@ -28,7 +28,7 @@ Modern Rescue Simulation × STEM Learning. Clear, confident, approachable, sligh
 
 ## Evidence on Hand
 
-Two existing missions, a free practice scene, procedural medical drone, local Kenney assets, mission preview images and existing hero videos. Existing asset provenance is incomplete outside the documented Kenney sources; do not invent licences. See CONTEXT.md for established domain vocabulary.
+Three existing missions (Tunnel Rescue, Wildfire Response and the factory rescue mission), a free practice scene, procedural medical drone, local Kenney assets, current mission preview images and the 45-second homepage promo. Existing asset provenance is incomplete outside the documented Kenney sources; do not invent licences. See CONTEXT.md for established domain vocabulary.
 
 ## Product Principles
 

@@ -32,27 +32,6 @@ test('Mission adapters own pending progress language', () => {
     assert.equal(missions.forScene('free').pending({}), '');
 });
 
-test('scene lifecycle keeps ordering behind one interface', async () => {
-    const calls = [];
-    await lifecycle.enter('tunnel', {
-        ensureRenderer: async () => calls.push('renderer'),
-        beforeEnter: async scene => calls.push(`before:${scene}`),
-        loadScene: async scene => calls.push(`load:${scene}`),
-        afterEnter: async scene => calls.push(`after:${scene}`)
-    });
-    assert.deepEqual(calls, ['renderer', 'before:tunnel', 'load:tunnel', 'after:tunnel']);
-});
-
-test('synchronous scene lifecycle supports the existing static browser', () => {
-    const calls = [];
-    lifecycle.enterSync('city', {
-        beforeEnter: scene => calls.push(`before:${scene}`),
-        loadScene: scene => calls.push(`load:${scene}`),
-        afterEnter: scene => calls.push(`after:${scene}`)
-    });
-    assert.deepEqual(calls, ['before:city', 'load:city', 'after:city']);
-});
-
 test('Flight Deck presentation owns screen DOM knowledge', () => {
     const elements = new Map(['main-menu', 'mission-select-menu', 'game-interface'].map(id => [id, { style: {} }]));
     const view = flightDeck.create({ getElementById: id => elements.get(id) || null });

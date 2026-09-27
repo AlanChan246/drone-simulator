@@ -1,0 +1,397 @@
+{
+  "date": "2026-09-26T17:56:48.021Z",
+  "browser": "152.0.7977.83",
+  "os": "darwin 27.2.0",
+  "arch": "arm64",
+  "cpu": "Apple M5",
+  "physicalDeviceTest": false,
+  "viewport": [
+    1440,
+    900
+  ],
+  "mode": "world / overview / real clock",
+  "sampleSeconds": 6.00019999999702,
+  "frameCount": 361,
+  "meanFrameMs": 16.6210526315707,
+  "p95FrameMs": 16.700000000000728,
+  "renderCalls": 188,
+  "triangles": 43502,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)",
+  "assetRequests": 93,
+  "assetBodyBytes": 2484175,
+  "assetTransferBytes": 2013539,
+  "resources": [
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/conveyor.glb",
+      "bytes": 18676
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/conveyor-long.glb",
+      "bytes": 18688
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/conveyor-stripe.glb",
+      "bytes": 23592
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/conveyor-corner.glb",
+      "bytes": 22088
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/conveyor-bars.glb",
+      "bytes": 18476
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/scanner-low.glb",
+      "bytes": 22192
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/machine.glb",
+      "bytes": 25620
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/machine-window.glb",
+      "bytes": 38812
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/machine-bed.glb",
+      "bytes": 52136
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/machine-fortified.glb",
+      "bytes": 29828
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/robot-arm-a.glb",
+      "bytes": 50592
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/robot-arm-b.glb",
+      "bytes": 44524
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/crane.glb",
+      "bytes": 53396
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/crane-magnet.glb",
+      "bytes": 16912
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/box-small.glb",
+      "bytes": 7500
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/box-large.glb",
+      "bytes": 7496
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/box-long.glb",
+      "bytes": 7492
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/cog-a.glb",
+      "bytes": 13660
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/screen-panel-wide.glb",
+      "bytes": 16000
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/pipe-large-long.glb",
+      "bytes": 27288
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/screen-small.glb",
+      "bytes": 12352
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/pipe-large-bend.glb",
+      "bytes": 44512
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/pipe-large-valve.glb",
+      "bytes": 42604
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/structure-window-wide.glb",
+      "bytes": 23340
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/structure-doorway-wide.glb",
+      "bytes": 5572
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/structure-high.glb",
+      "bytes": 25860
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/catwalk-straight.glb",
+      "bytes": 33492
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/catwalk-stairs.glb",
+      "bytes": 66256
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/cone.glb",
+      "bytes": 7028
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/warning-orange.glb",
+      "bytes": 16136
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/hopper-round.glb",
+      "bytes": 13700
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/building-a.glb",
+      "bytes": 177316
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/building-c.glb",
+      "bytes": 175844
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/building-f.glb",
+      "bytes": 134916
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/building-i.glb",
+      "bytes": 73848
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/building-m.glb",
+      "bytes": 138920
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/factory-kit/Textures/colormap.png",
+      "bytes": 11813
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/detail-tank.glb",
+      "bytes": 31436
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/shipping-container-a.glb",
+      "bytes": 36624
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/detail-tank-large.glb",
+      "bytes": 47452
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/shipping-container-c.glb",
+      "bytes": 36620
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/solar-panel-landscape-group.glb",
+      "bytes": 81860
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/windmill-low.glb",
+      "bytes": 46296
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/machine_generatorLarge.glb",
+      "bytes": 10220
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/machine_wireless.glb",
+      "bytes": 13420
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/water-tower.glb",
+      "bytes": 93836
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/craft_cargoA.glb",
+      "bytes": 18964
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/rover.glb",
+      "bytes": 13384
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/barrels.glb",
+      "bytes": 20808
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/city-kit-industrial/Textures/colormap.png",
+      "bytes": 11986
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/rail_corner.glb",
+      "bytes": 9956
+    },
+    {
+      "path": "/assets/models/kenney/factory-mission/space-kit/rail.glb",
+      "bytes": 6600
+    }
+  ]
+}

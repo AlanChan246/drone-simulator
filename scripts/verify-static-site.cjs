@@ -13,8 +13,7 @@ try {
     const command = recipe.split('\n').map(line => line.trim()).join('\n').replaceAll('_site', "'" + output.replaceAll("'", "'\\''") + "'");
     const result = spawnSync('sh', ['-eu', '-c', command], { cwd: root, encoding: 'utf8' });
     if (result.status !== 0) throw new Error(result.stderr || 'Packaging failed');
-    const sw = fs.readFileSync(path.join(output, 'sw.js'), 'utf8');
-    const shell = JSON.parse(sw.match(/const APP_SHELL = (\[[\s\S]*?\]);/)[1]);
+    const shell = require('./offline-resources.cjs').readOfflineResources(output);
     const missing = shell.filter(file => !fs.existsSync(path.join(output, file)));
     if (missing.length) throw new Error(`Missing offline resources: ${missing.join(', ')}`);
     if (!fs.existsSync(path.join(output, '.nojekyll'))) throw new Error('Missing .nojekyll');

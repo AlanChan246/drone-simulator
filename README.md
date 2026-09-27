@@ -4,11 +4,14 @@
 
 - **坍塌廢墟搜救**：沿街道飛行、完成巡檢，將情報送到疏散區。
 - **山火智能應對**：規劃取水、滅火與充電次序，完成救援任務。
-- **天空機關城**：讀取閘門訊號，用條件與等待通過三道機關門，重啟天空基地。提供標準／挑戰模式。
+- **失控機械工廠**：辨識零件、條件送修、等待機器與重複交付，重啟救援裝配線。
 - **自由練習**：從起飛、移動到降落，自由探索積木指令。
 
 全繁體中文介面，結合積木編程與即時 3D 飛行模擬。
 
-本機執行：`npm start`，開啟 `http://localhost:8080`，在任務選擇進入「天空機關城」。
 
-[Mission 3 規則與教師 QA](docs/missions/mission-3.md) · [外部資產與授權](docs/assets/mission-3-assets.md)
+以 `npm install`、`npm start` 啟動，開啟 `http://127.0.0.1:8080`。
+
+Mission 3 的[玩法與教師教材](docs/missions/factory.md)、[模型來源及授權](docs/assets/factory-assets.md)、[瀏覽器測試與效能紀錄](audit/factory/README.md)。
+
+開發與清理請參考[架構與日常維護](docs/architecture.md)：素材清單、場景切換、執行取消及測試輸出位置。

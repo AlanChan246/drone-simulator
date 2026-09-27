@@ -64,4 +64,4 @@ The v2-owned model/texture download payload is **0 bytes**, versus the proposed 
 
 ## Mission preview image
 
-`assets/images/mission-preview-2-v2.png` is now an actual v2 renderer capture without UI overlays, shared by the mission selection card and mission briefing. Generated locally using the audit harness Export scene preview button; no external image or licence added. The previous PNG remains unchanged at `assets/images/mission-preview-2.png` (also archived under `audit/mission-2-v2/legacy-preview.png`). The service-worker cache version is advanced so installed clients refresh the shared image.
+`assets/images/mission-preview-2-v2.png` is now an actual v2 renderer capture without UI overlays, shared by the mission selection card and mission briefing. Generated locally using the audit harness Export scene preview button; no external image or licence added. The obsolete `assets/images/mission-preview-2.png` was removed during the approved media cleanup on 2026-09-27; its historical audit copy remains at `audit/mission-2-v2/legacy-preview.png`. The service-worker cache version is advanced so installed clients refresh the shared image.

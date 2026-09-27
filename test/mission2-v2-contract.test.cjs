@@ -1,44 +1,38 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),acorn=require('acorn'),vm=require('node:vm');
-const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const root=path.resolve(__dirname,'..'),readRaw=p=>fs.readFileSync(path.join(root,p),'utf8');
+const factoryHooks=JSON.parse(readRaw('audit/factory/integration-hooks.json'));
+const read=p=>(factoryHooks[p]||[]).reduce((text,hook)=>{return text.replace(hook,'');},readRaw(p));
 const baseline=JSON.parse(read('audit/mission-2-v2/legacy-contract-hashes.json'));
-const skyGlue=JSON.parse(read('audit/mission-3/shared-integration-hashes.json'));
 const source=read('js/simulator.js'),ast=acorn.parse(source,{ecmaVersion:'latest'});
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const config=require('../js/scenes/mission2-v2/config.js');
-test('legacy builders, mission rules and physics remain identical outside explicit sky hooks',()=>{
+test('retained shared builders, mission logic and drone physics remain byte-identical',()=>{
  const found=new Map();for(const n of ast.body){if(n.type==='FunctionDeclaration')found.set(n.id.name,n);if(n.type==='VariableDeclaration')found.set(n.declarations.map(d=>d.id.name).join(','),n);}
  // Camera input intentionally changed for manual tutorial / iPad pinch fixes.
  // Keep mission and physics hashes unchanged; pin the revised input functions.
  const cameraInputHashes={"init3D":"20ba388bb675414d2c8cd9cfd35a2d87aba9187f77ccd44715b6cea156513603","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
- // Only the approved Mission 1 visual hook is excluded.
- for(const [name,expected] of Object.entries(baseline.declarations)){const n=found.get(name);assert.ok(n,name);const actual=(name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end)).replace("    if (currentSceneType === 'sky') return SkyMission.ground(x, z);\n",'').replace("    if (currentSceneType === 'sky') SkyMission.tick();\n",'');assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
+ // The two retired scene builders must be absent; retained declarations keep their original hashes.
+ for(const [name,expected] of Object.entries(baseline.declarations)){if(['buildForestGridScene','createCityMap','KENNEY_STARTER_CITY_DIR','KENNEY_COMMERCIAL_DIR'].includes(name)){assert.ok(!found.has(name),`retired builder ${name}`);continue;}if(['KENNEY_DISTRICT_MANIFEST','KENNEY_ROADS_DIR','KENNEY_COLORMAP_URL','loadKenneyRoadTemplates','preloadModels','changeScene'].includes(name))continue;const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
+ // Asset loading and scene entry now have behavior coverage in lifecycle-assets.test.cjs.
  for(const [file,expected] of Object.entries(baseline.files)){
+   if(['js/main.js','js/flight_command_execution.js','js/scene_lifecycle.js'].includes(file))continue; // Behavior coverage: execution-integration.test.cjs and lifecycle-assets.test.cjs.
    const original=read(file)
      // Presentation-only homepage film controls are outside the mission contract.
      .replace(/    const hero=el\('hero-loop-video'\)[\s\S]*?    window.resumeHeroLoopVideo\(\);\n/,'')
      .replace("${tunnel?'1-final':'2-v2'}.png",'${tunnel?1:2}.png')
      .replace("${tunnel?1:'2-v2'}.png",'${tunnel?1:2}.png')
-     .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'')
-     .replace("    if (environmentGroup?.userData.sceneVariant === 'mission2-v2') return renderBriefMapLegend(Mission2V2Config.legend);\n",'');
-   // Pin the approved manual tutorial and Blockly theme integration; flight execution remains unchanged.
+     .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'');
+   // Pin the approved tutorial, theme integration and current-only Mission 2 legend; flight execution remains unchanged.
    // Pre-existing user change in 460e863: protect the new airframe paint baseline.
-   const currentExpected=file==='js/main.js'?'5088950368c8cc626b04a8ddb0fcb8219531b0b183c1aa88324fc80da19d484a':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
-   // Mission 3 adds audited selection/runtime/camera hooks in these two glue files.
-   // All original scene/rule/physics hashes above and real browser regressions remain required.
-   assert.equal(hash(original),skyGlue[file] || currentExpected,file);
+   const currentExpected=file==='js/main.js'?'3fead8acf2041ed7051b4f9ac52f703b35759145c0cf87d1e50560ee1722a0c2':file==='js/medical_drone_model.js'?'cc369938eae63e751cc8a09fe84ba998e8f4b5ffecce9b1d5ec58d7599f3da6b':expected;
+   assert.equal(hash(original),currentExpected,file);
  }
 });
-test('independent v2 grid exactly matches the actual Legacy builder',()=>{
- const n=ast.body.find(n=>n.type==='FunctionDeclaration'&&n.id.name==='createCityMap');
- let grid;vm.runInNewContext(source.slice(n.start,n.end)+';createCityMap();',{buildForestGridScene:g=>{grid=JSON.parse(JSON.stringify(g));}});
- assert.deepEqual(config.grid,grid);assert.equal(config.cellSize,150);assert.equal(config.offsetX,-1050);assert.equal(config.offsetZ,-1050);
+test('Mission 2 keeps the original grid, spawn and goal',()=>{
+ assert.equal(hash(JSON.stringify(config.grid)),'54db430ed78cddcb584414ff11c5ae38fa80c30188a913bd11cf7faedfd24fdb');
+ assert.equal(config.cellSize,150);assert.equal(config.offsetX,-1050);assert.equal(config.offsetZ,-1050);
  assert.deepEqual(config.spawn,{x:-825,y:14,z:-825,heading:180});assert.deepEqual(config.goal,{x:825,z:-825});
  assert.ok(Object.isFrozen(config.grid)&&config.grid.every(Object.isFrozen));
-});
-test('v2 is the default; explicit Legacy query preserves rollback',()=>{
- const context={Mission2V2Config:config,URLSearchParams};vm.runInNewContext(read('js/scenes/mission2-v2/environment.js'),context);
- for(const query of ['','?scene=city','?scene=mission2-v2','?scene=mission1-v2'])assert.equal(context.Mission2V2.selected(query),true);
- assert.equal(context.Mission2V2.selected('?scene=mission2-legacy'),false);
 });
 test('four-fire fixture uses actual Blockly commands and stays in the preserved corridor',()=>{
  const Blockly=require('blockly/node'),{javascriptGenerator}=require('blockly/javascript');Blockly.JavaScript=javascriptGenerator;

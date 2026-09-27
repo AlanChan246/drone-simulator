@@ -27,7 +27,7 @@
             return !!window.__DRONE_SIM_FILE_ORIGIN__;
         };
     </script>
-    <link rel="stylesheet" href="assets/styles/mission3.css?v=sky-1">
+    <link rel="stylesheet" href="assets/styles/factory.css?v=factory-1">
 </head>
 <body>
     <!-- THESIS: A rescue field school where a student sees a program become a flight.
@@ -91,7 +91,7 @@
             <div class="v2-mission-grid">
                 <button class="v2-mission-card" onclick="startMission(1)"><div class="v2-mission-image"><img src="assets/images/mission-preview-1-final.png" alt="震後街區搜救場景"><span>路線規劃</span></div><div class="v2-mission-copy"><h2>坍塌廢墟搜救</h2><p>沿街道把情報送到疏散區。途中巡檢，為救援提供更多線索。</p><div><span>學習：順序・距離・轉向</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
                 <button class="v2-mission-card" onclick="startMission(2)"><div class="v2-mission-image"><img src="assets/images/mission-preview-2-v2.png" alt="森林山火救援場景"><span>資源管理</span></div><div class="v2-mission-copy"><h2>山火智能應對</h2><p>取水、滅火、補充電量。規劃救援次序，在受災區安全降落。</p><div><span>學習：規劃・取捨・效率</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
-                <button class="v2-mission-card" onclick="startMission(3)"><div class="v2-mission-image"><img src="assets/images/mission-preview-3.jpg" alt="雲海上的天空研究基地與智能閘門"><span>條件編程 · 進階入門</span></div><div class="v2-mission-copy"><h2>天空機關城</h2><p>破解智能閘門，重啟天空基地！讀取訊號，讓程式決定下一步。</p><div><span>學習：條件・感測・迴圈</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
+                <button class="v2-mission-card" data-mission="factory" onclick="startMission(3)"><div class="v2-mission-image"><img src="assets/images/mission-preview-factory.png" alt="機械工廠的輸送帶、維修站與裝配線"><span>偵測與判斷</span></div><div class="v2-mission-copy"><h2>失控機械工廠</h2><p>辨識零件、送修及交付。用你的程式，讓救援裝配線重新運作。</p><div><span>學習：迴圈・條件・等待</span><strong>查看任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></strong></div></div></button>
             </div>
         </main>
     </div>
@@ -118,6 +118,7 @@
                 <option value="free">場景: 自由飛行</option>
                 <option value="tunnel">任務一: 坍塌廢墟搜救</option>
                 <option value="city">任務二: 山火智能應對</option>
+                <option value="factory">任務三: 失控機械工廠</option>
             </select>
                 <button type="button" class="control-btn control-btn--quiet camera-mode-btn" onclick="toggleCameraMode()" id="camera-mode-btn" title="切換視角"><span class="ui-icon" aria-hidden="true">◉</span><span id="camera-mode-label">跟隨視角</span></button>
                 <button type="button" class="control-btn control-btn--quiet" onclick="toggleUtilityMenu()" id="utility-menu-btn" aria-expanded="false" aria-controls="utility-menu" title="更多工具"><span class="ui-icon" aria-hidden="true">•••</span><span class="sr-only">更多工具</span></button>
@@ -131,12 +132,6 @@
             <button type="button" class="control-btn road-editor-top-btn road-editor-ui" onclick="toggleRoadEditorMode()" id="road-editor-toggle-btn" hidden aria-hidden="true" title="編輯任務一路面（開發用）">路面編輯</button>
         </div>
 
-        <section id="sky-strip" class="sky-strip" aria-label="天空機關城通訊" hidden>
-            <div class="sky-gates" aria-label="閘門進度"><span id="sky-gate-1">1 · 待通訊</span><span id="sky-gate-2">2 · 待通訊</span><span id="sky-gate-3">3 · 待通訊</span></div>
-            <strong id="sky-channel">無人機 A ●</strong><span id="sky-config" class="sky-config">S-1</span>
-            <div class="sky-tools"><label>模式<select id="sky-mode" onchange="SkyMission.setMode(this.value)"><option value="standard">標準</option><option value="challenge">挑戰</option></select></label><details class="sky-route-toggle"><summary>航線</summary><div id="sky-route-content"></div></details><button type="button" onclick="SkyUI.hint()">提示</button><button type="button" id="sky-retry" onclick="resetSimulator()">重試</button><button type="button" id="sky-new" onclick="SkyMission.newChallenge()">新挑戰</button></div>
-            <p id="sky-feedback" class="sky-feedback" role="status" aria-live="polite">讀訊號 → 選頻道 → 發送 → 等門開 → 通過</p>
-        </section>
         <!-- 首次進入遊戲介面：Blockly 尋址提示（localStorage 見 main.js） -->
         <div id="blockly-discover-toast" class="discover-toast" role="status" aria-live="polite" hidden aria-hidden="true">
             <p class="discover-toast-text">第一次玩嗎？請按上方「程式積木」開啟編程面板，完成程式後再按下方控制列的「執行」。</p>
@@ -219,9 +214,11 @@
                 <input type="file" id="blockly-import-input" accept=".xml,text/xml,application/xml" hidden onchange="handleBlocklyImportFile(this)">
             </div>
             <div id="canvas-container" class="canvas-panel">
+                <div class="v2-observation-tools">
                 <div class="v2-action" role="status" aria-live="polite"><span id="v2-action-status">準備飛行</span><strong id="v2-action-label">把想法連成積木，再按執行。</strong><progress id="v2-command-progress" value="0" max="1" aria-label="程式執行進度"></progress></div>
-                <div id="v2-drone-label" class="v2-world-label" hidden>無人機</div><div id="v2-goal-label" class="v2-world-label v2-world-label--goal" hidden>降落終點</div>
                 <div class="v2-camera-tools" aria-label="觀察視角"><button onclick="V2UI.camera('follow')">跟隨</button><button onclick="V2UI.camera('map')">全景</button><button onclick="V2UI.camera('top')">俯視</button></div>
+                </div>
+                <div id="v2-drone-label" class="v2-world-label" hidden>無人機</div><div id="v2-goal-label" class="v2-world-label v2-world-label--goal" hidden>降落終點</div>
                 <section class="hud" id="hud-display" aria-label="飛行遙測">
                     <div class="hud__section hud__flight">
                         <div class="hud__head"><span>FLIGHT</span><strong id="hud-flight-state" class="status-safe"><i></i> LANDED</strong></div>
@@ -385,7 +382,7 @@
                         <td id="res-exit-score">+200</td>
                     </tr>
                     <tr>
-                        <td id="res-row3-label">任務耗時</td>
+                        <td>任務耗時</td>
                         <td id="res-time">0s</td>
                         <td id="res-time-bonus">+0</td>
                     </tr>
@@ -461,6 +458,7 @@
 
     <script src="node_modules/three/examples/js/geometries/RoundedBoxGeometry.js?v=type-20260924a"></script>
     <script src="js/medical_drone_model.js?v=rescue-color-20260924b"></script>
+    <script src="js/asset_catalog.js?v=architecture-1"></script>
     <script src="js/flight_command_execution.js?v=type-20260924a"></script>
     <script src="js/mission_rules.js?v=type-20260924a"></script>
     <script src="js/scene_lifecycle.js?v=type-20260924a"></script>
@@ -468,19 +466,19 @@
     <script src="js/scenes/mission2-v2/config.js?v=mission2-v2-1"></script>
     <script src="js/scenes/mission2-v2/assets.js?v=mission2-v2-1"></script>
     <script src="js/scenes/mission2-v2/environment.js?v=mission2-v2-default-2"></script>
-    <script src="node_modules/three/examples/js/utils/BufferGeometryUtils.js?v=sky-1"></script>
-    <script src="js/mission3/config.js?v=sky-1"></script>
-    <script src="js/mission3/gates.js?v=sky-1"></script>
-    <script src="js/mission3/scene.js?v=sky-1"></script>
-    <script src="js/mission3/runtime.js?v=sky-1"></script>
+    <script src="js/factory/config.js?v=factory-1"></script>
+    <script src="js/factory/rules.js?v=factory-1"></script>
+    <script src="js/factory/runtime.js?v=factory-1"></script>
+    <script src="js/factory/assets.js?v=factory-1"></script>
+    <script src="js/factory/scene.js?v=factory-1"></script>
     <script src="js/simulator.js?v=pan-20260924b"></script>
     <script src="js/blockly_def.js?v=type-20260924a"></script>
-    <script src="js/mission3/blocks.js?v=sky-1"></script>
+    <script src="js/factory/blocks.js?v=factory-1"></script>
     <script src="js/mission2_answer.js?v=type-20260924a"></script>
     <script src="js/blockly_workspace_io.js?v=type-20260924a"></script>
     <script src="js/main.js?v=interaction-20260924a"></script>
-    <script src="js/mission3/mission.js?v=sky-1"></script>
-    <script src="js/mission3/ui.js?v=sky-1"></script>
+    <script src="js/factory/mission.js?v=factory-1"></script>
+    <script src="js/factory/ui.js?v=factory-1"></script>
     <script src="js/v2_ui.js?v=promo-45s-loop-1"></script>
     <script>
         window.addEventListener('load', function () {
