@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-architecture-20260927a';
+const CACHE_VERSION = 'drone-simulator-crane-grounding-20260929a';
 importScripts('js/asset_catalog.js');
 const APP_SHELL = [
   "./",

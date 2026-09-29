@@ -145,7 +145,7 @@ window.FactoryScene = (() => {
         // Central industrial islands: each has a coherent service apron and clear 3 m lanes around it.
         floor(-600, 180, 720, 620, 0xb8b7a3, .15); floor(600, 180, 720, 620, 0xb8b7a3, .15);
         f('machine-window', -690, 60, 340); f('machine-bed', -590, 440, 275, Math.PI / 2);
-        f('hopper-round', -310, 230, 140); f('crane', -660, 240, 330, 0, 280, false, false);
+        f('hopper-round', -310, 230, 140); f('crane', -660, 240, 330, 0, .15, false, false);
         f('machine-fortified', 570, 50, 340, Math.PI / 2);
         f('catwalk-straight', 600, 275, 360, Math.PI / 2, 180, false, false);
         f('catwalk-stairs', 880, 330, 190, Math.PI / 2);
