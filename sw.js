@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-factory-gripper-20261001b';
+const CACHE_VERSION = 'drone-simulator-mission1-ground-20261001c';
 importScripts('js/asset_catalog.js');
 const APP_SHELL = [
   "./",

@@ -11,7 +11,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const source = read('js/simulator.js');
 const declarations = acorn.parse(source, { ecmaVersion: 'latest' }).body;
 const code = name => {
-    const node = declarations.find(node => node.id?.name === name);
+    const node = declarations.find(node => node.id?.name === name || node.declarations?.some(value => value.id.name === name));
     assert.ok(node, name);
     return source.slice(node.start, node.end);
 };
@@ -46,7 +46,7 @@ function harness() {
         state: { isFlying: false }, console: { log() {}, warn() {} } });
     vm.runInContext(read('node_modules/three/examples/js/geometries/RoundedBoxGeometry.js'), context);
     vm.runInContext(read('js/medical_drone_model.js'), context);
-    for (const name of ['clearDroneAirframe', 'addDroneDetailLight', 'createMissionDroneAirframe',
+    for (const name of ['TUNNEL_VISUAL_GROUND_Y_CM', 'clearDroneAirframe', 'addDroneDetailLight', 'createMissionDroneAirframe',
         'getDroneCargoAttachmentPoint', 'setDroneAirframeForScene', 'animateDronePropellers', 'createDroneModel']) {
         vm.runInContext(code(name), context);
     }
@@ -122,6 +122,42 @@ test('scene switches preserve the flight group and pose without accumulating air
         const instance = group.children[0];
         c.setDroneAirframeForScene(type);
         assert.equal(group.children[0], instance, 'same airframe is reused on scene reset');
+    }
+    c.clearDroneAirframe();
+});
+
+test('medical airframe clears the raised mission 1 pads without moving flight coordinates or accumulating lift', () => {
+    const c = harness(), group = c.droneGroup;
+    const original = group.children.map(node => node.position.toArray());
+    group.position.set(-675, 0, -675);
+    group.rotation.y = Math.PI;
+    const frame = group.children[0];
+    for (let pass = 0; pass < 3; pass++) {
+        c.setDroneAirframeForScene('tunnel');
+        group.updateMatrixWorld(true);
+        const gear = new THREE.Box3().setFromObject(group.getObjectByName('landing_gear'));
+        const gimbal = new THREE.Box3().setFromObject(group.getObjectByName('gimbal_system'));
+        assert.ok(gear.min.y >= 8 && gear.min.y < 8.1, 'the skids must rest above the visible pads');
+        assert.ok(gimbal.min.y > 8, 'the camera must not disappear into the pad');
+        assert.deepEqual(group.position.toArray(), [-675, 0, -675]);
+        close(group.rotation.y, Math.PI);
+        assert.equal(group.children[0], frame, 'ground alignment must reuse the airframe');
+        const positions = group.children.map(node => node.position.toArray());
+        c.setDroneAirframeForScene('tunnel');
+        assert.deepEqual(group.children.map(node => node.position.toArray()), positions);
+        c.setDroneAirframeForScene('free');
+        group.updateMatrixWorld(true);
+        original.forEach((position, index) => {
+            position.forEach((value, axis) => close(group.children[index].position.toArray()[axis], value));
+        });
+        close(new THREE.Box3().setFromObject(group.getObjectByName('landing_gear')).min.y, 0.021);
+    }
+    c.setDroneAirframeForScene('tunnel');
+    for (const type of ['city', 'factory', 'tunnel']) {
+        c.setDroneAirframeForScene(type);
+        group.updateMatrixWorld(true);
+        const bottom = new THREE.Box3().setFromObject(group.children[0]).min.y;
+        close(bottom, type === 'tunnel' ? 8.021 : 0.02);
     }
     c.clearDroneAirframe();
 });

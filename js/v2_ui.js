@@ -49,7 +49,7 @@ window.V2UI = (() => {
             label.hidden=!visible||projected.z>1||projected.z< -1||Math.abs(projected.x)>.9||Math.abs(projected.y)>.8;
             if(!label.hidden)label.style.transform=`translate(${(projected.x+1)*width/2}px,${(1-projected.y)*height/2}px) translate(-50%,-160%)`;
         }
-        place('v2-drone-label',drone.x,drone.y+15,drone.z,true);
+        place('v2-drone-label',drone.x,drone.y+15+(droneGroup?.userData.visualGroundOffset||0),drone.z,true);
         place('v2-goal-label',destination.x,0,destination.z,currentGameMode==='mission'&&!followDrone);
     }
     function enter() {

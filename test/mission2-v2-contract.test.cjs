@@ -22,6 +22,8 @@ test('retained shared builders, mission logic and drone physics remain byte-iden
      .replace(/    const hero=el\('hero-loop-video'\)[\s\S]*?    window.resumeHeroLoopVideo\(\);\n/,'')
      .replace("${tunnel?'1-final':'2-v2'}.png",'${tunnel?1:2}.png')
      .replace("${tunnel?1:'2-v2'}.png",'${tunnel?1:2}.png')
+     // Mission 1's label follows its presentation lift; simulation values stay unchanged.
+     .replace('drone.y+15+(droneGroup?.userData.visualGroundOffset||0)','drone.y+15')
      .replace("        if(!followDrone && currentSceneType==='city' && environmentGroup?.userData.sceneVariant==='mission2-v2')camRadius=Mission2V2Config.overviewRadius;\n",'');
    // Pin the approved tutorial, theme integration and current-only Mission 2 legend; flight execution remains unchanged.
    // Pre-existing user change in 460e863: protect the new airframe paint baseline.

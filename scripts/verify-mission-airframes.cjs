@@ -4,6 +4,8 @@ const { chromium } = require('../promo/node_modules/playwright');
 const qa = require('./qa-output.cjs').createRun('verify-mission-airframes');
 const report = { checks: [], missions: [], errors: [] };
 const url = process.env.DRONE_URL || 'http://127.0.0.1:8080/';
+const cacheVersion = fs.readFileSync(require('node:path').join(__dirname, '../sw.js'), 'utf8')
+    .match(/CACHE_VERSION = ['"]([^'"]+)['"]/)[1];
 const check = (name, value) => { assert.ok(value, name); report.checks.push(name); console.log('PASS', name); };
 
 async function ready(page) {
@@ -108,12 +110,12 @@ async function airframe(page) {
             await navigator.serviceWorker.ready;
         });
         await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
-        const cached = await page.evaluate(async () => {
-            const cache = await caches.open('drone-simulator-factory-gripper-20261001b');
+        const cached = await page.evaluate(async cacheVersion => {
+            const cache = await caches.open(cacheVersion);
             return Promise.all(['assets/models/wildfire-response-drone.glb', 'assets/models/industrial-intervention-drone.glb'].map(async path => {
                 const response = await cache.match(path); return response?.ok;
             }));
-        });
+        }, cacheVersion);
         check('both mission airframes are cached', cached.every(Boolean));
         await context.setOffline(true);
         await page.reload({ waitUntil: 'load' });

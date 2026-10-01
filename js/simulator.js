@@ -81,6 +81,8 @@ let mazeOffsetZ = 0;
 let lastSafePos = { x: 0, y: 0, z: 0 };
 /** 任務一道路片 Y（供 __DEBUG_ROAD_MASK__ 射線與平面相交） */
 let tunnelMazeRoadSurfaceY = 0.38;
+/** 任務一道路／停機坪的顯示基準；飛行高度仍由 state.y 表示。 */
+const TUNNEL_VISUAL_GROUND_Y_CM = 8;
 /** 任務一 Kenney 街區：最高飛行高度（cm），避免從高空穿越整張地圖 */
 const TUNNEL_KENNEY_MAX_FLIGHT_CM = 320;
 /** 任務一：抵達終點須低於此高度（cm）才算降落完成 */
@@ -2046,7 +2048,7 @@ function polishMission1Environment() {
         ctx.font='bold 26px sans-serif';ctx.fillText(label,128,230);
         const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
         const mesh=new THREE.Mesh(new THREE.PlaneGeometry(108,108),new THREE.MeshStandardMaterial({map:texture,roughness:0.95,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
-        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,8,z);decor.add(mesh);
+        mesh.rotation.x=-Math.PI/2;mesh.position.set(x,TUNNEL_VISUAL_GROUND_Y_CM,z);decor.add(mesh);
     }
 
     // Urban edge: continuous verges and civic planting connect the existing perimeter buildings.
@@ -3185,6 +3187,7 @@ function clearDroneAirframe() {
     droneLedMesh = null;
     droneLedLight = null;
     delete droneGroup.userData.airframeKey;
+    delete droneGroup.userData.visualGroundOffset;
 }
 
 function addDroneDetailLight() {
@@ -3320,6 +3323,13 @@ function setDroneAirframeForScene(type) {
         }
     }
     if (droneGroup.userData.airframeKey !== 'medical') createDroneModel();
+    // Mission 1's visible pads sit above the simulation's zero-altitude plane.
+    // Lift the presentation (including its lights), keeping flight coordinates
+    // intact. Apply only the difference so resets/re-entry cannot accumulate it.
+    const groundOffset = type === 'tunnel' ? TUNNEL_VISUAL_GROUND_Y_CM : 0;
+    const delta = groundOffset - (droneGroup.userData.visualGroundOffset || 0);
+    droneGroup.children.forEach(node => { node.position.y += delta; });
+    droneGroup.userData.visualGroundOffset = groundOffset;
 }
 
 function animateDronePropellers() {
