@@ -8,11 +8,12 @@ const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const config=require('../js/scenes/mission2-v2/config.js');
 test('retained shared builders, mission logic and drone physics remain byte-identical',()=>{
  const found=new Map();for(const n of ast.body){if(n.type==='FunctionDeclaration')found.set(n.id.name,n);if(n.type==='VariableDeclaration')found.set(n.declarations.map(d=>d.id.name).join(','),n);}
- // Camera input intentionally changed for manual tutorial / iPad pinch fixes.
- // Keep mission and physics hashes unchanged; pin the revised input functions.
- const cameraInputHashes={"init3D":"20ba388bb675414d2c8cd9cfd35a2d87aba9187f77ccd44715b6cea156513603","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b"};
+ // Pin approved camera input and mission-specific airframe presentation changes.
+ // Airframe selection/spin/disposal have behavior coverage in mission-drone-airframes.test.cjs;
+ // mission rules and flight physics retain every original hash.
+ const presentationHashes={"init3D":"20ba388bb675414d2c8cd9cfd35a2d87aba9187f77ccd44715b6cea156513603","onMouseWheel":"52a9f6b8ea8f90a81192a6a88ed8b9d4526595e318cdd7c39e6c153966e2070b","createDroneModel":"f251a92e9baf0cb00df85304fdccc37135224c0d94689eaad8fbf40bbd7f3152","animateLoop":"e72fca57540b705729fc99c288cb731b42a0fac0988caf856703afec497557fe"};
  // The two retired scene builders must be absent; retained declarations keep their original hashes.
- for(const [name,expected] of Object.entries(baseline.declarations)){if(['buildForestGridScene','createCityMap','KENNEY_STARTER_CITY_DIR','KENNEY_COMMERCIAL_DIR'].includes(name)){assert.ok(!found.has(name),`retired builder ${name}`);continue;}if(['KENNEY_DISTRICT_MANIFEST','KENNEY_ROADS_DIR','KENNEY_COLORMAP_URL','loadKenneyRoadTemplates','preloadModels','changeScene'].includes(name))continue;const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),cameraInputHashes[name] || expected,name);}
+ for(const [name,expected] of Object.entries(baseline.declarations)){if(['buildForestGridScene','createCityMap','KENNEY_STARTER_CITY_DIR','KENNEY_COMMERCIAL_DIR'].includes(name)){assert.ok(!found.has(name),`retired builder ${name}`);continue;}if(['KENNEY_DISTRICT_MANIFEST','KENNEY_ROADS_DIR','KENNEY_COLORMAP_URL','loadKenneyRoadTemplates','preloadModels','changeScene'].includes(name))continue;const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),presentationHashes[name] || expected,name);}
  // Asset loading and scene entry now have behavior coverage in lifecycle-assets.test.cjs.
  for(const [file,expected] of Object.entries(baseline.files)){
    if(['js/main.js','js/flight_command_execution.js','js/scene_lifecycle.js'].includes(file))continue; // Behavior coverage: execution-integration.test.cjs and lifecycle-assets.test.cjs.

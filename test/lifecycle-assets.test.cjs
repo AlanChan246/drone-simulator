@@ -35,12 +35,16 @@ test('actual scene adapters route all missions, restore outgoing resources and p
         buildMission2V2Scene(){events.push('city');context.environmentGroup.userData.disposeMission2V2=()=>events.push('leave-city');},
         createFreeFlightMap(){events.push('free');},FactoryScene:{preload:async()=>events.push('preload')},
         FactoryMission:{build(){events.push('factory');context.environmentGroup.userData.disposeFactory=()=>events.push('leave-factory');}},
-        clearSceneContents(){events.push('clear');},syncDroneToStart(){events.push('spawn');}
+        clearSceneContents(){events.push('clear');},setDroneAirframeForScene(type){events.push('airframe:'+type);},syncDroneToStart(){events.push('spawn');}
     });
     vm.runInContext(code('disposeSceneHook')+'\n'+code('simulatorSceneAdapters')+'\nthis.registry=simulatorSceneAdapters;',context);
     const r=context.registry;assert.equal(r.forMission('training'),'tunnel');assert.equal(r.forMission('2'),'city');assert.equal(r.forMission(3),'factory');
     r.enterSync('tunnel');await r.enter('factory');r.enterSync('city');r.enterSync('free');
     assert.ok(events.indexOf('preload')<events.indexOf('leave-tunnel'));assert.ok(events.indexOf('leave-factory')<events.indexOf('city'));assert.ok(events.indexOf('leave-city')<events.lastIndexOf('free'));
+    for(const type of ['tunnel','factory','city','free']) {
+        const selected=events.indexOf('airframe:'+type);
+        assert.ok(selected>events.indexOf(type));assert.equal(events[selected+1],'spawn');
+    }
     assert.equal(context.currentSceneType,'free');assert.deepEqual(Object.keys(context.environmentGroup.userData),[]);
 });
 test('actual preload and district/road loaders use catalog paths, preserve roles and required model destinations', async()=>{

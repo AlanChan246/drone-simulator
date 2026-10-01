@@ -1487,7 +1487,10 @@ const simulatorSceneAdapters = SceneLifecycle.createRegistry({
         currentSceneType = type;
     },
     clear: clearSceneContents,
-    afterEnter: syncDroneToStart
+    afterEnter: type => {
+        setDroneAirframeForScene(type);
+        syncDroneToStart();
+    }
 });
 
 function finishSceneChange(type) {
@@ -3164,9 +3167,174 @@ function createLandingPadTexture() {
     return canvas;
 }
 
-// 建立無人機模型
+// Airframe instances own their geometry/materials; GLB textures remain owned by
+// the preloaded templates. Never dispose those textures during a mission switch.
+function clearDroneAirframe() {
+    const geometries = new Set(), materials = new Set();
+    droneGroup.traverse(node => {
+        if (node.geometry) geometries.add(node.geometry);
+        if (node.material) {
+            (Array.isArray(node.material) ? node.material : [node.material]).forEach(material => materials.add(material));
+        }
+        if (node.shadow) node.shadow.dispose();
+    });
+    geometries.forEach(geometry => geometry.dispose());
+    materials.forEach(material => material.dispose());
+    while (droneGroup.children.length) droneGroup.remove(droneGroup.children[0]);
+    propellers = [];
+    droneLedMesh = null;
+    droneLedLight = null;
+    delete droneGroup.userData.airframeKey;
+}
+
+function addDroneDetailLight() {
+    const airframeDisplayScale = 3;
+    const droneKey = new THREE.DirectionalLight(0xffffff, 0.32);
+    droneKey.name = 'medical_drone_detail_light';
+    droneKey.position.set(-42, 64, -58).multiplyScalar(airframeDisplayScale);
+    droneKey.castShadow = true;
+    droneKey.shadow.mapSize.set(1024, 1024);
+    droneKey.shadow.camera.left = -28 * airframeDisplayScale;
+    droneKey.shadow.camera.right = 28 * airframeDisplayScale;
+    droneKey.shadow.camera.top = 28 * airframeDisplayScale;
+    droneKey.shadow.camera.bottom = -28 * airframeDisplayScale;
+    droneKey.shadow.camera.near = 1;
+    droneKey.shadow.camera.far = 180 * airframeDisplayScale;
+    droneKey.shadow.bias = -0.0002;
+    droneKey.shadow.radius = 3;
+    const detailTarget = new THREE.Object3D();
+    detailTarget.position.set(0, 1.5 * airframeDisplayScale, 0);
+    droneGroup.add(detailTarget);
+    droneKey.target = detailTarget;
+    droneGroup.add(droneKey);
+}
+
+function createMissionDroneAirframe(template) {
+    const root = new THREE.Group();
+    const model = template.clone(true);
+    root.add(model);
+    // Both exported GLBs face +Z; flight commands use -Z at heading zero.
+    root.rotation.y = Math.PI;
+    const bounds = new THREE.Box3().setFromObject(root);
+    const size = bounds.getSize(new THREE.Vector3());
+    const horizontalSize = Math.max(size.x, size.z);
+    if (!Number.isFinite(horizontalSize) || horizontalSize <= 0 || !Number.isFinite(size.y) || size.y <= 0) {
+        throw new Error('Invalid drone model bounds');
+    }
+    const rotors = ['FL', 'FR', 'RL', 'RR'].map(id => {
+        const rotor = model.getObjectByName('Propeller_' + id);
+        if (!rotor) throw new Error('Missing drone propeller: ' + id);
+        rotor.userData.spinDirection = rotor.userData.spin_direction || (id === 'FL' || id === 'RR' ? 1 : -1);
+        return rotor;
+    });
+    const scale = 49.15 / horizontalSize;
+    const center = bounds.getCenter(new THREE.Vector3());
+    root.scale.setScalar(scale);
+    root.position.set(-center.x * scale, -bounds.min.y * scale + 0.02, -center.z * scale);
+
+    const geometries = new Map(), materials = new Map();
+    let ledMesh = null;
+    model.traverse(node => {
+        if (!node.isMesh) return;
+        if (!geometries.has(node.geometry)) geometries.set(node.geometry, node.geometry.clone());
+        node.geometry = geometries.get(node.geometry);
+        const cloneMaterial = original => {
+            if (!materials.has(original)) materials.set(original, original.clone());
+            return materials.get(original);
+        };
+        node.material = Array.isArray(node.material) ? node.material.map(cloneMaterial) : cloneMaterial(node.material);
+        node.castShadow = true;
+        node.receiveShadow = true;
+        // GLTFLoader separates multi-material parts into primitive meshes.
+        // Bind the inspection lamp alone, leaving safety/status emission intact.
+        if (!ledMesh && !Array.isArray(node.material) && node.material.name === 'Inspection_Light') {
+            ledMesh = node;
+            node.material.transparent = true;
+            node.material.opacity = 0.1;
+            // Existing LED commands write color; emission follows that same Color.
+            node.material.emissive = node.material.color;
+        }
+    });
+    if (!ledMesh) {
+        ledMesh = new THREE.Mesh(new THREE.SphereGeometry(0.015, 16, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 }));
+        ledMesh.position.set(-center.x, bounds.max.y + 0.015, -center.z);
+        root.add(ledMesh);
+    }
+    root.updateMatrixWorld(true);
+    const ledPosition = new THREE.Box3().setFromObject(ledMesh).getCenter(new THREE.Vector3());
+    const gripper = model.getObjectByName('Gripper');
+    const fingers = ['Left', 'Right'].map(side => model.getObjectByName('Gripper_Finger_' + side));
+    if (gripper && fingers.every(Boolean)) {
+        const tip = new THREE.Vector3();
+        fingers.forEach(finger => {
+            const box = new THREE.Box3().setFromObject(finger);
+            const point = box.getCenter(new THREE.Vector3());
+            point.y = box.min.y;
+            tip.add(point.multiplyScalar(0.5));
+        });
+        const attachment = new THREE.Object3D();
+        attachment.name = 'drone_cargo_attachment';
+        attachment.position.copy(gripper.worldToLocal(tip));
+        gripper.add(attachment);
+    }
+    return { root, rotors, ledMesh, ledPosition };
+}
+
+function getDroneCargoAttachmentPoint(drone = state) {
+    const point = new THREE.Vector3(0, -20, 0);
+    const attachment = droneGroup?.getObjectByName('drone_cargo_attachment');
+    if (attachment) {
+        attachment.updateWorldMatrix(true, false);
+        droneGroup.worldToLocal(attachment.getWorldPosition(point));
+    }
+    // Factory updates run before the flight group's RAF pose sync. Apply the
+    // supplied flight state so cargo follows this frame, including during turns.
+    return point.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(drone.heading))
+        .add(new THREE.Vector3(drone.x, drone.y, drone.z));
+}
+
+function setDroneAirframeForScene(type) {
+    if (!droneGroup) return;
+    const key = ({ city: 'wildfireDrone', factory: 'industrialDrone' })[type];
+    if (key && assets[key]) {
+        if (droneGroup.userData.airframeKey === key) return;
+        let airframe;
+        try {
+            airframe = createMissionDroneAirframe(assets[key]);
+        } catch (error) {
+            console.warn('無人機模型無法使用，沿用醫療救援機型：', error);
+        }
+        if (airframe) {
+            clearDroneAirframe();
+            airframe.root.name = key;
+            droneGroup.add(airframe.root);
+            propellers = airframe.rotors;
+            droneLedMesh = airframe.ledMesh;
+            droneLedLight = new THREE.PointLight(0xffffff, 0, 40);
+            droneLedLight.position.copy(airframe.ledPosition);
+            droneGroup.add(droneLedLight);
+            addDroneDetailLight();
+            droneGroup.userData.airframeKey = key;
+            return;
+        }
+    }
+    if (droneGroup.userData.airframeKey !== 'medical') createDroneModel();
+}
+
+function animateDronePropellers() {
+    if (!state.isFlying) return;
+    propellers.forEach((propeller, index) => {
+        const direction = propeller.userData.spinDirection ?? (index % 2 === 0 ? 1 : -1);
+        propeller.rotation.y += direction * 0.8;
+    });
+}
+
+// 建立預設機身；外層始終保留為飛行／物理變換。
 function createDroneModel() {
-    droneGroup = new THREE.Group();
+    if (!droneGroup) droneGroup = new THREE.Group();
+    clearDroneAirframe();
+    droneGroup.userData.airframeKey = 'medical';
 
     // The simulator now uses the procedural medical-rescue airframe. Keep the
     // outer group as the flight/physics transform so the existing commands,
@@ -3192,24 +3360,7 @@ function createDroneModel() {
 
         // A tight shadow frustum follows the aircraft. The global light still
         // covers the mission map, while this local key preserves small airframe details.
-        const droneKey = new THREE.DirectionalLight(0xffffff, 0.32);
-        droneKey.name = 'medical_drone_detail_light';
-        droneKey.position.set(-42, 64, -58).multiplyScalar(airframeDisplayScale);
-        droneKey.castShadow = true;
-        droneKey.shadow.mapSize.set(1024, 1024);
-        droneKey.shadow.camera.left = -28 * airframeDisplayScale;
-        droneKey.shadow.camera.right = 28 * airframeDisplayScale;
-        droneKey.shadow.camera.top = 28 * airframeDisplayScale;
-        droneKey.shadow.camera.bottom = -28 * airframeDisplayScale;
-        droneKey.shadow.camera.near = 1;
-        droneKey.shadow.camera.far = 180 * airframeDisplayScale;
-        droneKey.shadow.bias = -0.0002;
-        droneKey.shadow.radius = 3;
-        const detailTarget = new THREE.Object3D();
-        detailTarget.position.set(0, 1.5 * airframeDisplayScale, 0);
-        droneGroup.add(detailTarget);
-        droneKey.target = detailTarget;
-        droneGroup.add(droneKey);
+        addDroneDetailLight();
 
         scene.add(droneGroup);
         console.log('✅ 已使用醫療救援無人機模型（' + propellers.length + ' 組旋翼）');
@@ -3220,6 +3371,9 @@ function createDroneModel() {
     if (assets.drone) {
         console.log("✅ 使用載入的無人機 GLB 模型");
         const droneModel = assets.drone.clone();
+        droneModel.traverse(node => {
+            if (node.geometry) node.geometry = node.geometry.clone();
+        });
         
         // 計算模型的邊界框以確定大小
         const bbox = new THREE.Box3().setFromObject(droneModel);
@@ -4376,13 +4530,7 @@ function animateLoop() {
         window.mazeAnimations.forEach(fn => fn());
     }
 
-    // 螺旋槳動畫：確保所有螺旋槳都會轉動
-    if (state.isFlying && propellers.length > 0) {
-        propellers.forEach((p, i) => {
-            // 交替旋轉方向
-            p.rotation.y += (i % 2 === 0 ? 0.8 : -0.8);
-        });
-    }
+    animateDronePropellers();
     if (droneGroup) { droneGroup.position.set(state.x, state.y, state.z); droneGroup.rotation.y = THREE.MathUtils.degToRad(state.heading); }
     if (followDrone) { camTarget.x += (state.x - camTarget.x)*0.1; camTarget.y += (state.y - camTarget.y)*0.1; camTarget.z += (state.z - camTarget.z)*0.1; }
     if (ruinsUpdateFunction) ruinsUpdateFunction();

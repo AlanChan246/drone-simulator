@@ -186,9 +186,10 @@ window.FactoryScene = (() => {
             s('barrels', x - 90, z + 90, 85); f('warning-orange', x, z - 90, 50);
         }
         for (const x of [-1450, 1450]) for (const z of [1000, 500, 50, -1000]) f('cone', x, z, 38, 0, 0, false, false);
-        // Magnetic part and gripper are real imported assets. They do not become collision/sensor geometry.
+        // The imported part follows the airframe's built-in gripper. It does not
+        // become collision/sensor geometry; no separate hanging tool is needed.
         const part = f('cog-a', 0, 750, 46, 0, 20, true, false);
-        const magnet = f('crane-magnet', -1200, 1200, 20, 0, 0, true, false);
+        const cargoHeight = new THREE.Box3().setFromObject(part).getSize(new THREE.Vector3()).y;
         const repairPart = f('cog-a', -1200, -300, 46, 0, 20, true, false);
         const movingStock = [0, 1, 2].map(i => f('box-small', 275 + i * 100, 975, 45, 0, 45, true, false));
         // Batch static model meshes and ground markings without changing their world transforms.
@@ -210,9 +211,14 @@ window.FactoryScene = (() => {
             const cargo = data.cargo, ready = data.intake;
             dispatchReady.visible = data.delivered.length === 6;
             part.visible = !!cargo || !!ready || data.feedRemaining > 0;
-            if (cargo) part.position.set(drone.x, drone.y - 33, drone.z);
-            else part.position.set(data.feedRemaining > 0 ? data.feedRemaining / C.feedSeconds * 150 : 0, 20, 750);
-            magnet.position.set(drone.x, Math.max(1, drone.y - 20), drone.z); magnet.visible = drone.isFlying;
+            if (cargo) {
+                part.position.copy(getDroneCargoAttachmentPoint(drone));
+                part.position.y -= cargoHeight;
+                part.rotation.y = THREE.MathUtils.degToRad(drone.heading);
+            } else {
+                part.position.set(data.feedRemaining > 0 ? data.feedRemaining / C.feedSeconds * 150 : 0, 20, 750);
+                part.rotation.y = 0;
+            }
             repairPart.visible = !!data.repair.part;
             repairArm.rotation.y = data.repair.status === 'working' && !reduced.matches ? Math.sin(data.elapsed * 1.5) * .22 : 0;
             assemblyArm.rotation.y = Math.PI + (data.delivered.length >= 4 && !reduced.matches ? Math.sin(data.elapsed) * .2 : 0);

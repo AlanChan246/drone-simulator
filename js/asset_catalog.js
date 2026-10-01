@@ -76,6 +76,18 @@
       "required": false
     },
     {
+      "key": "wildfireDrone",
+      "path": "assets/models/wildfire-response-drone.glb",
+      "required": false,
+      "preserveMaterial": true
+    },
+    {
+      "key": "industrialDrone",
+      "path": "assets/models/industrial-intervention-drone.glb",
+      "required": false,
+      "preserveMaterial": true
+    },
+    {
       "key": "tree_pine",
       "path": "assets/models/nature/GLTF format/tree_pineTallA.glb",
       "required": false
