@@ -25,6 +25,7 @@ async function startMission(n){await page.clock.resume();await page.evaluate(n=>
  // Verify the actual video decodes before treating media-only ERR_ABORTED as diagnostic.
  await page.waitForFunction(()=>{const video=document.getElementById('hero-loop-video');return video.error||video.readyState>=1;});
  check('homepage video metadata loads',await page.evaluate(()=>{const v=document.getElementById('hero-loop-video');return !v.error&&v.videoWidth>0&&v.duration>0;}));
+ check('initial browser and resources load without errors',report.errors,[]);
  await page.clock.install();await startMission(3);check('factory Blockly workspace initialized',await page.evaluate(()=>!!workspace));
  check('every marked lane has 3 m ground-level clearance',await page.evaluate(()=>FactoryMission.obstacles.filter(b=>b.min.y<=180&&b.max.y>=0).every(b=>![-1200,0,1200].some(x=>b.max.x>x-150&&b.min.x<x+150&&b.max.z>-1350&&b.min.z<1350)&&![-1200,-300,750,1200].some(z=>b.max.z>z-150&&b.min.z<z+150&&b.max.x>-1350&&b.min.x<1350))));
  check('factory style loaded',await page.evaluate(()=>getComputedStyle(document.getElementById('game-interface')).display),'flex');
@@ -57,10 +58,12 @@ async function startMission(n){await page.clock.resume();await page.evaluate(n=>
  // Restore reference before screenshot matrix and regression; no complete answer preloaded by application.
  await importXml(reference);await page.evaluate(()=>{V2UI.setView('split');V2UI.camera('map');});await tick(250);
  for(const size of [[1440,900],[1280,800],[1024,768]])for(const theme of ['light','dark']){
-  await page.setViewportSize({width:size[0],height:size[1]});await page.evaluate(t=>{DroneTheme.setPreference(t);V2UI.setView('split');V2UI.camera('map');},theme);await tick(300);
+  await page.setViewportSize({width:size[0],height:size[1]});await page.evaluate(t=>{DroneTheme.setPreference(t);V2UI.setView('split');V2UI.camera('map');},theme);
+  // Run each scheduled animation frame so resize/layout settles before measuring.
+  await page.clock.runFor(300);
   for(const selector of ['#run-blockly-btn','#debug-pause-btn','.program-btn--stop','#factory-new-order']){const b=await page.locator(selector).boundingBox();assert.ok(b&&b.x>=0&&b.y>=0&&b.x+b.width<=size[0]+1&&b.y+b.height<=size[1]+1,selector+' fits '+size);}
   const orderButton=await page.locator("#factory-new-order").boundingBox(), canvas=await page.locator("#canvas-container").boundingBox(), action=await page.locator(".v2-action").boundingBox();
-  assert.ok(Math.abs(orderButton.y-canvas.y-16)<1 && Math.abs(canvas.x+canvas.width-orderButton.x-orderButton.width-16)<1);
+  assert.ok(Math.abs(orderButton.y-canvas.y-16)<1 && Math.abs(canvas.x+canvas.width-orderButton.x-orderButton.width-16)<1, 'factory order button position: '+JSON.stringify({size,orderButton,canvas}));
   assert.ok(action.x+action.width<orderButton.x,"status and order button do not overlap");
   check('controls fit '+size+' '+theme,true);await shot('layout-'+size.join('x')+'-'+theme);
   await page.evaluate(()=>showMissionBriefing(3));await tick(100);await shot('briefing-'+size.join('x')+'-'+theme);await page.evaluate(()=>closeBriefing());

@@ -37,22 +37,6 @@ test('cancelled gesture must not leave a stale pinch baseline', () => {
     assert.equal(c.camTheta, 44);
     assert.equal(c.camRadius, 1000);
 });
-function tutorialHarness() {
-    const nodes = {};
-    const get = id => nodes[id] ||= { hidden: false, style: {}, textContent: '', disabled: false };
-    const source = fs.readFileSync('js/main.js', 'utf8');
-    const c = vm.createContext({ document: { getElementById: get, querySelector: () => ({}) }, workspace: { getAllBlocks: () => ['drone_takeoff','drone_move_cm','drone_land'].map(type => ({ type })) }, window: {}, setInterval: () => 1, clearInterval() {}, setTimeout: fn => fn() });
-    vm.runInContext(source.slice(source.indexOf('const tutorialSteps ='), source.indexOf('function updateDebugPosition()')), c);
-    return { c, get, run: code => vm.runInContext(code, c) };
-}
-test('completed tutorial steps stay on the same page until manually advanced', () => {
-    const { get, run } = tutorialHarness();
-    run('startInteractiveTutorial(); checkTutorialProgress(); checkTutorialProgress();');
-    assert.equal(get('tutorial-step-count').textContent, '1 / 5');
-    run('nextTutorialStep()');
-    assert.equal(get('tutorial-step-count').textContent, '2 / 5');
-});
-
 test('pinch zoom is proportional, bounded and does not rotate or tug the follow target', () => {
     const { context: c, fire } = touchHarness();
     c.followDrone = true;
@@ -67,23 +51,6 @@ test('pinch zoom is proportional, bounded and does not rotate or tug the follow 
     assert.equal(c.camRadius, 60);
     fire('touchmove', [[100, 100], [100.01, 100]]);
     assert.equal(c.camRadius, 4000);
-});
-test('tutorial completion and restart both require explicit progression', () => {
-    const { c, get, run } = tutorialHarness();
-    run('startInteractiveTutorial(); nextTutorialStep(); nextTutorialStep(); nextTutorialStep(); nextTutorialStep();');
-    assert.equal(get('tutorial-step-count').textContent, '5 / 5');
-    assert.equal(get('tutorial-next-btn').disabled, true);
-    run('nextTutorialStep()');
-    assert.equal(get('tutorial-title').textContent, '執行小任務');
-    c.window.__tutorialFlightCompleted = true;
-    run('checkTutorialProgress(); checkTutorialProgress()');
-    assert.equal(get('tutorial-title').textContent, '執行小任務');
-    run('nextTutorialStep()');
-    assert.equal(get('tutorial-title').textContent, '第一次飛行完成');
-    assert.equal(get('tutorial-next-btn').hidden, true);
-    run('stopInteractiveTutorial(); startInteractiveTutorial()');
-    assert.equal(get('tutorial-step-count').textContent, '1 / 5');
-    assert.equal(get('tutorial-next-btn').hidden, false);
 });
 test('wheel zoom responds more strongly and normalizes pixel/line input', () => {
     const start = simulator.indexOf('function onMouseWheel(');

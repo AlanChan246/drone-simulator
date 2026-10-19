@@ -633,6 +633,7 @@ function runBlocklyCode() {
     if (window.FactoryMission && FactoryMission.active()) return FactoryMission.run(); // factory-hook
     window.__tutorialRunAttempted = false;
     window.__tutorialFlightCompleted = false;
+    window.__tutorialReturnedToEdit = false;
     console.log("runBlocklyCode 被調用，state.isRunning:", state.isRunning);
     
     if (state.isRunning) {
@@ -652,7 +653,7 @@ function runBlocklyCode() {
             variant: 'warn',
             title: 'Blockly 尚未就緒',
             body: '積木區尚未開啟或未完成初始化，無法執行程式。',
-            nextStep: '下一步：請先按頂部「顯示積木區」開啟 Blockly，再按「執行」。'
+            nextStep: '下一步：請選「專心編程」開啟積木，再按「執行」。'
         });
         return;
     }
@@ -769,7 +770,7 @@ function runBlocklyCode() {
             variant: 'warn',
             title: '沒有可執行的指令',
             body: '工作區內沒有產生任何飛行指令。',
-            nextStep: '下一步：請從左側拖入積木（例如「程式開始」與「起飛」），並連接後再執行。',
+            nextStep: '下一步：請從左側拖入積木（例如「當按下執行」與「起飛」），並連接後再執行。',
             focusClose: false
         });
         return; 
@@ -787,7 +788,7 @@ function runBlocklyCode() {
         showAppMessage({ variant: 'error', title: '這次飛行未能完成',
             body: '無人機已停止。請檢查積木次序及數值。',
             nextStep: '保留目前積木，按重設後再試一次。', focusClose: true });
-        if (window.V2UI) V2UI.programEnded();
+        if (window.V2UI) V2UI.programEnded({ error, completed: 0, total: cmdQueue.length });
     });
     
     console.log("executeQueue 調用完成（異步函數已啟動）");
@@ -1934,7 +1935,7 @@ async function executeQueue() {
             }
 
             updateProgress(index + 1, total);
-            if (window.V2UI) V2UI.command(command, index, total);
+            if (window.V2UI) V2UI.command(command, index, total, blockId);
             if (blockId) highlightBlock(blockId, true);
             command._blockId = blockId;
 
@@ -1949,7 +1950,7 @@ async function executeQueue() {
         executeCommand: command => dispatchCommand(command),
         onComplete: result => finishFlightProgram(execution, () => {
             window.__tutorialFlightCompleted = !result.error && !result.stopped && result.completed === result.total
-                && !state.isFlying && commands.some(command => command.type === 'takeoff')
+                && !state.isFlying && !state.collisionDetected && commands.some(command => command.type === 'takeoff')
                 && commands.some(command => command.type.startsWith('move_'))
                 && commands.at(-1)?.type === 'land';
             if (window.V2UI) V2UI.programEnded(result);
@@ -2931,7 +2932,7 @@ function shouldAutoShowMissionBriefing(missionId) {
 async function startFreePlay() {
     if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) {
         console.warn('Drone Simulator：請用本機 HTTP 開啟（勿雙擊 index.html）。畫面上方應有說明。');
-        return;
+        return false;
     }
     const loading = document.getElementById('v2-scene-loading');
     loading.hidden = false;
@@ -2974,14 +2975,14 @@ async function startFreePlay() {
         
         if (!canvasContainer) {
             console.error("canvas-container element not found");
-            return;
+            return false;
         }
         
         const isReady = await waitForElementSize(canvasContainer, 30);
         
         if (!isReady) {
             console.error("Canvas container not ready after retries");
-            return;
+            return false;
         }
         
         if (!canvasContainer.querySelector('canvas')) {
@@ -3009,7 +3010,7 @@ async function startFreePlay() {
     
     if (typeof environmentGroup === 'undefined' || !environmentGroup) {
         console.error("environmentGroup not initialized");
-        return;
+        return false;
     }
     
     changeScene('free');
@@ -3026,9 +3027,11 @@ async function startFreePlay() {
 
     onBlocklyContextChanged();
     if (window.V2UI) V2UI.enter();
+    return true;
     } catch (error) {
         console.error('Scene preparation failed:', error);
         showAppMessage({ variant:'error', title:'場景暫時未能載入', body:'請確認瀏覽器支援 3D 圖像並重新整理。', nextStep:'若仍未能載入，嘗試更新瀏覽器或重新連線。', focusClose:true });
+        return false;
     } finally { loading.hidden = true; }
 }
 
@@ -3828,81 +3831,139 @@ window.enableRoadMaskDebug = function () {
 // ==========================================
 // 互動式新手教學與行動裝置提示
 // ==========================================
-const tutorialSteps = [
-    { title: '開啟積木區', text: '開啟程式積木，準備編寫第一個飛行程式。', check: () => !!document.querySelector('#blocklyDiv.visible') },
-    { title: '加入起飛', text: '從「飛行指令」拖入起飛積木，並接在程式開始下方。', type: 'drone_takeoff' },
-    { title: '加入短距離移動', text: '拖入「向前飛行」積木，距離先設為 50 cm。', type: 'drone_move_cm' },
-    { title: '安全降落', text: '在最後接上降落積木，形成完整的起飛、移動、降落程序。', type: 'drone_land' },
-    { title: '執行小任務', text: '按執行，觀察高亮積木與無人機，直到它安全降落。', check: () => !!window.__tutorialFlightCompleted }
-];
+const tutorialSteps = FlightTutorial.steps;
 let tutorialStepIndex = 0;
 let tutorialTimer = null;
 
-function hasTutorialBlock(type) {
-    return !!(workspace && workspace.getAllBlocks(false).some(block => block.type === type));
-}
 function tutorialStepComplete(step) {
-    return step.check ? !!step.check() : hasTutorialBlock(step.type);
+    const index = tutorialSteps.indexOf(step);
+    if (index === 4) return !!window.__tutorialFlightCompleted && FlightTutorial.inspect(workspace, 3).complete;
+    if (index === 5) return !!window.__tutorialReturnedToEdit;
+    return FlightTutorial.inspect(workspace, index).complete;
 }
 function renderTutorialStep() {
-    const coach = document.getElementById('tutorial-coach');
-    if (!coach) return;
     const step = tutorialSteps[tutorialStepIndex];
     document.getElementById('tutorial-title').textContent = step.title;
     document.getElementById('tutorial-instruction').textContent = step.text;
     document.getElementById('tutorial-step-count').textContent = `${tutorialStepIndex + 1} / ${tutorialSteps.length}`;
     document.getElementById('tutorial-progress-bar').style.width = `${((tutorialStepIndex + 1) / tutorialSteps.length) * 100}%`;
-    document.getElementById('tutorial-check').textContent = '等待你完成這一步…';
-    document.getElementById('tutorial-helper-btn').hidden = tutorialStepIndex === 0 || tutorialStepIndex === tutorialSteps.length - 1;
+    document.getElementById('tutorial-add-btn').hidden = !step.type;
+    document.getElementById('tutorial-helper-btn').hidden = !step.type;
+    document.getElementById('tutorial-distance-btn').hidden = tutorialStepIndex !== 5 || !window.__tutorialReturnedToEdit;
+    document.getElementById('tutorial-restart-btn').hidden = false;
     document.getElementById('tutorial-next-btn').hidden = false;
     checkTutorialProgress();
+    scheduleGameUILayoutRefresh();
 }
 function checkTutorialProgress() {
     const coach = document.getElementById('tutorial-coach');
-    if (!coach || coach.hidden) return;
-    const complete = tutorialStepComplete(tutorialSteps[tutorialStepIndex]);
-    const lastStep = tutorialStepIndex === tutorialSteps.length - 1;
+    if (!coach || coach.hidden || tutorialStepIndex >= tutorialSteps.length) return;
+    const step = tutorialSteps[tutorialStepIndex];
+    const complete = tutorialStepComplete(step);
+    const running = !!state.isRunning;
     const next = document.getElementById('tutorial-next-btn');
-    next.disabled = !complete;
-    next.textContent = lastStep ? '完成教學' : '下一步';
-    document.getElementById('tutorial-check').textContent = complete
-        ? (lastStep ? '飛行完成，按「完成教學」查看總結。' : '已完成，準備好後按「下一步」。')
-        : '等待你完成這一步…';
+    next.disabled = !complete || running;
+    next.textContent = tutorialStepIndex === 5 ? '完成教學' : '下一步';
+    ['tutorial-add-btn', 'tutorial-helper-btn'].forEach(id => { document.getElementById(id).disabled = complete || running; });
+    document.getElementById('tutorial-distance-btn').hidden = tutorialStepIndex !== 5 || !window.__tutorialReturnedToEdit;
+    document.getElementById('tutorial-distance-btn').disabled = running;
+    document.getElementById('tutorial-restart-btn').disabled = running;
+    const detail = step.type ? FlightTutorial.inspect(workspace, tutorialStepIndex) : null;
+    const message = complete ? `已完成：${step.condition}` : `完成條件：${step.condition}${detail && workspace?.getAllBlocks(false).length ? '。' + detail.message : ''}`;
+    const check = document.getElementById('tutorial-check');
+    if (check.textContent !== message) check.textContent = message;
 }
 function nextTutorialStep() {
-    const coach = document.getElementById('tutorial-coach');
-    if (!coach || coach.hidden || !tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
+    if (tutorialStepIndex >= tutorialSteps.length) return;
+    if (state.isRunning || !tutorialStepComplete(tutorialSteps[tutorialStepIndex])) return;
     if (tutorialStepIndex === tutorialSteps.length - 1) {
         clearInterval(tutorialTimer); tutorialTimer = null;
+        tutorialStepIndex = tutorialSteps.length;
         document.getElementById('tutorial-title').textContent = '第一次飛行完成';
-        document.getElementById('tutorial-instruction').textContent = '你已掌握建立、執行和觀察程式的基本流程。現在可嘗試改變距離或加入轉向。';
-        document.getElementById('tutorial-check').textContent = '教學已完成。';
+        document.getElementById('tutorial-instruction').textContent = '你已掌握編程、觀察和修改。試試 100 cm，看看下一次飛行有甚麼不同。';
+        document.getElementById('tutorial-check').textContent = '教學已完成。積木會保留，你可以繼續自由練習。';
         document.getElementById('tutorial-next-btn').hidden = true;
+        document.getElementById('tutorial-restart-btn').hidden = false;
+        scheduleGameUILayoutRefresh();
         return;
     }
     tutorialStepIndex += 1;
     renderTutorialStep();
 }
-function startInteractiveTutorial() {
-    const coach = document.getElementById('tutorial-coach');
-    if (!coach) return;
-    tutorialStepIndex = 0;
-    window.__tutorialRunAttempted = false;
-    window.__tutorialFlightCompleted = false;
-    coach.hidden = false;
+function openTutorialCoach() {
+    V2UI.showEditor();
+    document.getElementById('tutorial-coach').hidden = false;
+    document.getElementById('tutorial-resume').hidden = true;
+    document.getElementById('game-interface').classList.add('tutorial-active');
     renderTutorialStep();
     if (tutorialTimer) clearInterval(tutorialTimer);
     tutorialTimer = setInterval(checkTutorialProgress, 350);
+    setTimeout(() => {
+        const first = workspace?.getTopBlocks(false).find(block => block.type === 'event_start');
+        if (first && !document.getElementById('tutorial-coach').hidden) workspace.centerOnBlock?.(first.id);
+    }, 120);
+}
+function startInteractiveTutorial() {
+    if (window.isDroneSimFileOrigin && window.isDroneSimFileOrigin()) return;
+    if (state.isRunning) {
+        showAppMessage({ variant: 'info', title: '請先完成或停止飛行', body: '飛行停止後，就可以開始逐步教學。', focusClose: false });
+        return;
+    }
+    if (currentGameMode !== 'freeplay') return startFirstFlightTutorial();
+    resetSimulator();
+    tutorialStepIndex = 0;
+    window.__tutorialFlightCompleted = false;
+    window.__tutorialReturnedToEdit = false;
+    openTutorialCoach();
+}
+async function startFirstFlightTutorial() {
+    if (await startFreePlay()) startInteractiveTutorial();
+}
+function resumeInteractiveTutorial() {
+    if (tutorialStepIndex >= tutorialSteps.length) return startInteractiveTutorial();
+    openTutorialCoach();
 }
 function stopInteractiveTutorial() {
-    const coach = document.getElementById('tutorial-coach');
-    if (coach) coach.hidden = true;
+    document.getElementById('tutorial-coach').hidden = true;
+    document.getElementById('tutorial-resume').hidden = currentGameMode !== 'freeplay';
+    document.getElementById('game-interface').classList.remove('tutorial-active');
     if (tutorialTimer) clearInterval(tutorialTimer);
     tutorialTimer = null;
+    scheduleGameUILayoutRefresh();
 }
 function applyTutorialHelper() {
-    V2UI.setView(window.innerWidth<1100?'code':'split');
-    V2UI.starter();
+    if (state.isRunning || tutorialStepIndex > 3) return;
+    V2UI.showEditor();
+    const ws = ensureBlocklyWorkspaceReady();
+    if (!ws) return;
+    const result = FlightTutorial.addStep(Blockly, ws, tutorialStepIndex);
+    if (!result.complete) {
+        document.getElementById('tutorial-check').textContent = result.message;
+        return;
+    }
+    result.block?.select?.();
+    if (result.block && ws.centerOnBlock) ws.centerOnBlock(result.block.id);
+    flushBlocklyAutosave();
+    checkTutorialProgress();
+}
+function setTutorialDistance(distance) {
+    if (state.isRunning) return;
+    const block = FlightTutorial.distanceBlock(workspace);
+    const value = block?.getInputTargetBlock('DIST');
+    if (!value || value.type !== 'math_number') return;
+    value.setFieldValue(distance, 'NUM');
+    block.select?.();
+    workspace.centerOnBlock?.(block.id);
+    flushBlocklyAutosave();
+    document.getElementById('tutorial-instruction').textContent = `距離已改為 ${distance} cm。按「執行」，比較這次飛行。`;
+}
+async function restartInteractiveTutorial() {
+    if (state.isRunning) return;
+    if (workspace?.getAllBlocks(false).length && !await showAppConfirm('重新開始會清空自由練習的積木。需要保留時，請先取消並匯出程式。', { title: '重新開始教學？' })) return;
+    workspace?.clear();
+    resetSimulator();
+    flushBlocklyAutosave();
+    startInteractiveTutorial();
 }
 
 function updateDebugPosition() {

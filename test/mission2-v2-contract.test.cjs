@@ -16,6 +16,14 @@ test('retained shared builders, mission logic and drone physics remain byte-iden
  for(const [name,expected] of Object.entries(baseline.declarations)){if(['buildForestGridScene','createCityMap','KENNEY_STARTER_CITY_DIR','KENNEY_COMMERCIAL_DIR'].includes(name)){assert.ok(!found.has(name),`retired builder ${name}`);continue;}if(['KENNEY_DISTRICT_MANIFEST','KENNEY_ROADS_DIR','KENNEY_COLORMAP_URL','loadKenneyRoadTemplates','preloadModels','changeScene'].includes(name))continue;const n=found.get(name);assert.ok(n,name);const actual=name==='createMazeMap'?source.slice(n.start,n.end).replace('    polishMission1Environment();\n',''):source.slice(n.start,n.end);assert.equal(hash(actual),presentationHashes[name] || expected,name);}
  // Asset loading and scene entry now have behavior coverage in lifecycle-assets.test.cjs.
  for(const [file,expected] of Object.entries(baseline.files)){
+   if(file==='js/v2_ui.js'){
+     // Approved first-flight UI changes are covered by flight-tutorial and flight-deck-handoff.
+     // Keep the original mission presentation functions pinned independently of editor UI.
+     const ui=read(file),body=acorn.parse(ui,{ecmaVersion:'latest'}).body[0].expression.right.callee.body.body;
+     const protectedFunctions={camera:'5f4554f30d45269769cbb9603993a69e046701e0a9fd7b783dee9f0d6ef5431c',briefing:'ca9231a020d653bc35450d78af5ae99bf37b6e83c8acdc48149dbc9224fe8174',nextMission:'606cae1ff01a80fdecbc89ca049bf61b34ab7e76a5c9f9daaa36ca8ac93d9e31',projectLabels:'8cee159c915a309ab5fcc5e313f38fa62cc13e3a7d8ddaf95148fbedf48b304f'};
+     for(const [name,digest] of Object.entries(protectedFunctions)){const n=body.find(n=>n.type==='FunctionDeclaration'&&n.id.name===name);assert.ok(n,name);assert.equal(hash(ui.slice(n.start,n.end)),digest,name);}
+     continue;
+   }
    if(['js/main.js','js/flight_command_execution.js','js/scene_lifecycle.js'].includes(file))continue; // Behavior coverage: execution-integration.test.cjs and lifecycle-assets.test.cjs.
    const original=read(file)
      // Presentation-only homepage film controls are outside the mission contract.

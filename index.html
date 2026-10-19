@@ -19,7 +19,7 @@
     <script src="node_modules/blockly/blocks_compressed.js?v=type-20260924a"></script>
     <script src="node_modules/blockly/javascript_compressed.js?v=type-20260924a"></script>
     <script src="node_modules/blockly/msg/zh-hant.js?v=type-20260924a"></script>
-    <link rel="stylesheet" href="assets/styles/v2.css?v=theme-2">
+    <link rel="stylesheet" href="assets/styles/v2.css?v=first-flight-20261020b">
     <script>
         window.__DRONE_SIM_FILE_ORIGIN__ = (typeof location !== 'undefined' && location.protocol === 'file:');
         /** 全專案共用：simulator.js / main.js 皆呼叫此函式，勿重複定義 */
@@ -51,7 +51,7 @@
     </div>
     <div id="orientation-hint" class="orientation-hint" hidden role="dialog" aria-modal="true" aria-labelledby="orientation-title">
         <strong id="orientation-title">請將手機轉為橫向</strong>
-        <small>橫向可並排看積木和飛行；直向可用上方按鈕切換，執行時會自動顯示飛行。</small>
+        <small>橫向可並排看積木和飛行；直向可用上方按鈕切換。執行會保留你選擇的畫面。</small>
         <button type="button" onclick="dismissOrientationHint()">仍然繼續</button>
     </div>
     <div id="v2-scene-loading" class="v2-scene-loading" hidden role="status">正在準備飛行場景…</div>
@@ -81,7 +81,7 @@
                 <video id="hero-loop-video" width="1920" height="1080" muted loop playsinline controls preload="metadata" poster="assets/video/drone-simulator-promo-poster.jpg" aria-label="Drone Simulator 45 秒宣傳片"><source src="assets/video/drone-simulator-promo-45s-web.mp4" type="video/mp4"></video>
                 <button type="button" class="v2-promo-play" id="hero-promo-play" aria-label="播放宣傳片" hidden><svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7V5Z"/></svg><span>播放宣傳片</span></button>
             </figure>
-            <div class="v2-home-copy"><h1 id="hub-brand-heading">下一次救援，<br>由你編程。</h1><p>連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。</p><button class="v2-primary" onclick="showMissionSelect()">開始救援任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button><button class="v2-secondary" onclick="startFreePlay()">自由練習</button><div class="v2-first-flight"><strong>第一次操控無人機？</strong><button class="v2-text" onclick="startFreePlay().then(function () { startInteractiveTutorial(); })">從第一次飛行開始</button><span>起飛、移動、降落。邊做邊學。</span></div></div>
+            <div class="v2-home-copy"><h1 id="hub-brand-heading">下一次救援，<br>由你編程。</h1><p>連接積木，指揮無人機。穿越震後街區、支援山火救援，在每一次飛行中找到更好的方法。</p><button class="v2-primary" onclick="showMissionSelect()">開始救援任務 <svg class="v2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button><button class="v2-secondary" onclick="startFreePlay()">自由練習</button><div class="v2-first-flight"><strong>第一次操控無人機？</strong><button class="v2-text" onclick="startFirstFlightTutorial()">從第一次飛行開始</button><span>起飛、移動、降落。邊做邊學。</span></div></div>
         </main>
         <footer class="v2-home-footer"><span>觀察。修正。再試一次。</span><span>Blockly × 3D 飛行模擬</span></footer>
     </div>
@@ -208,14 +208,28 @@
                         </div>
                     </div>
                 </header>
+                <aside id="tutorial-coach" class="tutorial-coach" hidden aria-labelledby="tutorial-title">
+                    <div class="tutorial-coach__heading"><h2 id="tutorial-title">先放入開始事件</h2><span id="tutorial-step-count">1 / 6</span><button type="button" id="tutorial-restart-btn" onclick="restartInteractiveTutorial()">重來</button><button type="button" onclick="stopInteractiveTutorial()">離開教學</button></div>
+                    <div class="tutorial-coach__progress" aria-hidden="true"><span id="tutorial-progress-bar"></span></div>
+                    <p id="tutorial-instruction">從「事件」加入「當按下執行」。</p>
+                    <p id="tutorial-check" role="status" aria-live="polite"></p>
+                    <div class="tutorial-coach__actions">
+                        <button type="button" id="tutorial-add-btn" onclick="applyTutorialHelper()">加入這塊積木</button>
+                        <button type="button" id="tutorial-next-btn" onclick="nextTutorialStep()" disabled>下一步</button>
+                        <button type="button" id="tutorial-helper-btn" onclick="applyTutorialHelper()">幫我完成這一步</button>
+                        <button type="button" id="tutorial-distance-btn" onclick="setTutorialDistance(100)" hidden>改為 100 cm</button>
+                    </div>
+                </aside>
+                <div id="tutorial-resume" class="tutorial-resume" hidden><span>教學已離開，積木已保留。</span><button type="button" onclick="resumeInteractiveTutorial()">繼續教學</button></div>
+                <div id="v2-code-feedback" class="v2-code-feedback" hidden><span id="v2-code-command">準備飛行</span><button type="button" onclick="V2UI.setView('world')">觀察飛行</button><button type="button" class="v2-return-edit" onclick="V2UI.returnToEditor()" hidden>返回修改程式</button></div>
                 <div id="blockly-workspace" class="blockly-workspace"></div>
-                <div id="v2-empty" class="v2-empty" hidden><strong>讓第一塊積木起飛。</strong><p>從「飛行指令」拖入起飛積木，或先試一段短程式。</p><button class="v2-primary" onclick="V2UI.starter()">加入起飛・移動・降落</button></div>
+                <div id="v2-empty" class="v2-empty" hidden><strong>讓第一塊積木起飛。</strong><p>先加入「當按下執行」，再連接起飛、移動與降落。</p><button class="v2-primary" onclick="V2UI.starter()">載入完整示範程式</button></div>
                 <div class="v2-editor-footer"><button onclick="V2UI.undo(false)" aria-label="復原積木變更">復原</button><button onclick="V2UI.undo(true)" aria-label="重做積木變更">重做</button><span id="v2-save-status" role="status">積木會按任務自動儲存</span></div>
                 <input type="file" id="blockly-import-input" accept=".xml,text/xml,application/xml" hidden onchange="handleBlocklyImportFile(this)">
             </div>
             <div id="canvas-container" class="canvas-panel">
                 <div class="v2-observation-tools">
-                <div class="v2-action" role="status" aria-live="polite"><span id="v2-action-status">準備飛行</span><strong id="v2-action-label">把想法連成積木，再按執行。</strong><progress id="v2-command-progress" value="0" max="1" aria-label="程式執行進度"></progress></div>
+                <div class="v2-action" role="status" aria-live="polite"><span id="v2-action-status">準備飛行</span><strong id="v2-action-label">把想法連成積木，再按執行。</strong><small id="v2-block-preview" hidden></small><button type="button" class="v2-return-edit" onclick="V2UI.returnToEditor()" hidden>返回修改程式</button><progress id="v2-command-progress" value="0" max="1" aria-label="程式執行進度"></progress></div>
                 <div class="v2-camera-tools" aria-label="觀察視角"><button onclick="V2UI.camera('follow')">跟隨</button><button onclick="V2UI.camera('map')">全景</button><button onclick="V2UI.camera('top')">俯視</button></div>
                 </div>
                 <div id="v2-drone-label" class="v2-world-label" hidden>無人機</div><div id="v2-goal-label" class="v2-world-label v2-world-label--goal" hidden>降落終點</div>
@@ -443,18 +457,6 @@
         </div>
     </div>
 
-    <aside id="tutorial-coach" class="tutorial-coach" hidden aria-live="polite" aria-labelledby="tutorial-title">
-        <div class="tutorial-coach__progress"><span id="tutorial-progress-bar"></span></div>
-        <p class="tutorial-coach__eyebrow">互動教學 <span id="tutorial-step-count">1 / 5</span></p>
-        <h2 id="tutorial-title">開啟積木區</h2>
-        <p id="tutorial-instruction">按上方「顯示積木區」，準備編寫第一個飛行程式。</p>
-        <p id="tutorial-check" class="tutorial-coach__check">等待你完成這一步…</p>
-        <div class="tutorial-coach__actions">
-            <button type="button" id="tutorial-next-btn" onclick="nextTutorialStep()" disabled>下一步</button>
-            <button type="button" id="tutorial-helper-btn" onclick="applyTutorialHelper()">幫我放入示範積木</button>
-            <button type="button" onclick="stopInteractiveTutorial()">離開教學</button>
-        </div>
-    </aside>
 
     <script src="node_modules/three/examples/js/geometries/RoundedBoxGeometry.js?v=type-20260924a"></script>
     <script src="js/medical_drone_model.js?v=rescue-color-20260924b"></script>
@@ -476,10 +478,11 @@
     <script src="js/factory/blocks.js?v=factory-1"></script>
     <script src="js/mission2_answer.js?v=type-20260924a"></script>
     <script src="js/blockly_workspace_io.js?v=type-20260924a"></script>
-    <script src="js/main.js?v=interaction-20260924a"></script>
+    <script src="js/flight_tutorial.js?v=first-flight-20261020b"></script>
+    <script src="js/main.js?v=first-flight-20261020b"></script>
     <script src="js/factory/mission.js?v=factory-1"></script>
     <script src="js/factory/ui.js?v=factory-1"></script>
-    <script src="js/v2_ui.js?v=mission1-ground-20261001c"></script>
+    <script src="js/v2_ui.js?v=first-flight-20261020b"></script>
     <script>
         window.addEventListener('load', function () {
             var loader = document.getElementById('app-loading');

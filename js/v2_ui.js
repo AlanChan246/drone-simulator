@@ -6,6 +6,12 @@ window.V2UI = (() => {
     let lastCommand = '';
     let wasPaused = false;
     let collisionShown = false;
+    const viewStorageKey = 'drone-simulator:v2:deck-view';
+    let preferredView = null;
+    try { preferredView = localStorage.getItem(viewStorageKey); } catch (_) { /* Session-only view is still available. */ }
+    if (!['split', 'code', 'world'].includes(preferredView)) preferredView = null;
+    let lastEditorView = preferredView && preferredView !== 'world' ? preferredView : null;
+    let runHasFinished = false;
     const paths = {
         play: 'M8 5l12 7-12 7z', pause: 'M8 5v14M16 5v14', stop: 'M6 6h12v12H6z',
         reset: 'M4 10a8 8 0 1 1 1 8M4 4v6h6', back: 'M19 12H5m6-6-6 6 6 6',
@@ -22,17 +28,56 @@ window.V2UI = (() => {
         map.forEach(([selector,name]) => { const node=document.querySelector(selector); if(node)node.innerHTML=icon(name); });
         [['out','minus'],['in','plus'],['reset','fit']].forEach(([action,name]) => {const node=document.querySelector(`[onclick="zoomBlockly('${action}')"]`);if(node)node.innerHTML=icon(name);});
     }
-    function setView(view) {
+    function setView(view, persist = true) {
+        if (!['split', 'code', 'world'].includes(view)) return;
         const deck=el('game-interface'), panel=el('blocklyDiv');
         deck.dataset.view=view;
-        if(view!=='world' && !panel.classList.contains('visible')) toggleBlocklyPanel();
+        if (view !== 'world') lastEditorView = view;
+        if (persist) {
+            preferredView = view;
+            try { localStorage.setItem(viewStorageKey, view); } catch (_) { /* Keep the current-session choice. */ }
+        }
+        // Prepare the saved program even when entering directly in flight view.
+        if(!panel.classList.contains('visible')) toggleBlocklyPanel();
         panel.inert=view==='world';
         el('canvas-container').inert=view==='code';
         document.querySelectorAll('.v2-view-switch button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));
         requestAnimationFrame(()=>{initBlockly();refreshGameUILayout();});
     }
+    function showEditor() {
+        setView(lastEditorView || (window.innerWidth >= 1000 ? 'split' : 'code'));
+    }
+    function showReturn(visible) {
+        document.querySelectorAll('.v2-return-edit').forEach(button => { button.hidden = !visible; });
+    }
+    function returnToEditor() {
+        if (state.isRunning) return;
+        const completed = !!window.__tutorialFlightCompleted;
+        if (currentGameMode === 'freeplay' && runHasFinished) resetSimulator();
+        window.__tutorialReturnedToEdit = completed;
+        showEditor();
+        showReturn(false);
+        const block = FlightTutorial.distanceBlock(workspace);
+        if (block) {
+            block.select?.();
+            workspace.centerOnBlock?.(block.id);
+        }
+        checkTutorialProgress();
+        const distanceButton = el('tutorial-distance-btn');
+        if (distanceButton && !distanceButton.hidden) distanceButton.focus();
+        else {
+            const svg = block?.getSvgRoot?.();
+            const target = svg || el('blockly-workspace');
+            target.setAttribute('tabindex', '-1');
+            target.focus();
+        }
+    }
     function resetFeedback() {
         collisionShown=false;
+        runHasFinished=false;
+        showReturn(false);
+        el('v2-code-feedback').hidden = true;
+        el('v2-block-preview').hidden = true;
         hideAppMessage();
         text('v2-action-status','準備飛行');
         text('v2-action-label','積木已保留。調整路線，再試一次。');
@@ -53,11 +98,17 @@ window.V2UI = (() => {
         place('v2-goal-label',destination.x,0,destination.z,currentGameMode==='mission'&&!followDrone);
     }
     function enter() {
+        stopInteractiveTutorial();
+        el('tutorial-resume').hidden = true;
+        runHasFinished=false;
+        showReturn(false);
+        el('v2-code-feedback').hidden = true;
+        el('v2-block-preview').hidden = true;
         dismissBlocklyDiscoverToast();
         hideAppMessage();
         toggleConsole(false);
         lastCommand='';
-        setView(window.innerWidth<1100?'code':'split');
+        setView(preferredView || (window.innerWidth >= 1000 ? 'split' : 'code'), false);
         camera(currentGameMode==='freeplay'?'follow':'map');
         text('v2-action-status','準備飛行');
         text('v2-action-label','把想法連成積木，再按執行。');
@@ -65,7 +116,14 @@ window.V2UI = (() => {
         setTimeout(()=>{initBlockly();sync();},60);
     }
     function workspaceReady(ws) {
-        ws.addChangeListener(()=>{el('v2-empty').hidden=ws.getAllBlocks(false).length>0;});
+        ws.addChangeListener(event=>{
+            el('v2-empty').hidden=ws.getAllBlocks(false).length>0;
+            if (!event.isUiEvent && event.type !== Blockly.Events.FINISHED_LOADING) {
+                window.__tutorialFlightCompleted = false;
+                showReturn(false);
+                checkTutorialProgress();
+            }
+        });
         el('v2-empty').hidden=ws.getAllBlocks(false).length>0;
     }
     function starter() {
@@ -91,18 +149,41 @@ window.V2UI = (() => {
         document.querySelectorAll('.v2-camera-tools button').forEach(button=>button.setAttribute('aria-pressed',String(button.textContent===(followDrone?'跟隨':mode==='top'?'俯視':'全景'))));
     }
     const names={takeoff:'起飛',land:'安全降落',move_forward:'向前飛行',move_backward:'向後飛行',move_left:'向左飛行',move_right:'向右飛行',move_up:'上升',move_down:'下降',hover:'懸停觀察',turn_left:'向左轉向',turn_right:'向右轉向',goto_xyz:'飛向指定座標',collect_water:'裝填水箱',release_water:'噴水滅火',set_color:'改變燈光',print:'輸出觀察結果',wait_key:'等待按下空白鍵',turn_time:'按時間轉向',set_var:'設定飛行動力',set_heading:'轉至指定航向',move_complex:'按設定動力飛行'};
-    function command(cmd,index,total) {
+    function command(cmd,index,total,blockId) {
         lastCommand=names[cmd.type]||'執行飛行指令';
+        const block = workspace?.getBlockById(blockId || cmd._blockId || '');
+        const description = block ? block.toString(100) : lastCommand;
+        text('v2-block-preview', `目前積木：${description}`);
+        el('v2-block-preview').hidden = false;
+        text('v2-code-command', `指令 ${index+1} / ${total} · ${description}`);
         text('v2-action-status',`指令 ${index+1} / ${total}`);
         text('v2-action-label',lastCommand);
         el('v2-command-progress').max=total;
         el('v2-command-progress').value=index+1;
     }
-    function prepareRun(){hideAppMessage();if(el('game-interface').dataset.view==='code')setView('world');}
+    function prepareRun(){
+        hideAppMessage();
+        runHasFinished=false;
+        showReturn(false);
+        el('v2-code-feedback').hidden = false;
+        if(el('game-interface').dataset.view!=='world')lastEditorView=el('game-interface').dataset.view;
+    }
     function programEnded(result) {
         const incomplete=result && result.completed<result.total;
+        runHasFinished = !!result && result.total > 0 && !incomplete && !result.stopped && !result.error && !state.stopSignal;
+        showReturn(currentGameMode === 'freeplay' && runHasFinished);
+        if (result?.error) {
+            text('v2-action-status', '飛行未能完成');
+            text('v2-action-label', '檢查錯誤提示，保留積木並重設後再試。');
+            text('v2-code-command', el('v2-action-label').textContent);
+            checkTutorialProgress();
+            return;
+        }
         text('v2-action-status',state.missionCompleted?'任務完成':state.stopSignal?'已停止':incomplete?'有指令未能執行':'程式執行完畢');
         text('v2-action-label',state.missionCompleted?'救援目標已達成。':state.stopSignal?'調整積木後，可以重設再試。':incomplete?'依照提示調整積木，再試一次。':'觀察飛行結果，再試一個新想法。');
+        if (currentGameMode === 'freeplay' && window.__tutorialFlightCompleted) text('v2-action-label', '已完成第一次飛行。返回修改程式，再試試不同距離。');
+        text('v2-code-command', el('v2-action-label').textContent);
+        checkTutorialProgress();
     }
     function sync() {
         const now=Date.now();if(now-lastSync<100)return;lastSync=now;
@@ -122,6 +203,7 @@ window.V2UI = (() => {
         if(state.isRunning&&executionDebug.paused)text('v2-action-status','下一塊積木前暫停 · 可按單步或繼續');
         else if(state.isRunning&&wasPaused)text('v2-action-status',`指令 ${executionDebug.currentIndex+1} / ${cmdQueue.length}`);
         wasPaused=executionDebug.paused;
+        if(state.isRunning&&executionDebug.paused)text('v2-code-command', `已暫停 · ${el('v2-block-preview').textContent}`);
         if(el('v2-empty')&&workspace)el('v2-empty').hidden=workspace.getAllBlocks(false).length>0;
     }
     function briefing(id,content) {
@@ -191,5 +273,5 @@ window.V2UI = (() => {
     window.resumeHeroLoopVideo();
     icons();
     const originalNextMission=nextMission; nextMission=function() { if(activeMissionId===3) { closeResultModal(); FactoryMission.newOrder(); } else if(activeMissionId===2) { closeResultModal(); emergencyStop(); startMission(3); } else originalNextMission(); }; // factory-hook
-    return {enter,setView,workspaceReady,starter,undo,camera,command,programEnded,sync,briefing,nextMission,toggleTelemetry,toggleDebug,icon,resetFeedback,projectLabels,prepareRun};
+    return {enter,setView,showEditor,returnToEditor,workspaceReady,starter,undo,camera,command,programEnded,sync,briefing,nextMission,toggleTelemetry,toggleDebug,icon,resetFeedback,projectLabels,prepareRun};
 })();

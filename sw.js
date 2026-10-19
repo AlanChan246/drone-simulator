@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'drone-simulator-mission1-ground-20261001c';
+const CACHE_VERSION = 'drone-simulator-first-flight-20261020b';
 importScripts('js/asset_catalog.js');
 const APP_SHELL = [
   "./",
@@ -8,6 +8,7 @@ const APP_SHELL = [
   "js/theme.js",
   "js/medical_drone_model.js",
   "js/main.js",
+  "js/flight_tutorial.js",
   "js/blockly_workspace_io.js",
   "js/scene_lifecycle.js",
   "js/mission2_answer.js",
